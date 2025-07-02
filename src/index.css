@@ -1,0 +1,193 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode variables (Refined Palette) */
+    --background: 39 82% 96%; /* rgb(253, 246, 238) */
+    --foreground: 30 26% 16%; /* rgb(51, 40, 30) */
+
+    --card: 39 46% 94%; /* rgb(247, 240, 232) */
+    --card-foreground: 30 26% 16%; /* Matches foreground */
+
+    --popover: 39 46% 94%; /* rgb(247, 240, 232) */
+    --popover-foreground: 30 26% 16%; /* Matches foreground */
+
+    --primary: 39 46% 94%; /* rgb(247, 240, 232) for button backgrounds */
+    --primary-foreground: 30 26% 16%; /* Dark text for buttons */
+
+    --secondary: 39 46% 90%; /* Slightly darker shade for secondary elements */
+    --secondary-foreground: 30 26% 16%; /* Dark text */
+
+    --muted: 39 46% 90%; /* Slightly darker shade for muted elements */
+    --muted-foreground: 30 26% 30%; /* Medium dark grey */
+
+    --accent: 39 46% 94%; /* Matches card */
+    --accent-foreground: 30 26% 16%; /* Dark text */
+
+    --destructive: 0 84.2% 60.2%; /* Red (keep for errors) */
+    --destructive-foreground: 210 40% 98%; /* Off-white (keep for contrast on red) */
+
+    --border: 39 30% 85%; /* Border color within the palette */
+    --input: 39 46% 94%; /* Matches card/button */
+    --ring: 30 26% 16%; /* Dark ring */
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 39 46% 94%; /* Matches card */
+    --sidebar-foreground: 30 26% 16%; /* Matches foreground */
+    --sidebar-primary: 30 26% 16%; /* Dark primary in sidebar */
+    --sidebar-primary-foreground: 0 0% 98%; /* Off-white for contrast */
+    --sidebar-accent: 39 46% 90%; /* Slightly darker */
+    --sidebar-accent-foreground: 30 26% 16%; /* Dark text */
+    --sidebar-border: 39 30% 85%; /* Border color */
+    --sidebar-ring: 30 26% 16%; /* Dark ring */
+  }
+
+  .dark {
+    /* Dark mode variables (Gray/White/Black Palette) - Keeping largely as is */
+    --background: 240 10% 3.9%; /* Very dark grey */
+    --foreground: 0 0% 98%; /* Off-white */
+
+    --card: 240 10% 13%; /* Dark grey */
+    --card-foreground: 0 0% 98%; /* Off-white */
+
+    --popover: 240 10% 13%; /* Dark grey */
+    --popover-foreground: 0 0% 98%; /* Off-white */
+
+    --primary: 217.9 10.6% 10.9%; /* Purple (Keeping original) */
+    --primary-foreground: 240 10% 3.9%; /* Very dark grey */
+
+    --secondary: 215 27% 16.9%; /* Darker grey */
+    --secondary-foreground: 210 40% 96.1%; /* Light grey */
+
+    --muted: 215 27% 16.9%; /* Darker grey */
+    --muted-foreground: 217.9 10.6% 64.9%; /* Medium grey */
+
+    --accent: 215 27% 16.9%; /* Darker grey */
+    --accent-foreground: 210 40% 96.1%; /* Light grey */
+
+    --destructive: 0 62.8% 30.6%; /* Darker red (keep for errors) */
+    --destructive-foreground: 210 40% 98%; /* Off-white */
+
+    --border: 217 19% 27%; /* Medium dark grey border */
+    --input: 215 27% 16.9%; /* Darker grey input background */
+    --ring: 248 67% 78%; /* Purple (Keeping original) */
+
+    --sidebar-background: 240 100% 9%; /* Very dark grey/near black */
+    --sidebar-foreground: 210 40% 98%; /* Off-white */
+    --sidebar-primary: 248 67% 78%; /* Purple (Keeping original) */
+    --sidebar-primary-foreground: 240 5.9% 10%; /* Near black */
+    --sidebar-accent: 240 3.7% 15.9%; /* Dark grey */
+    --sidebar-accent-foreground: 0 0% 98%; /* Off-white */
+    --sidebar-border: 240 3.7% 15.9%; /* Dark grey border */
+    --sidebar-ring: 248 67% 78%; /* Purple (Keeping original) */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    /* Ensure Inter font is applied */
+    @apply bg-background text-foreground font-sans;
+    font-family: "Inter", sans-serif;
+  }
+
+  .glass-card {
+    /* Adjusted for light/dark using opacity and specific dark background */
+    @apply bg-white/20 dark:bg-black/20 backdrop-filter backdrop-blur-lg border border-white/10 dark:border-black/10 shadow-lg;
+  }
+
+  .tech-glow {
+    /* Kept original glow as it matches the dark mode primary color */
+    @apply shadow-[0_0_15px_rgba(155,135,245,0.5)];
+  }
+
+  /* Gradient for the top-right light focus effect */
+  /* Adjusted for light mode - subtle dark gradient */
+  .top-right-gradient {
+    background-image: radial-gradient(
+      circle at top right,
+      rgba(0, 0, 0, 0.06) 0%,
+      rgba(0, 0, 0, 0) 50%
+    ); /* Made even more subtle */
+  }
+
+  /* Dark mode top-right gradient */
+  .dark .top-right-gradient {
+    /* Kept original as it works for dark mode */
+    background-image: radial-gradient(
+      circle at top right,
+      rgba(255, 255, 255, 0.200) 0%,
+      rgba(255, 255, 255, 0) 30%
+    );
+  }
+
+  /* Gradient for text - using theme variables */
+  /* Adjusted to use the new light mode foreground/muted-foreground */
+  .text-gradient-gray-white {
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    @apply bg-gradient-to-r from-foreground to-muted-foreground; /* Use new foreground to muted-foreground */
+  }
+
+  /* Z-depth text shadow */
+  /* Adjusted for light mode using new foreground color opacity */
+  .text-z-depth {
+    text-shadow: 0px 2px 4px hsla(30, 26%, 16%, 0.2); /* Use foreground HSL with opacity */
+    position: relative;
+    z-index: 10;
+  }
+
+  /* Dark mode z-depth text shadow */
+  .dark .text-z-depth {
+    text-shadow: 0px 6px 8px rgba(0, 0, 0, 0.6);
+  }
+
+  .typing-dots::after {
+    content: "";
+    animation: typingDots 1.5s infinite;
+  }
+
+  @keyframes typingDots {
+    0% {
+      content: "";
+    }
+    25% {
+      content: ".";
+    }
+    50% {
+      content: "..";
+    }
+    75% {
+      content: "...";
+    }
+    100% {
+      content: "";
+    }
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 0px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted; /* Use muted background for track */
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground rounded-full; /* Use muted foreground for thumb */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary; /* Use primary color on hover */
+}
