@@ -330,7 +330,7 @@ export function SummaryPanel({
               {isSummarizing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin text-white" />
-                  Creating New Summary...
+                  Processing...
                 </>
               ) : (
                 "New Summary"

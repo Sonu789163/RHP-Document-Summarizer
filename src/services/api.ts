@@ -48,7 +48,7 @@ export const documentService = {
     const payload: any = {
       id: document.id,
       name: document.name,
-      namespace:document.namespace,
+      namespace: document.namespace,
     };
     if (document.namespace) payload.namespace = document.namespace;
     if (document.status) payload.status = document.status;
@@ -91,30 +91,47 @@ export const documentService = {
 // Chat Services
 export const chatService = {
   getByDocumentId: async (documentId: string) => {
-    const response = await axios.get(`${API_URL}/chats/document/${documentId}`);
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.get(
+      `${API_URL}/chats/document/${documentId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
     return response.data;
   },
 
   create: async (chat: any) => {
-    const response = await axios.post(`${API_URL}/chats`, chat);
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.post(`${API_URL}/chats`, chat, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
   },
 
   addMessage: async (chatId: string, message: any) => {
+    const token = localStorage.getItem("accessToken");
     const response = await axios.post(
       `${API_URL}/chats/${chatId}/messages`,
-      message
+      message,
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     return response.data;
   },
 
   update: async (id: string, chat: any) => {
-    const response = await axios.put(`${API_URL}/chats/${id}`, chat);
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.put(`${API_URL}/chats/${id}`, chat, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
   },
 
   delete: async (id: string) => {
-    const response = await axios.delete(`${API_URL}/chats/${id}`);
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.delete(`${API_URL}/chats/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
   },
 };
@@ -136,24 +153,35 @@ export interface Summary {
 
 export const summaryService = {
   async getByDocumentId(documentId: string): Promise<Summary[]> {
+    const token = localStorage.getItem("accessToken");
     const response = await axios.get(
-      `${API_URL}/summaries/document/${documentId}`
+      `${API_URL}/summaries/document/${documentId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     return response.data;
   },
 
   async create(summary: Omit<Summary, "id" | "updatedAt">): Promise<Summary> {
-    const response = await axios.post(`${API_URL}/summaries`, summary);
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.post(`${API_URL}/summaries`, summary, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
   },
 
   async update(id: string, summary: Partial<Summary>): Promise<Summary> {
-    const response = await axios.put(`${API_URL}/summaries/${id}`, summary);
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.put(`${API_URL}/summaries/${id}`, summary, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
   },
 
   async delete(id: string): Promise<void> {
-    await axios.delete(`${API_URL}/summaries/${id}`);
+    const token = localStorage.getItem("accessToken");
+    await axios.delete(`${API_URL}/summaries/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
   },
 };
 
