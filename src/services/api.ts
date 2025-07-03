@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api"; 
 
 // Document Services
 export const documentService = {
@@ -50,7 +50,7 @@ export const documentService = {
       name: document.name,
       namespace: document.namespace,
     };
-    if (document.namespace) payload.namespace = document.namespace;
+    // if (document.namespace) payload.namespace = document.namespace;
     if (document.status) payload.status = document.status;
     if (document.uploadedAt) payload.uploadedAt = document.uploadedAt;
     if (document.file) payload.file = document.file;
@@ -61,6 +61,7 @@ export const documentService = {
     const response = await axios.post(`${API_URL}/documents`, payload, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    console.log("for namespace:", response)
     return response.data;
   },
 
@@ -76,6 +77,7 @@ export const documentService = {
     const response = await axios.put(`${API_URL}/documents/${id}`, document, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    console.log("check namespace:",response)
     return response.data;
   },
 

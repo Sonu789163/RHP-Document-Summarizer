@@ -438,7 +438,10 @@ export function ChatPanel({
     const token = localStorage.getItem("accessToken");
     try {
       const response = await fetch(
-        `https://smart-rhtp-backend-2.onrender.com/api/documents/download/${currentDocument?.id}`,
+        `${import.meta.env.VITE_API_URL}/documents/download/${
+          currentDocument?.id
+        } ` ||
+          `http://localhost:5000/api/documents/download/${currentDocument?.id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -647,7 +650,9 @@ export function DocumentPopover({
     setLoading(true);
     try {
       const res = await axios.get(
-        `https://smart-rhtp-backend-2.onrender.com/api/documents/${documentId}`
+        `${import.meta.env.VITE_API_URL}/documents/${
+          documentId
+        } `  //||"http://localhost:5000/api/documents/upload",
       );
       setDocDetails(res.data);
     } catch (e) {
@@ -661,7 +666,9 @@ export function DocumentPopover({
     const token = localStorage.getItem("accessToken");
     try {
       const response = await fetch(
-        `https://smart-rhtp-backend-2.onrender.com/api/documents/download/${documentId}`,
+        `${import.meta.env.VITE_API_URL}/documents/download/${
+          documentId
+        } `,  // ||`http://localhost:5000/api/documents/download/${documentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

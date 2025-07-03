@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import UploadLayout from "./pages/UploadLayout";
 import ChatSummaryLayout from "./pages/ChatSummaryLayout";
 import NotFound from "./pages/NotFound";
 import ChatHistoryPage from "./pages/ChatHistoryPage";
@@ -48,7 +47,6 @@ const App = () => (
               <Route element={<ProtectedLayout />}>
                 <Route path="/dashboard" element={<StartConversationPage />} />
                 <Route element={<MainLayout />}>
-                  <Route path="/upload" element={<UploadLayout />} />
                   <Route path="/doc/:namespace" element={<ChatSummaryLayout />} />
                   <Route path="/chat-history" element={<ChatHistoryPage />} />
                   <Route path="/settings" element={<SettingsPage />} />

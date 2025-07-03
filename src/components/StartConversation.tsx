@@ -113,6 +113,7 @@ export const StartConversation: React.FC = () => {
       if (!response || !response.document) {
         throw new Error(response?.error || "Upload failed");
       }
+      console.log("file response:", response)
 
       // Show modal instead of toast
       setUploadedDoc(response.document);

@@ -4,7 +4,6 @@ import { documentService } from "@/services/api";
 
 const N8N_WEBHOOK_URL =
   "https://n8n-excollo.azurewebsites.net/webhook/bfda1ff3-99be-4f6e-995f-7728ca5b2f6a";
-// "https://yashjain3010.app.n8n.cloud/webhook-test/bfda1ff3-99be-4f6e-995f-7728ca5b2f6a"
 
 export interface UploadResponse {
   success: boolean;
@@ -25,94 +24,92 @@ export interface DocumentStatusResponse {
 }
 
 export const uploadService = {
-  async uploadFile(
-    file: File,
-    sessionData: SessionData
-  ): Promise<UploadResponse> {
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("session_id", sessionData.id);
-      formData.append("timestamp", new Date().toISOString());
-      formData.append("action", "upload");
-      formData.append("filename", file.name.replace(".pdf", ""));
+  // async uploadFile(
+  //   file: File,
+  //   sessionData: SessionData
+  // ): Promise<UploadResponse> {
+  //   try {
+  //     const formData = new FormData();
+  //     formData.append("file", file);
+  //     formData.append("session_id", sessionData.id);
+  //     formData.append("timestamp", new Date().toISOString());
+  //     formData.append("action", "upload");
+  //     formData.append("namespace",file.name.replace(".pdf", ""));
+  //     formData.append("filename", file.name.replace(".pdf", ""));
 
-      console.log("Uploading file:", file.name, "Size:", file.size);
+  //     const uploadResponse = await axios.post(N8N_WEBHOOK_URL, formData, {
+  //       headers: { "Content-Type": "multipart/form-data" },
+  //       timeout: 300000, // 5 minutes timeout for processing
+  //     });
 
-      const uploadResponse = await axios.post(N8N_WEBHOOK_URL, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        timeout: 300000, // 5 minutes timeout for processing
-      });
+  //     console.log("Form response:", formData);
 
-      console.log("Upload response:", uploadResponse.data);
+  //     // Store document in MongoDB
+  //     if (uploadResponse.data.success) {
+  //       try {
+  //         const documentData = {
+  //           id: uploadResponse.data.documentId || sessionData.id,
+  //           name: file.name,
+  //           namespace: file.name,
+  //           status: uploadResponse.data.status || "processing",
+  //           uploadedAt: new Date().toISOString(),
+  //         };
 
-      // Store document in MongoDB
-      if (uploadResponse.data.success) {
-        try {
-          const documentData = {
-            id: uploadResponse.data.documentId || sessionData.id,
-            name: file.name,
-            namespace:
-              uploadResponse.data.namespace || file.name.replace(".pdf", ""),
-            status: uploadResponse.data.status || "processing",
-            uploadedAt: new Date().toISOString(),
-          };
+  //         await documentService.create(documentData);
+  //         console.log("Document stored in MongoDB:", documentData);
 
-          await documentService.create(documentData);
-          console.log("Document stored in MongoDB:", documentData);
+  //         // If the document is still processing, poll for status
+  //         if (documentData.status === "processing") {
+  //           let attempts = 0;
+  //           const maxAttempts = 60; // 5 minutes with 5-second intervals
+  //           const pollInterval = 5000; // 5 seconds
 
-          // If the document is still processing, poll for status
-          if (documentData.status === "processing") {
-            let attempts = 0;
-            const maxAttempts = 60; // 5 minutes with 5-second intervals
-            const pollInterval = 5000; // 5 seconds
+  //           while (attempts < maxAttempts) {
+  //             await new Promise((resolve) => setTimeout(resolve, pollInterval));
+  //             const statusResponse = await this.checkDocumentStatus(
+  //               documentData.id,
+  //               sessionData
+  //             );
 
-            while (attempts < maxAttempts) {
-              await new Promise((resolve) => setTimeout(resolve, pollInterval));
-              const statusResponse = await this.checkDocumentStatus(
-                documentData.id,
-                sessionData
-              );
+  //             if (statusResponse.status !== "processing") {
+  //               // Update document status in MongoDB
+  //               await documentService.update(documentData.id, {
+  //                 status: statusResponse.status,
+  //               });
+  //               return {
+  //                 success: true,
+  //                 documentId: documentData.id,
+  //                 namespace: documentData.namespace,
+  //                 status: statusResponse.status,
+  //                 message: statusResponse.message,
+  //               };
+  //             }
+  //             attempts++;
+  //           }
+  //         }
+  //       } catch (dbError) {
+  //         console.error("Error storing document in MongoDB:", dbError);
+  //       }
+  //     }
 
-              if (statusResponse.status !== "processing") {
-                // Update document status in MongoDB
-                await documentService.update(documentData.id, {
-                  status: statusResponse.status,
-                });
-                return {
-                  success: true,
-                  documentId: documentData.id,
-                  namespace: documentData.namespace,
-                  status: statusResponse.status,
-                  message: statusResponse.message,
-                };
-              }
-              attempts++;
-            }
-          }
-        } catch (dbError) {
-          console.error("Error storing document in MongoDB:", dbError);
-        }
-      }
-
-      return {
-        success: uploadResponse.data.success,
-        error: uploadResponse.data.error,
-        documentId: uploadResponse.data.documentId || sessionData.id,
-        namespace:
-          uploadResponse.data.namespace || file.name.replace(".pdf", ""),
-        status: uploadResponse.data.status || "processing",
-        message: uploadResponse.data.message,
-      };
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Upload failed",
-        status: "failed",
-      };
-    }
-  },
+  //     return {
+  //       success: uploadResponse.data.success,
+  //       error: uploadResponse.data.error,
+  //       documentId: uploadResponse.data.documentId || sessionData.id,
+  //       namespace:
+  //         uploadResponse.data.namespace || file.name.replace(".pdf", ""),
+  //       status: uploadResponse.data.status || "processing",
+  //       message: uploadResponse.data.message,
+  //     };
+  //   } catch (error) {
+  //     console.error("Error uploading file:", error);
+  //     return {
+  //       success: false,
+  //       error: error instanceof Error ? error.message : "Upload failed",
+  //       status: "failed",
+  //     };
+  //   }
+  // },
 
   async checkDocumentStatus(
     documentId: string,
@@ -168,7 +165,11 @@ export const uploadService = {
   async uploadFileToBackend(file: File): Promise<any> {
     const formData = new FormData();
     formData.append("file", file);
-    const token = localStorage.getItem("accessToken");
+    formData.append("namespace", file.name);
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ":", pair[1]);
+    }
+    const token = localStorage.getItem("accessToken"); //`${import.meta.env.VITE_API_URL}/documents/upload` ||
     const response = await fetch(
       `${import.meta.env.VITE_API_URL}/documents/upload`,
       {
