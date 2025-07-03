@@ -174,7 +174,7 @@ export function SummaryPanel({
         "Generate RHP Doc Summary",
         sessionData,
         [],
-        currentDocument.name,
+        currentDocument.namespace,
         abortControllerRef.current.signal
       );
 
@@ -325,7 +325,7 @@ export function SummaryPanel({
             <Button
               onClick={handleNewSummary}
               disabled={isSummarizing}
-              className="bg-[#4B2A06] text-white font-semibold px-10 py-5 rounded-xl shadow-lg text-lg hover:bg-[#3A2004] focus:outline-none transition-colors"
+              className="bg-[#4B2A06] text-white font-semibold  p-6 rounded-md shadow-lg text-xl hover:bg-[#3A2004] focus:outline-none transition-colors"
             >
               {isSummarizing ? (
                 <>
@@ -338,7 +338,7 @@ export function SummaryPanel({
             </Button>
             <Button
               variant="outline"
-              className="bg-white border border-border rounded-sm p-0 w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-foreground shadow-none"
+              className="bg-white border border-border rounded-sm p-6 w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-foreground shadow-none"
               onClick={handleDownload}
               disabled={!pdfUrl}
               style={{ minWidth: 40, minHeight: 40 }}
@@ -368,6 +368,7 @@ export function SummaryPanel({
               .summary-content table {
                 border-collapse: collapse;
                 width: 100%;
+                border: 2px solid #d1d5de;
                 margin: 16px 0;
                 font-size: 13px;
                 background: #f1eada;
@@ -411,7 +412,16 @@ export function SummaryPanel({
             disabled={isSummarizing}
             className=" text-[#FF7A1A]  px-6 py-2 font-semibold shadow-none border-none bg-none text-lg flex items-center gap-2"
           >
-            <span className="text-xl ">+</span> Generate New Summary
+            {isSummarizing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#FF7A1A]" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <span className="text-xl ">+</span> Generate New Summary
+              </>
+            )}
           </Button>
         </div>
       )}

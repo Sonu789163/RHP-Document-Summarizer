@@ -170,8 +170,7 @@ export const uploadService = {
     formData.append("file", file);
     const token = localStorage.getItem("accessToken");
     const response = await fetch(
-      import.meta.env.VITE_API_URL ||
-        "https://smart-rhtp-backend-2.onrender.com/api/documents/upload",
+      `${import.meta.env.VITE_API_URL}/documents/upload`,
       {
         method: "POST",
         headers: {

@@ -145,8 +145,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const filteredChats = chats.filter(
     (chat) =>
-      chat.docName?.toLowerCase().includes(chatSearch.toLowerCase()) ||
-      chat.title.toLowerCase().includes(chatSearch.toLowerCase())
+      (chat.docName?.toLowerCase().includes(chatSearch.toLowerCase()) ||
+        chat.title.toLowerCase().includes(chatSearch.toLowerCase())) &&
+      Array.isArray(chat.messages) &&
+      chat.messages.length > 1
   );
 
   const groupedChats = useMemo(
@@ -201,7 +203,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const visibleDocs = filteredDocs;
   return (
     <div
-      className="w-[260px] min-w-[220px] max-w-[280px] bg-[#F5F3EF] h-full flex flex-col p-4 fixed top-0 left-0 z-50"
+      className="w-full bg-[#F5F3EF] h-full flex flex-col p-4"
       style={{
         fontFamily: "Inter, Arial, sans-serif",
         boxShadow: "none",

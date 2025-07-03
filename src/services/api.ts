@@ -48,6 +48,7 @@ export const documentService = {
     const payload: any = {
       id: document.id,
       name: document.name,
+      namespace:document.namespace,
     };
     if (document.namespace) payload.namespace = document.namespace;
     if (document.status) payload.status = document.status;

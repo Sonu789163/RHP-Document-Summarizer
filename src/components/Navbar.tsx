@@ -20,6 +20,7 @@ interface NavbarProps {
   onSearchChange?: (value: string) => void;
   children?: React.ReactNode;
   onSidebarOpen?: () => void;
+  sidebarOpen?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -29,6 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSearchChange,
   children,
   onSidebarOpen,
+  sidebarOpen = false,
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -63,11 +65,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isChatSummaryPage = /^\/doc\//.test(location.pathname);
 
   return (
-    <header className="w-full flex items-center h-[10vh] min-h-[60px] px-[4vw] bg-white border-b border-[#F3F3F3] relative">
+    <header
+      className={`w-full flex items-center h-[10vh] min-h-[60px] px-[4vw] bg-white border-b border-[#F3F3F3] relative transition-all duration-300`}
+    >
       {/* Hamburger menu for chat summary page */}
-      {isChatSummaryPage && onSidebarOpen && (
+      {isChatSummaryPage && onSidebarOpen && !sidebarOpen && (
         <button
-          className="absolute left-[2vw] top-1/2 -translate-y-1/2 p-[0.5vw] rounded hover:bg-[#F3F3F3]"
+          className={`absolute top-1/2 -translate-y-1/2 p-[0.5vw] rounded hover:bg-[#F3F3F3] transition-all duration-300 left-[2vw]`}
           onClick={onSidebarOpen}
         >
           <svg
@@ -88,10 +92,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
       )}
       <span
-        className="text-2xl font-extrabold text-[#232323] tracking-tight"
+        className={`text-2xl font-extrabold text-[#232323] tracking-tight transition-all duration-300 ${
+          isChatSummaryPage ? "ml-[2vw]" : ""
+        }`}
         style={{
           fontFamily: "Inter, Arial, sans-serif",
-          marginLeft: isChatSummaryPage ? "5vw" : 0,
         }}
       >
         {displayTitle}

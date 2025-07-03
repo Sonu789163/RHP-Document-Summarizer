@@ -121,6 +121,7 @@ export function ChatPanel({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [lastDocumentId, setLastDocumentId] = useState<string | null>(null);
 
   useEffect(() => {
     // Cleanup on unmount
@@ -167,6 +168,15 @@ export function ChatPanel({
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Always open a new chat when the document changes to a new id
+  useEffect(() => {
+    if (currentDocument && currentDocument.id !== lastDocumentId) {
+      handleNewChat();
+      setLastDocumentId(currentDocument.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDocument]);
 
   // Load chat session when chatId or document changes
   useEffect(() => {
@@ -254,13 +264,26 @@ export function ChatPanel({
 
     try {
       if (!currentChatId) {
+        // Create chat with initial bot greeting
+        const initialBotMessage: ChatMessage = {
+          id: (Date.now() - 1).toString(),
+          content: `Hello! I'm your RHP document assistant. Ask a question about ${currentDocument.name} to start a chat.`,
+          isUser: false,
+          timestamp: new Date().toISOString(),
+        };
         chat = await chatStorageService.createChatForDoc(
           currentDocument.id,
-          userMessage
+          initialBotMessage
         );
         newChatId = chat.id;
         setCurrentChatId(newChatId);
         if (onChatCreated) onChatCreated(newChatId);
+
+        // Add user message to the chat
+        chat.messages.push(userMessage);
+        chat.updatedAt = new Date().toISOString();
+        await chatStorageService.saveChatForDoc(currentDocument.id, chat);
+
         newMessages = chat.messages.map((m) => ({
           ...m,
           timestamp: new Date(m.timestamp),
@@ -444,11 +467,13 @@ export function ChatPanel({
     >
       {/* Download PDF Button */}
       {currentDocument && (
-        <div className="flex items-center justify-end p-2">
+        <div className="flex items-center justify-end p-2 gap-2">
+          {/* New Chat Button */}
           {/* <button
-            onClick={handleDownload}
+            onClick={handleNewChat}
             className="inline-flex items-center gap-2 px-3 py-2 bg-[#4B2A06] text-white rounded hover:bg-[#3A2004] text-sm font-semibold shadow"
-            title="Download original PDF"
+            title="Start a new chat for this document"
+            type="button"
           >
             <svg
               width="18"
@@ -458,14 +483,14 @@ export function ChatPanel({
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="lucide lucide-download"
+              className="lucide lucide-message-square-plus"
               viewBox="0 0 24 24"
             >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" x2="12" y1="15" y2="3" />
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="12" y1="8" x2="12" y2="16" />
+              <line x1="8" y1="12" x2="16" y2="12" />
             </svg>
-            Download PDF
+            New Chat
           </button> */}
         </div>
       )}

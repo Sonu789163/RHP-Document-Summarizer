@@ -48,6 +48,8 @@ export const StartConversation: React.FC = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [renamingDocId, setRenamingDocId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState<string>("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [uploadedDoc, setUploadedDoc] = useState<any>(null);
 
   useRefreshProtection(
     isUploading,
@@ -112,18 +114,10 @@ export const StartConversation: React.FC = () => {
         throw new Error(response?.error || "Upload failed");
       }
 
-      toast.success(
-        <div className="flex items-center gap-2">
-          <CheckCircle className="h-4 w-4 text-green-500" />
-          <span>
-            <strong>{file.name}</strong> uploaded successfully!
-          </span>
-        </div>,
-        {
-          id: toastId,
-          duration: 4000,
-        }
-      );
+      // Show modal instead of toast
+      setUploadedDoc(response.document);
+      setShowSuccessModal(true);
+      toast.dismiss(toastId);
       fetchDocuments(); // Refresh the document list
     } catch (error) {
       console.error("Upload error:", error);
@@ -432,6 +426,30 @@ export const StartConversation: React.FC = () => {
                   Delete
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+        {/* Success Modal for Upload */}
+        {showSuccessModal && uploadedDoc && (
+          <div className="fixed inset-0 px-10 z-50 flex items-center justify-center bg-black bg-opacity-30">
+            <div className="bg-white rounded-lg shadow-lg p-[2vw] max-w-sm w-full flex flex-col items-center">
+              <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
+              <h2 className="text-xl font-bold mb-2">
+                Document saved successfully!
+              </h2>
+              <p className="mb-4 text-center">
+                Your document <b>{uploadedDoc.name}</b> has been uploaded and
+                saved.
+              </p>
+              <button
+                className="px-6 py-2 rounded bg-[#4B2A06] text-white font-semibold hover:bg-[#3A2004]"
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  navigate(`/doc/${uploadedDoc.namespace || uploadedDoc.id}`);
+                }}
+              >
+                OK
+              </button>
             </div>
           </div>
         )}
