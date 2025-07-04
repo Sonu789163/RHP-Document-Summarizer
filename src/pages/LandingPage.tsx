@@ -8,7 +8,7 @@ const LandingPage: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-white">
       {/* Orange Heading */}
       <h2 className="text-4xl md:text-5xl font-extrabold text-[#FF7A1A] mb-2 tracking-wide">
-        Smart RHP Document Assistant
+        Smart DRHP Document Assistant
       </h2>
       {/* Subtitle */}
       <h1
