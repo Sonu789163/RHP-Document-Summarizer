@@ -5,12 +5,8 @@ import { Loader2, Download, Copy, CheckCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { n8nService } from "@/lib/api/n8nService";
 import { sessionService } from "@/lib/api/sessionService";
-import { summaryService } from "@/services/api";
+import { summaryService, Summary } from "@/services/api";
 import { Tooltip } from "@/components/ui/tooltip";
-import {
-  summaryStorageService,
-  Summary,
-} from "@/lib/api/summaryStorageService";
 
 interface SummaryMetadata {
   pageCount?: Number;
@@ -18,13 +14,6 @@ interface SummaryMetadata {
   pdfExpiry?: String;
   duration?: Number;
   name?: String;
-}
-
-interface Summary {
-  id: string;
-  content: string;
-  metadata?: SummaryMetadata;
-  updatedAt?: string;
 }
 
 interface SummaryPanelProps {
@@ -215,7 +204,6 @@ export function SummaryPanel({
           setSummaryGenerated(true);
           onSummarySelect(newSummary.id);
           toast.success("SOP Summary generated and saved successfully");
-          await summaryStorageService.saveSummary(newSummary);
           setAllSummaries([newSummary, ...allSummaries]);
         } catch (saveError) {
           console.error("Error saving summary:", saveError);
@@ -250,65 +238,45 @@ export function SummaryPanel({
     }, 3000);
   };
 
+  // Find the selected summary object
+  const selectedSummaryObj = allSummaries.find(
+    (s) => s.id === selectedSummaryId
+  );
+  const hasPdf = !!(
+    selectedSummaryObj && (selectedSummaryObj as any).pdfFileId
+  );
+
   const handleDownload = async () => {
-    if (!pdfUrl) {
-      toast.error("PDF download URL is not available");
-      console.error("No pdfUrl available for download.");
-      return;
-    }
-    // Check if URL has expired
-    if (pdfUrlExpiry && new Date(pdfUrlExpiry) < new Date()) {
-      toast.error(
-        "PDF download link has expired. Please generate a new summary."
-      );
-      console.warn("PDF download link expired:", pdfUrlExpiry);
-      setPdfUrl(null);
-      setPdfUrlExpiry(null);
+    if (!selectedSummaryId || !hasPdf) {
+      toast.error("No PDF available for this summary");
       return;
     }
     try {
-      // Show loading toast
       const loadingToast = toast.loading("Downloading PDF...");
-      console.log("Attempting to download PDF from:", pdfUrl);
-      // Fetch the PDF file
-      const response = await fetch(pdfUrl);
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(
-          `Failed to download PDF. Status: ${response.status} ${response.statusText}. Response:`,
-          errorText
-        );
-        toast.dismiss(loadingToast);
-        toast.error(
-          `Failed to download PDF. Server responded with status ${response.status}.`
-        );
-        setPdfUrl(null);
-        setPdfUrlExpiry(null);
-        return;
-      }
-      // Get the blob from the response
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_URL
+        }/summaries/${selectedSummaryId}/download-pdf`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        }
+      );
+      if (!response.ok) throw new Error("Failed to download PDF");
       const blob = await response.blob();
-      // Create a download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = `${currentDocument?.name || "document"}.pdf`;
-      // Trigger download
       document.body.appendChild(link);
       link.click();
-      // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      // Show success toast
       toast.dismiss(loadingToast);
       toast.success("PDF downloaded successfully");
     } catch (error) {
-      console.error("Error downloading PDF:", error);
-      toast.error(
-        "Failed to download PDF. Please try again or check the console for details."
-      );
-      setPdfUrl(null);
-      setPdfUrlExpiry(null);
+      toast.error("Failed to download PDF");
     }
   };
 
@@ -340,7 +308,7 @@ export function SummaryPanel({
               variant="outline"
               className="bg-white border border-border rounded-sm p-5 w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-foreground shadow-none"
               onClick={handleDownload}
-              disabled={!pdfUrl}
+              disabled={!selectedSummaryId || !hasPdf}
               style={{ minWidth: 40, minHeight: 40 }}
             >
               <Download className="h-5 w-5 text-[#3F2306]" />
