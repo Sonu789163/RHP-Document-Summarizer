@@ -476,7 +476,7 @@ export function ChatPanel({
   return (
     <div
       className="flex flex-col flex-1 min-h-0"
-      style={{ background: customStyles.containerBg || undefined }}
+      // style={{ background: customStyles.containerBg || undefined }}
     >
       {/* Download PDF Button */}
       {currentDocument && (
@@ -518,7 +518,7 @@ export function ChatPanel({
       <ScrollArea
         ref={scrollAreaRef}
         className="flex-1"
-        style={{ background: customStyles.containerBg || undefined }}
+        // style={{ background: customStyles.containerBg || undefined }}
       >
         <div className="p-4 space-y-4">
           {messages.map((message) => (
@@ -543,11 +543,11 @@ export function ChatPanel({
                 )}
                 style={{
                   background: message.isUser
-                    ? customStyles.userBubble || "#F3F4F6"
-                    : customStyles.botBubble || "#F9F6F2",
+                    ? "#e6e3df"
+                    :  "#e7ebee",
                   color: message.isUser
-                    ? customStyles.userText || "#232323"
-                    : customStyles.botText || "#4B2A06",
+                    ? "rgba(62, 36, 7, 1)"
+                    : "rgba(38, 40, 43, 1)",
                 }}
               >
                 <p className="text-sm break-words">

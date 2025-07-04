@@ -56,17 +56,25 @@ export function LoginForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10 w-full max-w-lg mx-auto">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-10 w-full max-w-lg mx-auto"
+      >
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xl font-extrabold text-[#444] mb-2" style={{ fontFamily: 'Inter, Arial, sans-serif' }}>Email</FormLabel>
+              <FormLabel
+                className="text-xl font-extrabold text-[#444] mb-2"
+                style={{ fontFamily: "Inter, Arial, sans-serif" }}
+              >
+                Email
+              </FormLabel>
               <FormControl>
                 <Input
                   placeholder="Your email"
-                  className="rounded-xl border border-[#E5E5E5] px-6 py-6 text-lg focus:ring-2 focus:ring-[#4B2A06] focus:border-[#4B2A06] shadow-none bg-white h-16"
+                  className="outline-none border border-input rounded-xl px-6 py-6 text-lg focus:ring-2 focus:ring-[#4B2A06] focus:border-[#4B2A06] shadow-none bg-white h-16"
                   {...field}
                 />
               </FormControl>
@@ -78,13 +86,18 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xl font-extrabold text-[#444] mb-2" style={{ fontFamily: 'Inter, Arial, sans-serif' }}>Password</FormLabel>
+              <FormLabel
+                className="text-xl font-extrabold text-[#444] mb-2"
+                style={{ fontFamily: "Inter, Arial, sans-serif" }}
+              >
+                Password
+              </FormLabel>
               <FormControl>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
                     placeholder="Your password"
-                    className="rounded-xl border border-[#E5E5E5] px-6 py-6 text-lg focus:ring-2 focus:ring-[#4B2A06] focus:border-[#4B2A06] shadow-none bg-white pr-12 h-16"
+                    className="outline-none border border-input rounded-xl px-6 py-6 text-lg focus:ring-2 focus:ring-[#4B2A06] focus:border-[#4B2A06] shadow-none bg-white pr-12 h-16"
                     {...field}
                   />
                   <button
@@ -107,8 +120,8 @@ export function LoginForm() {
           <button
             type="button"
             className="text-[#4B2A06] text-base font-semibold hover:underline focus:outline-none"
-            onClick={() => navigate('/forgot-password')}
-            style={{ fontFamily: 'Inter, Arial, sans-serif' }}
+            onClick={() => navigate("/forgot-password")}
+            style={{ fontFamily: "Inter, Arial, sans-serif" }}
           >
             Forgot Password
           </button>
@@ -117,7 +130,7 @@ export function LoginForm() {
           type="submit"
           className="w-full bg-[#4B2A06] text-white text-xl font-bold py-6 rounded-xl shadow-none hover:bg-[#3a2004] transition h-16"
           disabled={isLoading}
-          style={{ fontFamily: 'Inter, Arial, sans-serif' }}
+          style={{ fontFamily: "Inter, Arial, sans-serif" }}
         >
           {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
           Log in

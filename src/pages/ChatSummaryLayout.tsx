@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Settings, Plus, Pencil, Edit, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 import { Navbar } from "@/components/Navbar";
 import { DocumentPopover } from "@/components/ChatPanel";
@@ -151,7 +151,7 @@ export default function ChatSummaryLayout() {
         } bg-white shadow-xl`}
         style={{ overflow: "hidden" }}
       >
-        {sidebarOpen && (  
+        {sidebarOpen && (
           <Sidebar
             selectedDocumentId={currentDocument?.id}
             selectedChatId={chatId}
@@ -186,32 +186,45 @@ export default function ChatSummaryLayout() {
             </div>
           </div>
           {/* Chat Panel (right) */}
-          <div className="flex-1 flex flex-col w-[70%] bg-[#FAFAFA] px-6 h-full ml-0 rounded-r-2xl rounded-l-none shadow-none justify-stretch">
+          <div className="flex-1 flex flex-col w-[70%] bg-[#fff] px-6 h-full ml-0 rounded-r-2xl rounded-l-none shadow-none justify-stretch">
             <div className="flex flex-col h-full w-full">
-              <div className="flex items-center gap-2 mt-4 mb-4 ml-2">
-                <svg
-                  width="22"
-                  height="22"
-                  fill="none"
-                  stroke="#232323"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="lucide lucide-file-text"
-                  viewBox="0 0 24 24"
+              <div className="flex items-center gap-2 mt-4 mb-4 ml-2 justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <svg
+                    width="22"
+                    height="22"
+                    fill="none"
+                    stroke="#232323"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="lucide lucide-file-text"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" x2="8" y1="13" y2="13"></line>
+                    <line x1="16" x2="8" y1="17" y2="17"></line>
+                    <line x1="10" x2="8" y1="9" y2="9"></line>
+                  </svg>
+                  <DocumentPopover
+                    documentId={currentDocument?.id}
+                    documentName={
+                      currentDocument?.name || currentDocument?.namespace || ""
+                    }
+                  />
+                </div>
+                <button
+                  className="flex items-center justify-center  rounded-sm px-2 py-2 text-[#4B2A06] shadow-none  transition"
+                  style={{
+                    fontWeight: 700,
+                    fontSize: "1.1rem",
+                  }}
+                  onClick={handleNewChat}
+                  title="New Chat"
                 >
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" x2="8" y1="13" y2="13"></line>
-                  <line x1="16" x2="8" y1="17" y2="17"></line>
-                  <line x1="10" x2="8" y1="9" y2="9"></line>
-                </svg>
-                <DocumentPopover
-                  documentId={currentDocument?.id}
-                  documentName={
-                    currentDocument?.name || currentDocument?.namespace || ""
-                  }
-                />
+                  <Edit className="h-7 w-7 mr-12 text-[#4B2A06]" />
+                </button>
               </div>
               <ChatPanel
                 isDocumentProcessed={true}

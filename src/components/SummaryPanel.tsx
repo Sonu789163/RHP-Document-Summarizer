@@ -338,7 +338,7 @@ export function SummaryPanel({
             </Button>
             <Button
               variant="outline"
-              className="bg-white border border-border rounded-sm p-6 w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-foreground shadow-none"
+              className="bg-white border border-border rounded-sm p-5 w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-foreground shadow-none"
               onClick={handleDownload}
               disabled={!pdfUrl}
               style={{ minWidth: 40, minHeight: 40 }}
@@ -353,7 +353,7 @@ export function SummaryPanel({
           >
             {/* Copy icon at top-right */}
             <button
-              className="absolute top-3 right-3 z-10 p-2 rounded-sm bg-background shadow hover:bg-muted transition-colors"
+              className="sticky top-0 left-[90%] z-10 p-2 rounded-sm bg-background shadow hover:bg-muted transition-colors"
               onClick={handleCopySummary}
               title={isCopied ? "Copied!" : "Copy to clipboard"}
             >

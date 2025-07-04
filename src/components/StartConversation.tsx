@@ -113,7 +113,7 @@ export const StartConversation: React.FC = () => {
       if (!response || !response.document) {
         throw new Error(response?.error || "Upload failed");
       }
-      console.log("file response:", response)
+      console.log("file response:", response);
 
       // Show modal instead of toast
       setUploadedDoc(response.document);
@@ -227,7 +227,7 @@ export const StartConversation: React.FC = () => {
             ref={fileInputRef}
             onChange={handleFileSelect}
             accept=".pdf"
-            className="hidden"
+            className="hidden outline-none"
             disabled={isUploading}
           />
           <button
@@ -272,7 +272,7 @@ export const StartConversation: React.FC = () => {
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="border border-[#E5E5E5] rounded px-[0.5vw] py-[0.3vw]"
+                    className="border border-[#E5E5E5] rounded px-[0.5vw] py-[0.3vw] outline-none"
                   />
                 </div>
                 <div className="flex flex-col">
@@ -283,7 +283,7 @@ export const StartConversation: React.FC = () => {
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="border border-[#E5E5E5] rounded px-[0.5vw] py-[0.3vw]"
+                    className="border border-[#E5E5E5] rounded px-[0.5vw] py-[0.3vw] outline-none"
                   />
                 </div>
                 <button
@@ -354,10 +354,12 @@ export const StartConversation: React.FC = () => {
                       {renamingDocId === doc.id ? (
                         <div className="flex items-center w-full mt-[0.5vw] mb-[0.5vw]">
                           <input
-                            className="font-semibold text-[#232323] mb-1 max-w-full truncate block border border-gray-300 rounded px-[0.5vw] py-[0.3vw] focus:outline-none focus:ring-2 focus:ring-[#4B2A06]"
+                            className="font-semibold text-[#232323] mb-1 max-w-full truncate block border border-gray-300 rounded px-[0.5vw] py-[0.3vw] outline-none focus:outline-none focus:ring-0 focus:border-gray-300"
                             style={{ maxWidth: "120px" }}
                             value={renameValue}
                             autoFocus
+                            onClick={(e) => e.stopPropagation()} // Prevent navigation on click
+                            onFocus={(e) => e.stopPropagation()} // Prevent navigation on focus
                             onChange={handleRenameChange}
                             onBlur={() => handleRenameSubmit(doc)}
                             onKeyDown={(e) => handleRenameKeyDown(e, doc)}

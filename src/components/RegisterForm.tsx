@@ -96,11 +96,16 @@ export function RegisterForm({
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xl font-extrabold text-[#444] mb-2" style={{ fontFamily: 'Inter, Arial, sans-serif' }}>Email</FormLabel>
+                <FormLabel
+                  className="text-xl font-extrabold text-[#444] mb-2"
+                  style={{ fontFamily: "Inter, Arial, sans-serif" }}
+                >
+                  Email
+                </FormLabel>
                 <FormControl>
                   <Input
                     placeholder="Your email"
-                    className="rounded-xl border border-[#E5E5E5] px-6 py-6 text-lg focus:ring-2 focus:ring-[#4B2A06] focus:border-[#4B2A06] shadow-none bg-white h-16"
+                    className="rounded-xl border border-[#E5E5E5] px-6 py-6 text-lg focus:ring-2 focus:ring-[#4B2A06] focus:border-[#4B2A06] shadow-none bg-white h-16 outline-none"
                     {...field}
                   />
                 </FormControl>
@@ -113,13 +118,18 @@ export function RegisterForm({
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xl font-extrabold text-[#444] mb-2" style={{ fontFamily: 'Inter, Arial, sans-serif' }}>Password</FormLabel>
+                <FormLabel
+                  className="text-xl font-extrabold text-[#444] mb-2"
+                  style={{ fontFamily: "Inter, Arial, sans-serif" }}
+                >
+                  Password
+                </FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Your password"
-                      className="rounded-xl border border-[#E5E5E5] px-6 py-6 text-lg focus:ring-2 focus:ring-[#4B2A06] focus:border-[#4B2A06] shadow-none bg-white pr-12 h-16"
+                      className="rounded-xl border border-[#E5E5E5] px-6 py-6 text-lg focus:ring-2 focus:ring-[#4B2A06] focus:border-[#4B2A06] shadow-none bg-white pr-12 h-16 outline-none"
                       {...field}
                     />
                     <button
@@ -144,18 +154,25 @@ export function RegisterForm({
             name="confirmPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xl font-extrabold text-[#444] mb-2" style={{ fontFamily: 'Inter, Arial, sans-serif' }}>Confirm Password</FormLabel>
+                <FormLabel
+                  className="text-xl font-extrabold text-[#444] mb-2"
+                  style={{ fontFamily: "Inter, Arial, sans-serif" }}
+                >
+                  Confirm Password
+                </FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Input
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm password"
-                      className="rounded-xl border border-[#E5E5E5] px-6 py-6 text-lg focus:ring-2 focus:ring-[#4B2A06] focus:border-[#4B2A06] shadow-none bg-white pr-12 h-16"
+                      className="rounded-xl border border-[#E5E5E5] px-6 py-6 text-lg focus:ring-2 focus:ring-[#4B2A06] focus:border-[#4B2A06] shadow-none bg-white pr-12 h-16 outline-none"
                       {...field}
                     />
                     <button
                       type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                       className="absolute inset-y-0 right-0 flex items-center pr-4 text-muted-foreground"
                     >
                       {showConfirmPassword ? (

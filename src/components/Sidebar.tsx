@@ -232,11 +232,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           style={{ maxHeight: "50%" }}
         >
           <div className="flex items-center justify-between mb-4 mt-2">
-            <span className="text-2xl font-extrabold text-[#232323] tracking-tight">
+            <span className="text-xl font-extrabold text-[#232323] tracking-tight">
               Documents
             </span>
             <Search
-              className="h-6 w-6 text-[#232323] cursor-pointer"
+              className=" outline-none h-6 w-6 text-[#232323] cursor-pointer"
               onClick={() => setDocSearchVisible(!docSearchVisible)}
             />
           </div>
@@ -247,7 +247,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 value={docSearch}
                 onChange={(e) => setDocSearch(e.target.value)}
                 placeholder="Search documents..."
-                className="w-full rounded-xl px-3 py-2 bg-[#F5F3EF] border border-[#ECECEC] text-[#232323] text-sm focus:outline-none placeholder:text-[#A1A1AA]"
+                className="outline-none  w-full rounded-xl px-3 py-2 bg-[#F5F3EF] border border-[#ECECEC] text-[#232323] text-sm focus:outline-none placeholder:text-[#A1A1AA]"
                 style={{ fontSize: "0.98rem", borderRadius: "12px" }}
                 autoFocus
               />
@@ -287,12 +287,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className="flex-1 min-h-0 overflow-y-auto pr-1"
           style={{ maxHeight: "50%" }}
         >
-          <div className="flex items-center justify-between mb-4 mt-2">
-            <span className="text-2xl font-extrabold text-[#232323] tracking-tight">
+          <div className=" flex items-center justify-between mb-4 mt-2">
+            <span className="text-xl font-extrabold text-[#232323] tracking-tight">
               Chat History
             </span>
             <Search
-              className="h-6 w-6 text-[#232323] cursor-pointer"
+              className=" outline-none h-6 w-6 text-[#232323] cursor-pointer"
               onClick={() => setChatSearchVisible(!chatSearchVisible)}
             />
           </div>
@@ -303,7 +303,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 value={chatSearch}
                 onChange={(e) => setChatSearch(e.target.value)}
                 placeholder="Search chats..."
-                className="w-full rounded-xl px-3 py-2 bg-[#F5F3EF] border border-[#ECECEC] text-[#232323] text-sm focus:outline-none placeholder:text-[#A1A1AA]"
+                className="outline-none w-full rounded-xl px-3 py-2 bg-[#F5F3EF] border border-[#ECECEC] text-[#232323] text-sm focus:outline-none placeholder:text-[#A1A1AA]"
                 style={{ fontSize: "0.98rem", borderRadius: "12px" }}
                 autoFocus
               />
