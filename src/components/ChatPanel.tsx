@@ -542,9 +542,7 @@ export function ChatPanel({
                     : "rounded-bl-none whitespace-pre-wrap"
                 )}
                 style={{
-                  background: message.isUser
-                    ? "#e6e3df"
-                    :  "#e7ebee",
+                  background: message.isUser ? "#e6e3df" : "#e7ebee",
                   color: message.isUser
                     ? "rgba(62, 36, 7, 1)"
                     : "rgba(38, 40, 43, 1)",
@@ -655,6 +653,9 @@ export function DocumentPopover({
 }) {
   const [docDetails, setDocDetails] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(false);
+  const [showPdf, setShowPdf] = React.useState(false);
+  const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = React.useState(false);
 
   const fetchDocDetails = async () => {
     setLoading(true);
@@ -696,60 +697,134 @@ export function DocumentPopover({
     }
   };
 
+  const handleViewPdf = async () => {
+    setPdfLoading(true);
+    setShowPdf(true); // Show modal immediately
+    const token = localStorage.getItem("accessToken");
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/documents/download/${documentId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (!response.ok) throw new Error("Failed to fetch PDF");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setPdfUrl(url);
+    } catch (err) {
+      alert("Failed to load PDF: " + err.message);
+      setShowPdf(false);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const handleClosePdf = () => {
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    setShowPdf(false);
+    setPdfUrl(null);
+    setPdfLoading(false);
+  };
+
   return (
-    <Popover
-      onOpenChange={(open) => {
-        if (open && !docDetails && !loading) fetchDocDetails();
-      }}
-    >
-      <PopoverTrigger asChild>
-        <span className="cursor-pointer underline text-base font-semibold text-[#4B2A06] mx-4">
-          {documentName}
-        </span>
-      </PopoverTrigger>
-      <PopoverContent className="max-w-lg">
-        {loading ? (
-          <div>Loading...</div>
-        ) : docDetails ? (
-          <>
-            <div
-              className="mb-2 text-sm text-gray-700"
-              style={{ maxHeight: 300, overflowY: "auto" }}
-            >
-              {docDetails.text || "No text extracted."}
-            </div>
+    <>
+      {/* Document name directly opens PDF modal */}
+      <span
+        className="cursor-pointer underline text-base font-semibold text-[#4B2A06] mx-4"
+        onClick={handleViewPdf}
+      >
+        {documentName}
+      </span>
+      <Popover
+        onOpenChange={(open) => {
+          if (open && !docDetails && !loading) fetchDocDetails();
+        }}
+      >
+        {/* Remove PopoverTrigger for document name */}
+        <PopoverContent className="max-w-lg">
+          {loading ? (
+            <div>Loading...</div>
+          ) : docDetails ? (
+            <>
+              {/* <div
+                className="mb-2 text-sm text-gray-700"
+                style={{ maxHeight: 300, overflowY: "auto" }}
+              >
+                {docDetails.text || "No text extracted."}
+              </div> */}
+              {/* Only show download button, no View PDF button */}
+              {!showPdf && (
+                <>
+                  <button
+                    onClick={handleDownload}
+                    className="inline-block mt-2 px-4 py-2 bg-[#4B2A06] text-white rounded hover:bg-[#3A2004] mr-2"
+                  >
+                    Download PDF
+                  </button>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <button
+                onClick={fetchDocDetails}
+                className="inline-block mt-2 px-4 py-2 bg-[#A1A1AA] text-white rounded cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mr-2"
+                disabled={loading}
+              >
+                Fetch Text
+              </button>
+              {!showPdf && (
+                <>
+                  <button
+                    onClick={handleDownload}
+                    className="inline-block mt-2 px-4 py-2 bg-[#4B2A06] text-white rounded hover:bg-[#3A2004] mr-2"
+                  >
+                    Download PDF
+                  </button>
+                </>
+              )}
+            </>
+          )}
+        </PopoverContent>
+      </Popover>
+      {showPdf && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/60">
+          <div className="bg-white rounded-lg shadow-lg p-2 w-full max-w-5xl h-[90vh] flex flex-col relative">
             <button
-              onClick={fetchDocDetails}
-              className="inline-block mt-2 px-4 py-2 bg-[#A1A1AA] text-white rounded cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mr-2"
-              disabled={!!docDetails.text || loading}
+              className="absolute top-3 right-4 text-2xl font-bold text-gray-500 hover:text-gray-800 z-10"
+              onClick={handleClosePdf}
+              aria-label="Close PDF"
             >
-              Fetch Text
+              ×
             </button>
-            <button
-              onClick={handleDownload}
-              className="inline-block mt-2 px-4 py-2 bg-[#4B2A06] text-white rounded hover:bg-[#3A2004]"
-            >
-              Download PDF
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              onClick={fetchDocDetails}
-              className="inline-block mt-2 px-4 py-2 bg-[#A1A1AA] text-white rounded cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mr-2"
-              disabled={loading}
-            >
-              Fetch Text
-            </button>
-            <button
-              onClick={handleDownload}
-              className="inline-block mt-2 px-4 py-2 bg-[#4B2A06] text-white rounded hover:bg-[#3A2004]"
-            >
-              Download PDF
-            </button>
-          </>
-        )}
-      </PopoverContent>
-    </Popover>
+            {pdfLoading ? (
+              <div className="flex-1 flex items-center justify-center">
+                <span className="text-lg font-semibold">Processing...</span>
+              </div>
+            ) : (
+              pdfUrl && (
+                <>
+                  <iframe
+                    src={pdfUrl}
+                    title="PDF Viewer"
+                    width="100%"
+                    height="100%"
+                    className="flex-1 rounded"
+                    style={{ border: "none" }}
+                  />
+                  <button
+                    onClick={handleDownload}
+                    className="absolute bottom-4 right-4 px-4 py-2 bg-[#4B2A06] text-white rounded hover:bg-[#3A2004] shadow"
+                  >
+                    Download PDF
+                  </button>
+                </>
+              )
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
