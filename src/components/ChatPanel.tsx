@@ -258,6 +258,18 @@ export function ChatPanel({
       timestamp: new Date().toISOString(),
     };
 
+    // 1. Optimistically update UI
+    setMessages((prev) => [
+      ...prev,
+      {
+        ...userMessage,
+        timestamp: new Date(userMessage.timestamp),
+      },
+    ]);
+    setInputValue("");
+    setIsTyping(true);
+    onProcessingChange?.(true);
+
     let chat: ChatSession | undefined;
     let newChatId = currentChatId;
     let newMessages: Message[] = [];
@@ -304,10 +316,8 @@ export function ChatPanel({
         }
       }
 
-      setMessages(newMessages);
-      setInputValue("");
-      setIsTyping(true);
-      onProcessingChange?.(true);
+      // Don't setMessages(newMessages) here, since we've already optimistically rendered the user message
+      // setMessages(newMessages);
 
       // Abort previous request if it exists
       if (abortControllerRef.current) {
@@ -650,9 +660,7 @@ export function DocumentPopover({
     setLoading(true);
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_API_URL}/documents/${
-          documentId
-        } `  //||"http://localhost:5000/api/documents/upload",
+        `${import.meta.env.VITE_API_URL}/documents/${documentId} ` //||"http://localhost:5000/api/documents/upload",
       );
       setDocDetails(res.data);
     } catch (e) {
@@ -666,9 +674,7 @@ export function DocumentPopover({
     const token = localStorage.getItem("accessToken");
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/documents/download/${
-          documentId
-        } `,  // ||`http://localhost:5000/api/documents/download/${documentId}`,
+        `${import.meta.env.VITE_API_URL}/documents/download/${documentId} `, // ||`http://localhost:5000/api/documents/download/${documentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

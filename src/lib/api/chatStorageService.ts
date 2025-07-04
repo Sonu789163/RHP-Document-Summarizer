@@ -55,6 +55,16 @@ export const chatStorageService = {
 
   async saveChatForDoc(documentId: string, chat: ChatSession) {
     try {
+      // If chat has exactly two messages (bot greeting + first user message) and title is 'New Chat', update title to first user message
+      if (
+        chat.messages.length === 2 &&
+        chat.title === "New Chat" &&
+        chat.messages[1].isUser
+      ) {
+        chat.title =
+          chat.messages[1].content.slice(0, 30) +
+          (chat.messages[1].content.length > 30 ? "..." : "");
+      }
       if (chat.id) {
         await chatService.update(chat.id, chat);
       } else {
@@ -80,9 +90,7 @@ export const chatStorageService = {
   ): Promise<ChatSession> {
     const chat: ChatSession = {
       id: Date.now().toString(),
-      title:
-        initialMessage.content.slice(0, 30) +
-        (initialMessage.content.length > 30 ? "..." : ""),
+      title: "New Chat", // Always use 'New Chat' as the default title
       messages: [initialMessage],
       updatedAt: new Date().toISOString(),
       documentId,
