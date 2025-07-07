@@ -1,12 +1,23 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Download, Copy, CheckCircle, FileText } from "lucide-react";
+import {
+  Loader2,
+  Download,
+  Copy,
+  CheckCircle,
+  FileText,
+  FileDown,
+} from "lucide-react";
 import { toast } from "sonner";
 import { n8nService } from "@/lib/api/n8nService";
 import { sessionService } from "@/lib/api/sessionService";
 import { summaryService, Summary } from "@/services/api";
-import { Tooltip } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 
 interface SummaryMetadata {
   pageCount?: Number;
@@ -238,6 +249,40 @@ export function SummaryPanel({
     }, 3000);
   };
 
+  const handleDownloadDocx = async () => {
+    if (!selectedSummaryId) {
+      toast.error("No summary selected");
+      return;
+    }
+    try {
+      const loadingToast = toast.loading("Downloading DOCX...");
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_URL
+        }/summaries/${selectedSummaryId}/download-docx`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        }
+      );
+      if (!response.ok) throw new Error("Failed to download DOCX");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${currentDocument?.name || "summary"}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.dismiss(loadingToast);
+      toast.success("DOCX downloaded successfully");
+    } catch (error) {
+      toast.error("Failed to download DOCX");
+    }
+  };
+
   // Find the selected summary object
   const selectedSummaryObj = allSummaries.find(
     (s) => s.id === selectedSummaryId
@@ -304,33 +349,59 @@ export function SummaryPanel({
                 "New Summary"
               )}
             </Button>
-            <Button
-              variant="outline"
-              className="bg-white border border-border rounded-sm p-5 w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-foreground shadow-none"
-              onClick={handleDownload}
-              disabled={!selectedSummaryId || !hasPdf}
-              style={{ minWidth: 40, minHeight: 40 }}
-            >
-              <Download className="h-5 w-5 text-[#3F2306]" />
-            </Button>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className="bg-white border border-border rounded-sm p-2 w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-foreground shadow-none"
+                  onClick={handleDownload}
+                  title="Download PDF file"
+                >
+                  <FileDown className="h-6 w-6 text-[#3F2306]" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Download PDF file</TooltipContent>
+            </Tooltip>
           </div>
 
           <div
             className="flex-1 bg-muted rounded-lg p-4 overflow-y-auto min-h-0 animate-fade-in relative"
             style={{ height: "100%" }}
           >
-            {/* Copy icon at top-right */}
-            <button
-              className="sticky top-0 left-[90%] z-10 p-2 rounded-sm bg-background shadow hover:bg-muted transition-colors"
-              onClick={handleCopySummary}
-              title={isCopied ? "Copied!" : "Copy to clipboard"}
-            >
-              {isCopied ? (
-                <CheckCircle className="h-5 w-5 text-green-500" />
-              ) : (
-                <Copy className="h-5 w-5 text-muted-foreground" />
-              )}
-            </button>
+            {/* Copy and download icons at top-right */}
+            <div className="sticky top-0 left-[90%] z-10 flex gap-2 justify-end">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="p-2 rounded-sm bg-background shadow hover:bg-muted transition-colors"
+                    onClick={handleCopySummary}
+                    title={isCopied ? "Copied!" : "Copy to clipboard"}
+                  >
+                    {isCopied ? (
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <Copy className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isCopied ? "Copied!" : "Copy to clipboard"}
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="p-2 rounded-sm bg-background shadow hover:bg-muted transition-colors"
+                    onClick={handleDownloadDocx}
+                    title="Download DOCX file"
+                  >
+                    <FileText className="h-5 w-5 text-blue-700" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Download DOCX file</TooltipContent>
+              </Tooltip>
+            </div>
             {/* Add local table styles for summary content */}
             <style>{`
               .summary-content table {
