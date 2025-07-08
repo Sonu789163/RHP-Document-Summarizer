@@ -23,6 +23,8 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import axios from "axios";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Message {
   id: string;
@@ -91,6 +93,18 @@ const formatBotMessage = (content: string): string => {
   // Join processed lines with newlines
   return formattedLines.join("\n");
 };
+
+// Utility to normalize markdown tables (removes extra blank lines within tables)
+function normalizeTables(markdown: string) {
+  return markdown.replace(
+    /((?:\|[^\n]*\|(?:\n|$))+)/g,
+    (tableBlock) =>
+      tableBlock
+        .split("\n")
+        .filter((line) => line.trim() !== "")
+        .join("\n") + "\n"
+  );
+}
 
 export function ChatPanel({
   isDocumentProcessed,
@@ -536,7 +550,7 @@ export function ChatPanel({
               )}
               <div
                 className={cn(
-                  "rounded-2xl p-4 max-w-[80%]",
+                  "rounded-2xl p-4 max-w-[75%]",
                   message.isUser
                     ? "rounded-br-none"
                     : "rounded-bl-none whitespace-pre-wrap"
@@ -548,11 +562,43 @@ export function ChatPanel({
                     : "rgba(38, 40, 43, 1)",
                 }}
               >
-                <p className="text-sm break-words">
-                  {message.isUser
-                    ? message.content
-                    : formatBotMessage(message.content)}
-                </p>
+                {message.isUser ? (
+                  <p className="text-sm break-words">{message.content}</p>
+                ) : (
+                  <div className="markdown-chat-message text-sm break-words">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        table: ({ children }) => (
+                          <table className="min-w-full border border-gray-300 my-2">
+                            {children}
+                          </table>
+                        ),
+                        th: ({ children }) => (
+                          <th className="border px-2 py-1 bg-gray-100 font-semibold">
+                            {children}
+                          </th>
+                        ),
+                        td: ({ children }) => (
+                          <td className="border px-2 py-1">{children}</td>
+                        ),
+                        a: ({ href, children, ...props }) => (
+                          <a
+                            href={href as string}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline"
+                            {...props}
+                          >
+                            {children}
+                          </a>
+                        ),
+                      }}
+                    >
+                      {normalizeTables(message.content)}
+                    </ReactMarkdown>
+                  </div>
+                )}
                 <span
                   className="text-xs opacity-70 block mt-1"
                   style={{ color: customStyles.timestamp || "#A1A1AA" }}

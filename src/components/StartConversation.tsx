@@ -323,7 +323,7 @@ export const StartConversation: React.FC = () => {
                           : ""
                       }`}
                       onClick={() =>
-                        navigate(`/doc/${doc.namespace || doc.id}`)
+                        navigate(`/doc/${doc.id || doc.namespace}`)
                       }
                     >
                       <div className="flex w-full justify-between items-start">

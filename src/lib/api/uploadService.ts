@@ -116,45 +116,21 @@ export const uploadService = {
     sessionData: SessionData
   ): Promise<DocumentStatusResponse> {
     try {
-      console.log("Checking status for document:", documentId);
-
-      const params = new URLSearchParams({
-        action: "status",
-        document_id: documentId,
-        session_id: sessionData.id,
-      });
-
-      const response = await axios.get(
-        `${N8N_WEBHOOK_URL}?${params.toString()}`
-      );
-
-      console.log("Status check response:", response.data);
-
-      // Update document status in MongoDB if it exists
-      if (response.data.status) {
-        try {
-          await documentService.update(documentId, {
-            status: response.data.status,
-          });
-        } catch (dbError) {
-          console.error("Error updating document status in MongoDB:", dbError);
-        }
-      }
-
+      // Fetch document from backend
+      const doc = await documentService.getById(documentId);
       return {
-        status: response.data.status || "failed",
-        documentId: response.data.documentId,
-        namespace: response.data.namespace,
-        error: response.data.error,
-        message: response.data.message,
+        status: doc.status || "failed",
+        documentId: doc.id,
+        namespace: doc.namespace,
+        message:
+          doc.status === "processing"
+            ? "Document is still processing."
+            : doc.status === "completed"
+            ? "Document processing completed."
+            : "Document processing failed.",
       };
     } catch (error) {
-      console.error("Error checking document status:", error);
-      if (axios.isAxiosError(error)) {
-        console.error("Response data:", error.response?.data);
-        console.error("Response status:", error.response?.status);
-        console.error("Response headers:", error.response?.headers);
-      }
+      console.error("Error checking document status from backend:", error);
       return {
         status: "failed",
         error: error instanceof Error ? error.message : "Unknown error",
