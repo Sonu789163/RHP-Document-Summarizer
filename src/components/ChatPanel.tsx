@@ -139,7 +139,7 @@ export function ChatPanel({
       currentDocument.id,
       {
         id: "initial",
-        content: `Hello! I'm your RHP document assistant. Ask a question about ${currentDocument.name} to start a chat.`,
+        content: `Hello! I'm your DRHP document assistant. Ask a question about ${currentDocument.name} to start a chat.`,
         isUser: false,
         timestamp: new Date().toISOString(),
       }
@@ -219,7 +219,7 @@ export function ChatPanel({
               {
                 id: "1",
                 content:
-                  "Hello! I'm your RHP document assistant. Ask a question about it to start a chat.",
+                  "Hello! I'm your DRHP document assistant. Ask a question about it to start a chat.",
                 isUser: false,
                 timestamp: new Date(),
               },
@@ -279,7 +279,7 @@ export function ChatPanel({
         // Create chat with initial bot greeting
         const initialBotMessage: ChatMessage = {
           id: (Date.now() - 1).toString(),
-          content: `Hello! I'm your RHP document assistant. Ask a question about ${currentDocument.name} to start a chat.`,
+          content: `Hello! I'm your DRHP document assistant. Ask a question about ${currentDocument.name} to start a chat.`,
           isUser: false,
           timestamp: new Date().toISOString(),
         };

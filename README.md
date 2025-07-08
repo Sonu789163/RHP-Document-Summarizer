@@ -1,4 +1,4 @@
-# Smart RHP Document Assistant (Frontend)
+# Smart DRHP Document Assistant (Frontend)
 
 This is the frontend for the Smart RHP Document Assistant platform. It provides a modern, user-friendly interface for uploading, managing, summarizing, and chatting with your documents using AI.
 
