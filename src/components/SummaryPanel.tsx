@@ -428,7 +428,12 @@ export function SummaryPanel({
             {/* HTML Content Display */}
             <div className="overflow-x-auto hide-scrollbar">
               <div
-                className="summary-content text-foreground/90 leading-relaxed min-w-fit"
+                className="summary-content text-foreground/90 leading-relaxed"
+                style={{
+                  width: "100%",
+                  wordBreak: "break-word",
+                  overflowWrap: "break-word",
+                }}
                 dangerouslySetInnerHTML={{ __html: stripStyleTags(summary) }}
               />
             </div>

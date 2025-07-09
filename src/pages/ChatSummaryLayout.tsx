@@ -198,10 +198,14 @@ export default function ChatSummaryLayout() {
           {/* Divider */}
           <div
             style={{
-              width: 5,
+              width: 4,
               cursor: "col-resize",
               background: "#f1eada",
               zIndex: 10,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              userSelect: "none", // Prevents text selection
             }}
             onMouseDown={(e) => {
               const startX = e.clientX;
@@ -223,7 +227,14 @@ export default function ChatSummaryLayout() {
               window.addEventListener("mousemove", onMouseMove);
               window.addEventListener("mouseup", onMouseUp);
             }}
-          />
+          >
+            {/* Drag handle icon (SVG) */}
+            <svg width="16" height="32" viewBox="0 0 16 32" fill="none">
+              <rect x="4" y="7" width="8" height="2" rx="1" fill="#bfa97a" />
+              <rect x="4" y="15" width="8" height="2" rx="1" fill="#bfa97a" />
+              <rect x="4" y="23" width="8" height="2" rx="1" fill="#bfa97a" />
+            </svg>
+          </div>
           {/* Chat Panel (right) */}
           <div className="flex-1 flex flex-col bg-[#fff] px-6 h-full ml-0 rounded-r-2xl rounded-l-none shadow-none justify-stretch">
             <div className="flex flex-col h-full w-full">
