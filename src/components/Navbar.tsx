@@ -96,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
         <span
           className={`text-2xl font-extrabold text-[#232323] tracking-tight transition-all duration-300 ${
-            isChatSummaryPage ? "ml-[2vw]" : ""
+            isChatSummaryPage ? "ml-[1vw]" : ""
           }`}
           style={{
             fontFamily: "Inter, Arial, sans-serif",

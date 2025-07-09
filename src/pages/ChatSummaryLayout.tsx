@@ -35,6 +35,9 @@ export default function ChatSummaryLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newChatTrigger, setNewChatTrigger] = useState(0);
   const { user, logout, isAuthenticated } = useAuth();
+  const [summaryWidth, setSummaryWidth] = useState(400); // default width in px
+  const minSummaryWidth = 300;
+  const maxSummaryWidth = 700;
 
   const chatId = searchParams.get("chatId");
 
@@ -174,7 +177,14 @@ export default function ChatSummaryLayout() {
         />
         <div className="flex flex-1 w-full h-[calc(100vh-80px)] overflow-hidden">
           {/* Summary Card */}
-          <div className="flex flex-col w-[30%] min-w-[300px] bg-white  rounded-r-none shadow-xl p-4 h-full justify-stretch">
+          <div
+            className="flex flex-col bg-white rounded-r-none shadow-xl p-4 h-full justify-stretch"
+            style={{
+              width: summaryWidth,
+              minWidth: minSummaryWidth,
+              maxWidth: maxSummaryWidth,
+            }}
+          >
             <div className="flex-1 overflow-y-auto pr-1 ">
               <SummaryPanel
                 isDocumentProcessed={true}
@@ -185,8 +195,37 @@ export default function ChatSummaryLayout() {
               />
             </div>
           </div>
+          {/* Divider */}
+          <div
+            style={{
+              width: 5,
+              cursor: "col-resize",
+              background: "#f1eada",
+              zIndex: 10,
+            }}
+            onMouseDown={(e) => {
+              const startX = e.clientX;
+              const startWidth = summaryWidth;
+              const onMouseMove = (moveEvent) => {
+                const newWidth = Math.min(
+                  Math.max(
+                    startWidth + moveEvent.clientX - startX,
+                    minSummaryWidth
+                  ),
+                  maxSummaryWidth
+                );
+                setSummaryWidth(newWidth);
+              };
+              const onMouseUp = () => {
+                window.removeEventListener("mousemove", onMouseMove);
+                window.removeEventListener("mouseup", onMouseUp);
+              };
+              window.addEventListener("mousemove", onMouseMove);
+              window.addEventListener("mouseup", onMouseUp);
+            }}
+          />
           {/* Chat Panel (right) */}
-          <div className="flex-1 flex flex-col w-[70%] bg-[#fff] px-6 h-full ml-0 rounded-r-2xl rounded-l-none shadow-none justify-stretch">
+          <div className="flex-1 flex flex-col bg-[#fff] px-6 h-full ml-0 rounded-r-2xl rounded-l-none shadow-none justify-stretch">
             <div className="flex flex-col h-full w-full">
               <div className="flex items-center gap-2 mt-4 mb-4 ml-2 justify-between w-full">
                 <div className="flex items-center gap-2">
