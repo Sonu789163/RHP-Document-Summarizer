@@ -44,7 +44,7 @@ const isTokenExpired = (token: string): boolean => {
 
     // Check if token is expired (with 5 minute buffer)
     const currentTime = Math.floor(Date.now() / 1000);
-    return decoded.exp < currentTime + 300; // 5 minute buffer
+    return decoded.exp < currentTime + 3600; // 5 minute buffer
   } catch {
     return true;
   }
@@ -233,7 +233,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (tokenCheckInterval.current) {
         clearInterval(tokenCheckInterval.current);
       }
-      tokenCheckInterval.current = setInterval(validateToken, 5 * 60 * 1000);
+      tokenCheckInterval.current = setInterval(validateToken, 60 * 60 * 1000);
 
       navigate("/dashboard");
     } catch (error) {
