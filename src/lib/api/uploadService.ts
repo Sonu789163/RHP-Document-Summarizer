@@ -23,6 +23,12 @@ export interface DocumentStatusResponse {
   message?: string;
 }
 
+export interface ExistingDocumentResponse {
+  exists: boolean;
+  document?: any;
+  message: string;
+}
+
 export const uploadService = {
   // async uploadFile(
   //   file: File,
@@ -138,14 +144,46 @@ export const uploadService = {
     }
   },
 
+  async checkExistingDocument(
+    fileName: string
+  ): Promise<ExistingDocumentResponse> {
+    try {
+      const namespace = fileName.replace(/\.pdf$/i, "");
+      const response = await documentService.checkExistingByNamespace(
+        namespace
+      );
+      return response;
+    } catch (error) {
+      console.error("Error checking existing document:", error);
+      return {
+        exists: false,
+        message: "Error checking existing document",
+      };
+    }
+  },
+
   async uploadFileToBackend(file: File): Promise<any> {
+    // Always use filename without .pdf as namespace
+    const namespace = file.name.replace(/\.pdf$/i, "");
+    // First check if document already exists
+    const existingCheck = await this.checkExistingDocument(file.name);
+
+    if (existingCheck.exists) {
+      return {
+        success: false,
+        existingDocument: existingCheck.document,
+        message: existingCheck.message,
+        error: "Document already exists",
+      };
+    }
+
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("namespace", file.name);
+    formData.append("namespace", namespace);
     for (let pair of formData.entries()) {
       console.log(pair[0] + ":", pair[1]);
     }
-    const token = localStorage.getItem("accessToken"); //`${import.meta.env.VITE_API_URL}/documents/upload` ||
+    const token = localStorage.getItem("accessToken");
     const response = await fetch(
       `${import.meta.env.VITE_API_URL}/documents/upload`,
       {

@@ -50,6 +50,8 @@ export const StartConversation: React.FC = () => {
   const [renameValue, setRenameValue] = useState<string>("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [uploadedDoc, setUploadedDoc] = useState<any>(null);
+  const [highlightedDocId, setHighlightedDocId] = useState<string | null>(null);
+  const docRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   useRefreshProtection(
     isUploading,
@@ -102,13 +104,37 @@ export const StartConversation: React.FC = () => {
     setIsUploading(true);
     const toastId = toast.loading(
       <div className="flex items-center gap-2">
-        <span>Uploading {file.name}...</span>
+        <span>Checking {file.name}...</span>
       </div>
     );
 
     try {
       // Use backend upload endpoint to store PDF in GridFS
       const response = await uploadService.uploadFileToBackend(file);
+
+      // Check if document already exists
+      if (response && response.existingDocument) {
+        toast.dismiss(toastId);
+        setHighlightedDocId(response.existingDocument.id);
+        // Scroll to the highlighted document after a short delay
+        setTimeout(() => {
+          const ref = docRefs.current[response.existingDocument.id];
+          if (ref) {
+            ref.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }, 200);
+        toast(
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-destructive" />
+            <span>
+              Document "{response.existingDocument.name}" already exists and is
+              highlighted below.
+            </span>
+          </div>,
+          { duration: 4000 }
+        );
+        return;
+      }
 
       if (!response || !response.document) {
         throw new Error(response?.error || "Upload failed");
@@ -204,6 +230,19 @@ export const StartConversation: React.FC = () => {
     } else if (e.key === "Escape") {
       setRenamingDocId(null);
     }
+  };
+
+  const handleNavigateToExisting = () => {
+    if (uploadedDoc) {
+      navigate(`/doc/${uploadedDoc.namespace || uploadedDoc.id}`);
+      setShowSuccessModal(false);
+      setUploadedDoc(null);
+    }
+  };
+
+  const handleCloseExistingModal = () => {
+    setShowSuccessModal(false);
+    setUploadedDoc(null);
   };
 
   return (
@@ -317,14 +356,26 @@ export const StartConversation: React.FC = () => {
                   filteredDocs.map((doc) => (
                     <div
                       key={doc.id}
-                      className={`flex flex-col items-start bg-[#F3F4F6] rounded-xl p-[1vw] min-w-[180px] min-h-[110px] w-full cursor-pointer hover:bg-[#ECECEC] transition ${
-                        selectedDoc && selectedDoc.id === doc.id
-                          ? "ring-2 ring-[#4B2A06] bg-[#ECECEC]"
-                          : ""
-                      }`}
+                      ref={(el) => (docRefs.current[doc.id] = el)}
+                      className={`flex flex-col items-start bg-[#F3F4F6] rounded-xl p-[1vw] min-w-[180px] min-h-[110px] w-full cursor-pointer hover:bg-[#ECECEC] transition
+                        ${
+                          selectedDoc && selectedDoc.id === doc.id
+                            ? "ring-2 ring-[#4B2A06] bg-[#ECECEC]"
+                            : ""
+                        }
+                        ${
+                          highlightedDocId === doc.id
+                            ? "ring-4 ring-orange-400 bg-yellow-100 animate-pulse"
+                            : ""
+                        }
+                      `}
                       onClick={() =>
                         navigate(`/doc/${doc.id || doc.namespace}`)
                       }
+                      onAnimationEnd={() => {
+                        if (highlightedDocId === doc.id)
+                          setHighlightedDocId(null);
+                      }}
                     >
                       <div className="flex w-full justify-between items-start">
                         <FileText className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px] text-[#4B2A06] mb-[1vw]" />
@@ -446,10 +497,7 @@ export const StartConversation: React.FC = () => {
               </p>
               <button
                 className="px-6 py-2 rounded bg-[#4B2A06] text-white font-semibold hover:bg-[#3A2004]"
-                onClick={() => {
-                  setShowSuccessModal(false);
-                  navigate(`/doc/${uploadedDoc.namespace || uploadedDoc.id}`);
-                }}
+                onClick={handleNavigateToExisting}
               >
                 OK
               </button>

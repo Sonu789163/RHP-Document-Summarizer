@@ -16,6 +16,7 @@ import AppLayout from "./AppLayout";
 import { Loader2 } from "lucide-react";
 import { MainLayout } from "./components/MainLayout";
 import StartConversationPage from "./pages/StartConversationPage";
+import { useAuthProtection } from "./hooks/useAuthProtection";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,33 @@ const Root = () => {
   return isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/" />;
 };
 
+const AppRoutes = () => {
+  // Add authentication protection
+  useAuthProtection();
+
+  return (
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<AuthPage />} />
+        <Route path="/auth-callback" element={<AuthCallbackPage />} />
+
+        <Route element={<ProtectedLayout />}>
+          <Route path="/dashboard" element={<StartConversationPage />} />
+          <Route element={<MainLayout />}>
+            <Route path="/doc/:namespace" element={<ChatSummaryLayout />} />
+            <Route path="/chat-history" element={<ChatHistoryPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Route>
+
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -38,25 +66,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route element={<AppLayout />}>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<AuthPage />} />
-              <Route path="/auth-callback" element={<AuthCallbackPage />} />
-
-              <Route element={<ProtectedLayout />}>
-                <Route path="/dashboard" element={<StartConversationPage />} />
-                <Route element={<MainLayout />}>
-                  <Route path="/doc/:namespace" element={<ChatSummaryLayout />} />
-                  <Route path="/chat-history" element={<ChatHistoryPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                </Route>
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-              </Route>
-
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
+          <AppRoutes />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

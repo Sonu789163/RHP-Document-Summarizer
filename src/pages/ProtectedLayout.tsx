@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export interface ProtectedLayoutContext {
   recentDocuments: any[];
@@ -17,7 +17,7 @@ export interface ProtectedLayoutContext {
 }
 
 const ProtectedLayout = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const navigate = useNavigate();
 
   // State lifted up for MainLayout and its children
@@ -27,6 +27,13 @@ const ProtectedLayout = () => {
   });
   const [currentDocument, setCurrentDocument] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Additional check to ensure authentication is properly validated
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate("/login", { replace: true });
+    }
+  }, [isAuthenticated, loading, navigate]);
 
   const handleDocumentSelect = (doc) => {
     setCurrentDocument(doc);
@@ -47,6 +54,7 @@ const ProtectedLayout = () => {
     navigate(`/doc/${namespace || documentId}`);
   };
 
+  // Show loading spinner while authentication is being checked
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -55,7 +63,8 @@ const ProtectedLayout = () => {
     );
   }
 
-  if (!isAuthenticated) {
+  // Redirect to login if not authenticated
+  if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
 

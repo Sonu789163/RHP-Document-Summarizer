@@ -51,7 +51,6 @@ export const n8nService = {
           headers: {
             "Content-Type": "application/json",
           },
-          signal,
         }
       );
 

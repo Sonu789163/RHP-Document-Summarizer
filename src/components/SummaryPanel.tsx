@@ -169,6 +169,13 @@ export function SummaryPanel({
     }
     abortControllerRef.current = new AbortController();
 
+    // Timeout warning for long jobs
+    const timeoutId = setTimeout(() => {
+      toast.warning(
+        "Summary generation is taking longer than expected. Please wait or try again later."
+      );
+    }, 120000); // 2 minutes
+
     try {
       const response = await n8nService.sendMessage(
         "Generate RHP Doc Summary",
@@ -179,8 +186,8 @@ export function SummaryPanel({
       );
 
       // Handle n8n-specific error response
-      if (response.error) {
-        throw new Error(response.error);
+      if (!response || response.error) {
+        throw new Error(response?.error || "No response from summary service");
       }
 
       if (
@@ -190,10 +197,10 @@ export function SummaryPanel({
         response.response.length === 2
       ) {
         const [pdfMetadata, summaryContent] = response.response;
-        if (!summaryContent?.output) {
+        if (!summaryContent || !summaryContent.output) {
           throw new Error("No summary content found in the response");
         }
-        if (!pdfMetadata?.url) {
+        if (!pdfMetadata || !pdfMetadata.url) {
           throw new Error("No PDF URL found in the response");
         }
         try {
@@ -229,13 +236,13 @@ export function SummaryPanel({
       } else {
         throw new Error("Invalid summary format received.");
       }
-    } catch (err) {
-      console.error("Error generating summary:", err);
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to generate summary.";
-      setError(errorMessage);
-      toast.error(errorMessage);
+    } catch (err: any) {
+      setError(err.message || "Failed to generate summary");
+      toast.error(
+        "Error generating summary: " + (err.message || "Unknown error")
+      );
     } finally {
+      clearTimeout(timeoutId);
       setIsSummarizing(false);
     }
   };

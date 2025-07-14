@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL; 
+const API_URL = import.meta.env.VITE_API_URL;
 
 // Document Services
 export const documentService = {
@@ -61,7 +61,7 @@ export const documentService = {
     const response = await axios.post(`${API_URL}/documents`, payload, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    console.log("for namespace:", response)
+    console.log("for namespace:", response);
     return response.data;
   },
 
@@ -77,7 +77,7 @@ export const documentService = {
     const response = await axios.put(`${API_URL}/documents/${id}`, document, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    console.log("check namespace:",response)
+    console.log("check namespace:", response);
     return response.data;
   },
 
@@ -86,6 +86,19 @@ export const documentService = {
     const response = await axios.delete(`${API_URL}/documents/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    return response.data;
+  },
+
+  async checkExistingByNamespace(namespace: string) {
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.get(
+      `${API_URL}/documents/check-existing?namespace=${encodeURIComponent(
+        namespace
+      )}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
     return response.data;
   },
 };
