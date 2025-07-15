@@ -18,6 +18,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
+import { summaryN8nService } from "@/lib/api/summaryN8nService";
 
 interface SummaryMetadata {
   pageCount?: Number;
@@ -177,7 +178,7 @@ export function SummaryPanel({
     }, 120000); // 2 minutes
 
     try {
-      const response = await n8nService.sendMessage(
+      const response = await summaryN8nService.createSummary(
         "Generate RHP Doc Summary",
         sessionData,
         [],
