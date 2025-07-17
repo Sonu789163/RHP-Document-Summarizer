@@ -74,7 +74,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Hamburger menu for chat summary page */}
         {isChatSummaryPage && onSidebarOpen && !sidebarOpen && (
           <button
-            className={`absolute top-1/2 -translate-y-1/2 p-[0.5vw] rounded hover:bg-[#F3F3F3] transition-all duration-300 left-[2vw]`}
+            className={`absolute top-1/2 -translate-y-1/2 p-[0.5vw] rounded hover:bg-[#F3F3F3] transition-all duration-300 left-[1vw]`}
             onClick={onSidebarOpen}
           >
             <svg
@@ -96,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
         <span
           className={`text-2xl font-extrabold text-[#232323] tracking-tight transition-all duration-300 ${
-            isChatSummaryPage ? "ml-[1vw]" : ""
+            isChatSummaryPage && sidebarOpen ? "ml-[-3vw]" : "ml-[0.5vw]"
           }`}
           style={{
             fontFamily: "Inter, Arial, sans-serif",

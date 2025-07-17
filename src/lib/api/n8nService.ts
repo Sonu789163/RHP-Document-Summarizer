@@ -2,7 +2,7 @@ import axios from "axios";
 import { SessionData, ConversationMemory } from "./sessionService";
 
 const N8N_WEBHOOK_URL =
-  "https://n8n-excollo.azurewebsites.net/webhook/w1/chat";
+  "https://n8n-excollo.azurewebsites.net/webhook/1/chat";
 
 interface N8nResponse {
   response: any[];

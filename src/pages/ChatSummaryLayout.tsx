@@ -201,7 +201,7 @@ export default function ChatSummaryLayout() {
               width: 4,
               cursor: "col-resize",
               background: "#f1eada",
-              zIndex: 10,
+              zIndex: 5,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",

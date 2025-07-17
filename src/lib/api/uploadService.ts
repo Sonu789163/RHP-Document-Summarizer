@@ -176,14 +176,14 @@ export const uploadService = {
         error: "Document already exists",
       };
     }
-
+    const token = localStorage.getItem("accessToken");
     const formData = new FormData();
     formData.append("file", file);
     formData.append("namespace", namespace);
     for (let pair of formData.entries()) {
       console.log(pair[0] + ":", pair[1]);
     }
-    const token = localStorage.getItem("accessToken");
+
     const response = await fetch(
       `${import.meta.env.VITE_API_URL}/documents/upload`,
       {

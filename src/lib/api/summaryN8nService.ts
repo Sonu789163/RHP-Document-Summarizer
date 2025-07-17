@@ -2,10 +2,15 @@ import axios from "axios";
 import { SessionData, ConversationMemory } from "./sessionService";
 
 const SUMMARY_N8N_WEBHOOK_URL =
-  "https://n8n-excollo.azurewebsites.net/webhook/w1/summary";
+  "https://n8n-excollo.azurewebsites.net/webhook/1/summary";
+
+let authToken = localStorage.getItem("accessToken");
 
 interface N8nSummaryResponse {
-  response: any[];
+  executionId?: string;
+  documentId?: string;
+  status?: string;
+  response?: any[];
   error?: string;
   memory_context?: {
     last_topic: string | null;
@@ -20,6 +25,7 @@ export const summaryN8nService = {
     sessionData: SessionData,
     conversationHistory: ConversationMemory[] = [],
     namespace?: string,
+    documentId?: string,
     signal?: AbortSignal
   ): Promise<N8nSummaryResponse> {
     try {
@@ -33,12 +39,16 @@ export const summaryN8nService = {
             timestamp: msg.timestamp,
           }))
         ),
+        token: authToken,
         timestamp: new Date().toISOString(),
-        action: "summary", // or whatever action you want to identify
+        action: "summary",
       });
 
       if (namespace) {
         params.append("namespace", namespace);
+      }
+      if (documentId) {
+        params.append("documentId", documentId);
       }
 
       const response = await axios.get(
@@ -50,19 +60,16 @@ export const summaryN8nService = {
           signal,
         }
       );
+      console.log("Execution-response", response)
 
-      console.log("summary-response",response)
-
-      let processedResponse;
-      if (Array.isArray(response.data)) {
-        processedResponse = response.data;
-      } else {
-        processedResponse = response.data;
-      }
-
+      // Expecting immediate response: { executionId, status, documentId }
       return {
-        response: processedResponse,
-        memory_context: response.data[0]?.memory_context,
+        executionId: response.data[0].executionId,
+        status: response.data[0].status,
+        documentId: response.data[0].documentId,
+        response: response.data[0].response,
+        memory_context: response.data[0].memory_context,
+        error: response.data[0].error,
       };
     } catch (error) {
       if (axios.isCancel(error)) {

@@ -19,6 +19,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { summaryN8nService } from "@/lib/api/summaryN8nService";
+import { io as socketIOClient } from "socket.io-client";
 
 interface SummaryMetadata {
   pageCount?: Number;
@@ -77,9 +78,14 @@ export function SummaryPanel({
   const [allSummaries, setAllSummaries] = useState<Summary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
+  const [lastSummaryId, setLastSummaryId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedSummaryId, setCopiedSummaryId] = useState<string | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastHandledRef = useRef<{
+    jobId: string | null;
+    status: string | null;
+  }>({ jobId: null, status: null });
 
   useEffect(() => {
     onProcessingChange(isSummarizing);
@@ -88,9 +94,7 @@ export function SummaryPanel({
   useEffect(() => {
     // Cleanup on unmount
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      // No abortControllerRef to clear
     };
   }, []);
 
@@ -157,95 +161,89 @@ export function SummaryPanel({
     setPdfUrlExpiry(null);
   }, [selectedSummaryId, allSummaries, onSummarySelect]);
 
+  useEffect(() => {
+    // Connect to backend Socket.IO server
+    const socket = socketIOClient(
+      process.env.NODE_ENV === "production"
+        ? "https://smart-rhtp-backend-2.onrender.com"
+        : "https://smart-rhtp-backend-2.onrender.com",
+      { transports: ["websocket"] }
+    );
+    console.log("conection", socket);
+    socket.on("summary_status", (data) => {
+      const { jobId, status, error } = data;
+      const cleanStatus = status?.trim().toLowerCase();
+      // Deduplicate: only handle if this jobId+status is new
+      if (
+        lastHandledRef.current.jobId === jobId &&
+        lastHandledRef.current.status === cleanStatus
+      ) {
+        return; // Already handled, skip
+      }
+      lastHandledRef.current = { jobId, status: cleanStatus };
+      console.log("Socket event received:", data);
+      
+      // Clear timeout on any status event
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      if (cleanStatus === "success") {
+        // Refetch summaries for the current document
+        if (currentDocument?.id) {
+          summaryService
+            .getByDocumentId(currentDocument.id)
+            .then((summaries) => {
+              setAllSummaries(summaries);
+              toast.success("Summary generated!");
+              setIsSummarizing(false);
+              setLastSummaryId(summaries[0]?.id || null);
+              if (summaries.length > 0) {
+                onSummarySelect(summaries[0].id);
+              }
+            });
+        }
+      } else if (cleanStatus === "failed") {
+        setIsSummarizing(false);
+        setLastSummaryId(null);
+        let errorMsg = "Unknown error";
+        if (typeof error === "string") errorMsg = error;
+        else if (error?.message) errorMsg = error.message;
+        else if (error?.stack) errorMsg = error.stack;
+        toast.error(`Summary failed: ${errorMsg}`);
+      } else if (cleanStatus === "processing") {
+        setIsSummarizing(true);
+      } else {
+        // For any other status, stop processing
+        setIsSummarizing(false);
+      }
+    });
+    return () => {
+      socket.disconnect();
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [currentDocument?.id, onSummarySelect]);
+
+  // Start the timeout when a new summary is requested
   const handleNewSummary = async () => {
     if (!currentDocument?.id) return;
-
     setIsSummarizing(true);
-    setError(null);
-    onSummarySelect(null);
-
-    // Abort previous request if it exists
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController();
-
-    // Timeout warning for long jobs
-    const timeoutId = setTimeout(() => {
-      toast.warning(
-        "Summary generation is taking longer than expected. Please wait or try again later."
-      );
-    }, 120000); // 2 minutes
-
-    try {
-      const response = await summaryN8nService.createSummary(
-        "Generate RHP Doc Summary",
-        sessionData,
-        [],
-        currentDocument.namespace,
-        abortControllerRef.current.signal
-      );
-
-      // Handle n8n-specific error response
-      if (!response || response.error) {
-        throw new Error(response?.error || "No response from summary service");
-      }
-
-      if (
-        response &&
-        response.response &&
-        Array.isArray(response.response) &&
-        response.response.length === 2
-      ) {
-        const [pdfMetadata, summaryContent] = response.response;
-        if (!summaryContent || !summaryContent.output) {
-          throw new Error("No summary content found in the response");
-        }
-        if (!pdfMetadata || !pdfMetadata.url) {
-          throw new Error("No PDF URL found in the response");
-        }
-        try {
-          const newSummary = await summaryService.create({
-            title: `Summary for ${currentDocument.name}`,
-            content: summaryContent.output,
-            documentId: currentDocument.id,
-            metadata: {
-              pageCount: pdfMetadata.pageCount,
-              url: pdfMetadata.url,
-              pdfExpiry: pdfMetadata.pdfExpiry,
-              duration: pdfMetadata.duration,
-              name: pdfMetadata.name,
-            },
-          });
-          setSummary(summaryContent.output);
-          setPdfUrl(String(pdfMetadata.url));
-          setPdfUrlExpiry(String(pdfMetadata.pdfExpiry));
-          setSummaryGenerated(true);
-          onSummarySelect(newSummary.id);
-          toast.success("SOP Summary generated and saved successfully");
-          setAllSummaries([newSummary, ...allSummaries]);
-        } catch (saveError) {
-          console.error("Error saving summary:", saveError);
-          setSummary(summaryContent.output);
-          setPdfUrl(String(pdfMetadata.url));
-          setPdfUrlExpiry(String(pdfMetadata.pdfExpiry));
-          setSummaryGenerated(true);
-          toast.warning(
-            "Summary generated but failed to save. Please try saving again."
-          );
-        }
-      } else {
-        throw new Error("Invalid summary format received.");
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to generate summary");
-      toast.error(
-        "Error generating summary: " + (err.message || "Unknown error")
-      );
-    } finally {
-      clearTimeout(timeoutId);
+    toast.info("Summary request processing...");
+    // Start 10-minute timeout
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
       setIsSummarizing(false);
-    }
+      toast.error(
+        "Summary generation timed out after 10 minutes. Please try again."
+      );
+    }, 10 * 60 * 1000); // 10 minutes
+    await summaryN8nService.createSummary(
+      "Generate RHP Doc Summary",
+      sessionData,
+      [],
+      currentDocument.namespace,
+      currentDocument.id
+    );
   };
 
   const handleCopySummary = () => {
