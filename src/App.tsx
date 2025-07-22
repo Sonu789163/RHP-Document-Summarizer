@@ -16,6 +16,7 @@ import AppLayout from "./AppLayout";
 import { Loader2 } from "lucide-react";
 import { MainLayout } from "./components/MainLayout";
 import StartConversationPage from "./pages/StartConversationPage";
+import ComparePage from "./pages/ComparePage";
 import { useAuthProtection } from "./hooks/useAuthProtection";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const AppRoutes = () => {
 
         <Route element={<ProtectedLayout />}>
           <Route path="/dashboard" element={<StartConversationPage />} />
+          <Route path="/compare/:drhpId" element={<ComparePage />} />
           <Route element={<MainLayout />}>
             <Route path="/doc/:namespace" element={<ChatSummaryLayout />} />
             <Route path="/chat-history" element={<ChatHistoryPage />} />

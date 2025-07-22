@@ -4,8 +4,6 @@ import { SessionData, ConversationMemory } from "./sessionService";
 const SUMMARY_N8N_WEBHOOK_URL =
   "https://n8n-excollo.azurewebsites.net/webhook/1/summary";
 
-let authToken = localStorage.getItem("accessToken");
-
 interface N8nSummaryResponse {
   executionId?: string;
   documentId?: string;
@@ -26,6 +24,7 @@ export const summaryN8nService = {
     conversationHistory: ConversationMemory[] = [],
     namespace?: string,
     documentId?: string,
+    userId?: string,
     signal?: AbortSignal
   ): Promise<N8nSummaryResponse> {
     try {
@@ -39,7 +38,6 @@ export const summaryN8nService = {
             timestamp: msg.timestamp,
           }))
         ),
-        token: authToken,
         timestamp: new Date().toISOString(),
         action: "summary",
       });
@@ -49,6 +47,9 @@ export const summaryN8nService = {
       }
       if (documentId) {
         params.append("documentId", documentId);
+      }
+      if (userId) {
+        params.append("userId", userId);
       }
 
       const response = await axios.get(

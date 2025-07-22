@@ -10,8 +10,16 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, Settings, MessageSquare, Home } from "lucide-react";
+import {
+  LogOut,
+  Settings,
+  MessageSquare,
+  Home,
+  Upload,
+  BarChart3,
+} from "lucide-react";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import SettingsModal from "./SettingsModal";
 
 interface NavbarProps {
@@ -22,6 +30,11 @@ interface NavbarProps {
   children?: React.ReactNode;
   onSidebarOpen?: () => void;
   sidebarOpen?: boolean;
+  // RHP related props
+  showRhpActions?: boolean;
+  onUploadRhp?: () => void;
+  onCompare?: () => void;
+  hasRhp?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -32,6 +45,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   children,
   onSidebarOpen,
   sidebarOpen = false,
+  showRhpActions = false,
+  onUploadRhp,
+  onCompare,
+  hasRhp = false,
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -118,9 +135,37 @@ export const Navbar: React.FC<NavbarProps> = ({
           />
         )}
         {children}
+
+        {/* RHP Action Buttons */}
+        {showRhpActions && (
+          <div className="flex items-center gap-2 mr-1">
+            {!hasRhp ? (
+              <Button
+                onClick={onUploadRhp}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                Upload RHP
+              </Button>
+            ) : (
+              <Button
+                onClick={onCompare}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <BarChart3 className="h-4 w-4" />
+                Compare With RHP
+              </Button>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center ml-[2vw] gap-[2vw] text-[#232323] text-2xl">
           {isChatSummaryPage && (
-            <nav className="flex gap-[2vw] ml-[4vw]">
+            <nav className="flex gap-[2vw] ">
               <Link
                 to={location.pathname}
                 className={`flex items-center gap-2 text-2xl font-bold ${

@@ -36,6 +36,7 @@ interface SummaryPanelProps {
     name: string;
     uploadedAt: string;
     namespace?: string;
+    userId: string; // <-- Add this line
   } | null;
   onProcessingChange?: (isProcessing: boolean) => void;
   selectedSummaryId: string | null;
@@ -98,6 +99,7 @@ export function SummaryPanel({
     };
   }, []);
 
+  console.log(currentDocument);
   // Fetch all summaries for the document and auto-select latest if none selected
   useEffect(() => {
     const fetchSummaries = async () => {
@@ -182,7 +184,7 @@ export function SummaryPanel({
       }
       lastHandledRef.current = { jobId, status: cleanStatus };
       console.log("Socket event received:", data);
-      
+
       // Clear timeout on any status event
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -242,6 +244,7 @@ export function SummaryPanel({
       sessionData,
       [],
       currentDocument.namespace,
+      currentDocument.userId,
       currentDocument.id
     );
   };

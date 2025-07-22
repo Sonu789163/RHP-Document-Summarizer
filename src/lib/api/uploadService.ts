@@ -164,7 +164,7 @@ export const uploadService = {
 
   async uploadFileToBackend(file: File): Promise<any> {
     // Always use filename without .pdf as namespace
-    const namespace = file.name.replace(/\.pdf$/i, "");
+    const namespace = file.name; //.replace(/\.pdf$/i, "")
     // First check if document already exists
     const existingCheck = await this.checkExistingDocument(file.name);
 
@@ -196,6 +196,29 @@ export const uploadService = {
     );
     if (!response.ok) {
       throw new Error("Failed to upload file to backend");
+    }
+    return response.json();
+  },
+
+  async uploadRhpToBackend(file: File, drhpId: string): Promise<any> {
+    const token = localStorage.getItem("accessToken");
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("drhpId", drhpId); // <-- This is the missing piece
+
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/documents/upload-rhp`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      }
+    );
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to upload RHP file");
     }
     return response.json();
   },

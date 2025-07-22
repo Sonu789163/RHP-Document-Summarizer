@@ -10,6 +10,8 @@ import {
   Trash2,
   Pencil,
   X,
+  Star,
+  BarChart3,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -29,6 +31,7 @@ import { sessionService } from "@/lib/api/sessionService";
 import { toast } from "sonner";
 import { useRefreshProtection } from "../hooks/useRefreshProtection";
 import { Navbar } from "./Navbar";
+import { RhpUploadModal } from "./RhpUploadModal";
 
 export const StartConversation: React.FC = () => {
   const [documents, setDocuments] = useState<any[]>([]);
@@ -52,11 +55,36 @@ export const StartConversation: React.FC = () => {
   const [uploadedDoc, setUploadedDoc] = useState<any>(null);
   const [highlightedDocId, setHighlightedDocId] = useState<string | null>(null);
   const docRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const [showRhpModal, setShowRhpModal] = useState<string | null>(null);
 
   useRefreshProtection(
     isUploading,
     "A file is currently uploading. Please wait."
   );
+
+  // Socket event handling for upload status
+  useEffect(() => {
+    const handleUploadStatus = (data: {
+      jobId: string;
+      status: string;
+      error?: string;
+    }) => {
+      if (data.status === "failed") {
+        toast.error(`Upload failed: ${data.error || "Unknown error"}`);
+      } else if (data.status === "completed") {
+        toast.success("Upload completed successfully!");
+        fetchDocuments(); // Refresh the document list
+      }
+    };
+
+    // Listen for socket events (if socket is available)
+    if (window.io) {
+      window.io.on("upload_status", handleUploadStatus);
+      return () => {
+        window.io.off("upload_status", handleUploadStatus);
+      };
+    }
+  }, []);
 
   // Helper for initials
   const getUserInitials = (email: string) => {
@@ -357,7 +385,7 @@ export const StartConversation: React.FC = () => {
                     <div
                       key={doc.id}
                       ref={(el) => (docRefs.current[doc.id] = el)}
-                      className={`flex flex-col items-start bg-[#F3F4F6] rounded-xl p-[1vw] min-w-[180px] min-h-[110px] w-full cursor-pointer hover:bg-[#ECECEC] transition
+                      className={`flex flex-col items-start bg-[#F3F4F6] rounded-xl p-[1vw] min-w-[180px] min-h-[110px] w-full cursor-pointer hover:bg-[#ECECEC] transition relative
                         ${
                           selectedDoc && selectedDoc.id === doc.id
                             ? "ring-2 ring-[#4B2A06] bg-[#ECECEC]"
@@ -377,9 +405,60 @@ export const StartConversation: React.FC = () => {
                           setHighlightedDocId(null);
                       }}
                     >
+                      {/* Star icon for DRHP with RHP */}
+                      {doc.type === "DRHP" && doc.relatedRhpId && (
+                        <div className="absolute top-2 right-2 z-10">
+                          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                        </div>
+                      )}
+
                       <div className="flex w-full justify-between items-start">
                         <FileText className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px] text-[#4B2A06] mb-[1vw]" />
                         <div className="flex gap-[0.5vw]">
+                          {/* RHP Upload button for DRHP documents */}
+                          {doc.type === "DRHP" && !doc.relatedRhpId && (
+                            <>
+                              <button
+                                className="text-muted-foreground hover:text-blue-600 p-[0.3vw]"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowRhpModal(doc.id);
+                                }}
+                                title="Upload RHP"
+                              >
+                                <Upload className="h-[1vw] w-[1vw] min-w-[16px] min-h-[16px]" />
+                              </button>
+                              <RhpUploadModal
+                                drhpId={doc.id}
+                                drhpName={doc.name}
+                                open={showRhpModal === doc.id}
+                                onOpenChange={(open) =>
+                                  open
+                                    ? setShowRhpModal(doc.id)
+                                    : setShowRhpModal(null)
+                                }
+                                onUploadSuccess={() => {
+                                  setShowRhpModal(null);
+                                  fetchDocuments();
+                                }}
+                              />
+                            </>
+                          )}
+
+                          {/* Compare button for DRHP with RHP */}
+                          {doc.type === "DRHP" && doc.relatedRhpId && (
+                            <button
+                              className="text-muted-foreground hover:text-green-600 p-[0.3vw]"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/compare/${doc.id}`);
+                              }}
+                              title="Compare DRHP and RHP"
+                            >
+                              <BarChart3 className="h-[1vw] w-[1vw] min-w-[16px] min-h-[16px]" />
+                            </button>
+                          )}
+
                           <button
                             className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
                             onClick={(e) => {
@@ -445,11 +524,22 @@ export const StartConversation: React.FC = () => {
                             ? `${Math.round(doc.fileSize / 1024)} KB`
                             : "")}
                       </span>
-                      <span className="text-[#A1A1AA] text-xs mt-[0.5vw]">
-                        {doc.uploadedAt
-                          ? new Date(doc.uploadedAt).toLocaleDateString()
-                          : ""}
-                      </span>
+                      <div className="flex items-center justify-between w-full mt-[0.5vw]">
+                        <span className="text-[#A1A1AA] text-xs">
+                          {doc.uploadedAt
+                            ? new Date(doc.uploadedAt).toLocaleDateString()
+                            : ""}
+                        </span>
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            doc.type === "DRHP"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
+                          {doc.type || "DRHP"}
+                        </span>
+                      </div>
                     </div>
                   ))
                 )}

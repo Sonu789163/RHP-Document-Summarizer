@@ -21,6 +21,7 @@ import { LogOut, Settings, Plus, Pencil, Edit, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 import { Navbar } from "@/components/Navbar";
 import { DocumentPopover } from "@/components/ChatPanel";
+import { RhpUploadModal } from "@/components/RhpUploadModal";
 
 export default function ChatSummaryLayout() {
   const { namespace } = useParams();
@@ -38,6 +39,8 @@ export default function ChatSummaryLayout() {
   const [summaryWidth, setSummaryWidth] = useState(400); // default width in px
   const minSummaryWidth = 300;
   const maxSummaryWidth = 700;
+  const [showRhpModal, setShowRhpModal] = useState(false);
+  const [isRhpUploading, setIsRhpUploading] = useState(false);
 
   const chatId = searchParams.get("chatId");
 
@@ -174,7 +177,36 @@ export default function ChatSummaryLayout() {
         <Navbar
           onSidebarOpen={() => setSidebarOpen(true)}
           sidebarOpen={sidebarOpen}
+          showRhpActions={!!currentDocument}
+          hasRhp={!!currentDocument?.relatedRhpId}
+          onUploadRhp={() => setShowRhpModal(true)}
+          onCompare={() =>
+            currentDocument && navigate(`/compare/${currentDocument.id}`)
+          }
         />
+        <RhpUploadModal
+          drhpId={currentDocument?._id}
+          drhpName={currentDocument?.name || ""}
+          open={showRhpModal}
+          onOpenChange={setShowRhpModal}
+          onUploadSuccess={() => {
+            setShowRhpModal(false);
+            if (currentDocument?.id) {
+              documentService
+                .getById(currentDocument.id)
+                .then(setCurrentDocument);
+            }
+          }}
+          setIsUploading={setIsRhpUploading}
+        />
+        {isRhpUploading && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-lg p-8 flex flex-col items-center shadow-lg">
+              <Loader2 className="h-10 w-10 animate-spin mb-4" />
+              <span className="text-lg font-semibold">Uploading RHP...</span>
+            </div>
+          </div>
+        )}
         <div className="flex flex-1 w-full h-[calc(100vh-80px)] overflow-hidden">
           {/* Summary Card */}
           <div
