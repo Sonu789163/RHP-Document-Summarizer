@@ -191,7 +191,24 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
   const handleDownloadPdf = async () => {
     if (!selectedReport) return;
     try {
-      const blob = await reportService.downloadPdf(selectedReport.id);
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/reports/${
+          selectedReport.id
+        }/download-pdf`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        }
+      );
+      if (
+        !response.ok ||
+        response.headers.get("Content-Type") !== "application/pdf"
+      ) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to download PDF");
+      }
+      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
