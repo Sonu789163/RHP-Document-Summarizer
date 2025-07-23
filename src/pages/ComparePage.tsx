@@ -533,7 +533,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
               <div className="h-[75vh] hide-scrollbar border-2 border-gray-200 rounded-md overflow-auto">
                 <div
                   ref={reportRef}
-                  className="summary-content text-foreground/90 leading-relaxed p-4"
+                  className="summary-content text-foreground/90 leading-relaxed py-8 px-5"
                   style={{
                     width: "100%",
                     wordBreak: "break-word",

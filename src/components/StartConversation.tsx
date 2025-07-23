@@ -405,13 +405,6 @@ export const StartConversation: React.FC = () => {
                           setHighlightedDocId(null);
                       }}
                     >
-                      {/* Star icon for DRHP with RHP */}
-                      {doc.type === "DRHP" && doc.relatedRhpId && (
-                        <div className="absolute top-2 right-2 z-10">
-                          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                        </div>
-                      )}
-
                       <div className="flex w-full justify-between items-start">
                         <FileText className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px] text-[#4B2A06] mb-[1vw]" />
                         <div className="flex gap-[0.5vw]">
@@ -530,15 +523,29 @@ export const StartConversation: React.FC = () => {
                             ? new Date(doc.uploadedAt).toLocaleDateString()
                             : ""}
                         </span>
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            doc.type === "DRHP"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-green-100 text-green-800"
-                          }`}
-                        >
-                          {doc.type || "DRHP"}
-                        </span>
+                        <div className="flex justify-between items-center ">
+                          {/* Star icon for DRHP with RHP */}
+                          {doc.type === "DRHP" && doc.relatedRhpId && (
+                            <span
+                              className={`text-xs px-2 py-1 mx-1 rounded-full ${
+                                doc.type === "DRHP"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-green-100 text-green-800"
+                              }`}
+                            >
+                              {"RHP"}
+                            </span>
+                          )}
+                          <span
+                            className={`text-xs px-2 py-1 mx-1 rounded-full ${
+                              doc.type === "DRHP"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-green-100 text-green-800"
+                            }`}
+                          >
+                            {doc.type || "DRHP"}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))
