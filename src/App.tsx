@@ -11,6 +11,9 @@ import SettingsPage from "./pages/SettingsPage";
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import TestPage from "./pages/TestPage";
 import ProtectedLayout from "./pages/ProtectedLayout";
 import AppLayout from "./AppLayout";
 import { Loader2 } from "lucide-react";
@@ -36,12 +39,16 @@ const Root = () => {
 const AppRoutes = () => {
   // Add authentication protection
   useAuthProtection();
+  console.log('AppRoutes component rendered');
 
   return (
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<AuthPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/test" element={<TestPage />} />
         <Route path="/auth-callback" element={<AuthCallbackPage />} />
 
         <Route element={<ProtectedLayout />}>

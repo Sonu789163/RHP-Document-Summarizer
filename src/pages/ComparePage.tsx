@@ -96,6 +96,16 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
   }, [drhpId]);
 
   useEffect(() => {
+    // On mount, check if report processing is ongoing for this DRHP
+    if (drhpId) {
+      const key = `report_processing_${drhpId}`;
+      if (localStorage.getItem(key)) {
+        setComparing(true);
+      }
+    }
+  }, [drhpId]);
+
+  useEffect(() => {
     const socket = socketIOClient(
       process.env.NODE_ENV === "production"
         ? "https://smart-rhtp-backend-2.onrender.com"
@@ -125,15 +135,19 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
         if (cleanStatus === "completed") {
           toast.success("Comparison completed successfully!");
           setComparing(false);
+          if (drhpId) localStorage.removeItem(`report_processing_${drhpId}`);
           // Refetch reports to get the new one
           fetchDocumentsAndReports();
         } else if (cleanStatus === "failed") {
           toast.error(`Comparison failed: ${error || "Unknown error"}`);
           setComparing(false);
+          if (drhpId) localStorage.removeItem(`report_processing_${drhpId}`);
         } else if (cleanStatus === "processing") {
           setComparing(true);
+          if (drhpId) localStorage.setItem(`report_processing_${drhpId}`, "1");
         } else {
           setComparing(false);
+          if (drhpId) localStorage.removeItem(`report_processing_${drhpId}`);
         }
       }
     );
@@ -141,7 +155,37 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [drhpId]);
+
+  useEffect(() => {
+    // On mount and on window focus, check if report is ready
+    const checkReportReady = async () => {
+      if (!drhpId) return;
+      const key = `report_processing_${drhpId}`;
+      if (localStorage.getItem(key)) {
+        // Fetch reports
+        const allReports = await reportService.getAll();
+        const filteredReports = allReports.filter(
+          (r) =>
+            r.drhpNamespace === drhp?.namespace ||
+            r.rhpNamespace === rhp?.rhpNamespace
+        );
+        if (filteredReports && filteredReports.length > 0) {
+          setReports(filteredReports);
+          setComparing(false);
+          localStorage.removeItem(key);
+          // Set ready flag for global notification
+          localStorage.setItem(`report_ready_${drhpId}`, "1");
+          toast.success("Comparison report is ready!");
+        }
+      }
+    };
+    checkReportReady();
+    // Listen for window focus
+    const onFocus = () => checkReportReady();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [drhpId, drhp?.namespace, rhp?.rhpNamespace]);
 
   const handleCreateReport = async () => {
     if (!drhp || !rhp) {
@@ -149,9 +193,10 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       return;
     }
     const prompt = "Compare these documents and provide a detailed analysis";
-
     try {
       setComparing(true);
+      // Persist processing state
+      if (drhpId) localStorage.setItem(`report_processing_${drhpId}`, "1");
       toast.info("Comparison request sent. Please wait...");
       await reportN8nService.createComparison(
         drhp.namespace,
@@ -165,6 +210,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       console.error("Error creating comparison report:", error);
       toast.error("Failed to initiate comparison report");
       setComparing(false);
+      if (drhpId) localStorage.removeItem(`report_processing_${drhpId}`);
     }
   };
 
@@ -363,9 +409,9 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
-                        variant="destructive"
+                        variant="outline"
                         size="icon"
-                        className="p-2"
+                        className="p-2 hover:bg-gray/50 "
                         disabled={deleting}
                         title="Delete Document"
                       >
@@ -449,7 +495,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
         </div>
         {/* Vertical Divider */}
         {/* Right: Summary/Report */}
-        <div className="w-[50vw] flex-2 flex flex-col px-8 py-8 bg-gray-50">
+        <div className="w-[50vw] flex-2 flex flex-col px-5 py-5 bg-gray-50">
           {/* Header row with controls */}
           <div className="flex items-center justify-between mb-4">
             <div className="font-bold text-lg">Comparision Report</div>
@@ -530,7 +576,10 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
               }
             `}</style>
               {/* HTML Content Display */}
-              <div className="h-[75vh] hide-scrollbar border-2 border-gray-200 rounded-md overflow-auto">
+              <div
+                className="h-[78vh] hide-scrollbar border-2 border-gray-200 rounded-md overflow-y-auto"
+                style={{ zoom: zoom }}
+              >
                 <div
                   ref={reportRef}
                   className="summary-content text-foreground/90 leading-relaxed py-8 px-5"
@@ -538,8 +587,6 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                     width: "100%",
                     wordBreak: "break-word",
                     overflowWrap: "break-word",
-                    transform: `scale(${zoom})`,
-                    transformOrigin: "top left",
                   }}
                   dangerouslySetInnerHTML={{
                     __html: stripStyleTags(selectedReport.content),

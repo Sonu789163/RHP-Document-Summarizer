@@ -164,6 +164,31 @@ export function SummaryPanel({
   }, [selectedSummaryId, allSummaries, onSummarySelect]);
 
   useEffect(() => {
+    // On mount and on window focus, check if summary is ready
+    const checkSummaryReady = async () => {
+      if (!currentDocument?.id) return;
+      const key = `summary_processing_${currentDocument.id}`;
+      if (localStorage.getItem(key)) {
+        // Fetch summaries
+        const summaries = await summaryService.getByDocumentId(currentDocument.id);
+        if (summaries && summaries.length > 0) {
+          setAllSummaries(summaries);
+          setIsSummarizing(false);
+          localStorage.removeItem(key);
+          // Set ready flag for global notification
+          localStorage.setItem(`summary_ready_${currentDocument.id}`, '1');
+          toast.success('Summary is ready!');
+        }
+      }
+    };
+    checkSummaryReady();
+    // Listen for window focus
+    const onFocus = () => checkSummaryReady();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [currentDocument?.id]);
+
+  useEffect(() => {
     // Connect to backend Socket.IO server
     const socket = socketIOClient(
       process.env.NODE_ENV === "production"
@@ -205,9 +230,14 @@ export function SummaryPanel({
               }
             });
         }
+        // Remove processing state
+        if (currentDocument?.id)
+          localStorage.removeItem(`summary_processing_${currentDocument.id}`);
       } else if (cleanStatus === "failed") {
         setIsSummarizing(false);
         setLastSummaryId(null);
+        if (currentDocument?.id)
+          localStorage.removeItem(`summary_processing_${currentDocument.id}`);
         let errorMsg = "Unknown error";
         if (typeof error === "string") errorMsg = error;
         else if (error?.message) errorMsg = error.message;
@@ -215,9 +245,13 @@ export function SummaryPanel({
         toast.error(`Summary failed: ${errorMsg}`);
       } else if (cleanStatus === "processing") {
         setIsSummarizing(true);
+        if (currentDocument?.id)
+          localStorage.setItem(`summary_processing_${currentDocument.id}`, "1");
       } else {
         // For any other status, stop processing
         setIsSummarizing(false);
+        if (currentDocument?.id)
+          localStorage.removeItem(`summary_processing_${currentDocument.id}`);
       }
     });
     return () => {
@@ -230,6 +264,8 @@ export function SummaryPanel({
   const handleNewSummary = async () => {
     if (!currentDocument?.id) return;
     setIsSummarizing(true);
+    // Persist processing state
+    localStorage.setItem(`summary_processing_${currentDocument.id}`, "1");
     toast.info("Summary request processing...");
     // Start 10-minute timeout
     if (timeoutRef.current) clearTimeout(timeoutRef.current);

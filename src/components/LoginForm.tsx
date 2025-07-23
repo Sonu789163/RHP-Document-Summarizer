@@ -44,9 +44,9 @@ export function LoginForm() {
       );
       login(accessToken, refreshToken);
       toast.success("Login successful!");
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       const errorMessage =
-        error.response?.data?.message ||
+        error instanceof Error ? error.message :  
         "Login failed. Please check your credentials.";
       toast.error(errorMessage);
     } finally {
@@ -117,14 +117,19 @@ export function LoginForm() {
           )}
         />
         <div className="flex justify-end -mt-6 mb-2">
-          <button
-            type="button"
+          <a
+            href="/forgot-password"
             className="text-[#4B2A06] text-base font-semibold hover:underline focus:outline-none"
-            onClick={() => navigate("/forgot-password")}
+            onClick={(e) => {
+              e.preventDefault();
+              console.log('Forgot Password link clicked');
+              // Try direct window location change instead of React Router
+              window.location.href = "/forgot-password";
+            }}
             style={{ fontFamily: "Inter, Arial, sans-serif" }}
           >
-            Forgot Password
-          </button>
+            Forgot Password?
+          </a>
         </div>
         <Button
           type="submit"

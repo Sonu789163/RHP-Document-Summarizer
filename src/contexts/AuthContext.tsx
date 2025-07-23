@@ -233,7 +233,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (tokenCheckInterval.current) {
         clearInterval(tokenCheckInterval.current);
       }
-      tokenCheckInterval.current = setInterval(validateToken, 60 * 60 * 1000);
+      tokenCheckInterval.current = setInterval(validateToken, 24 * 60 * 60 * 1000);
 
       navigate("/dashboard");
     } catch (error) {
