@@ -8,6 +8,7 @@ import {
   CheckCircle,
   FileText,
   FileDown,
+  Printer,
 } from "lucide-react";
 import { toast } from "sonner";
 import { n8nService } from "@/lib/api/n8nService";
@@ -87,6 +88,8 @@ export function SummaryPanel({
     jobId: string | null;
     status: string | null;
   }>({ jobId: null, status: null });
+  // Add a ref for the summary content
+  const summaryRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     onProcessingChange(isSummarizing);
@@ -99,7 +102,7 @@ export function SummaryPanel({
     };
   }, []);
 
-  console.log(currentDocument);
+  // console.log(currentDocument);
   // Fetch all summaries for the document and auto-select latest if none selected
   useEffect(() => {
     const fetchSummaries = async () => {
@@ -170,22 +173,24 @@ export function SummaryPanel({
       const key = `summary_processing_${currentDocument.id}`;
       if (localStorage.getItem(key)) {
         // Fetch summaries
-        const summaries = await summaryService.getByDocumentId(currentDocument.id);
+        const summaries = await summaryService.getByDocumentId(
+          currentDocument.id
+        );
         if (summaries && summaries.length > 0) {
           setAllSummaries(summaries);
           setIsSummarizing(false);
           localStorage.removeItem(key);
           // Set ready flag for global notification
-          localStorage.setItem(`summary_ready_${currentDocument.id}`, '1');
-          toast.success('Summary is ready!');
+          localStorage.setItem(`summary_ready_${currentDocument.id}`, "1");
+          toast.success("Summary is ready!");
         }
       }
     };
     checkSummaryReady();
     // Listen for window focus
     const onFocus = () => checkSummaryReady();
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, [currentDocument?.id]);
 
   useEffect(() => {
@@ -333,7 +338,7 @@ export function SummaryPanel({
     (s) => s.id === selectedSummaryId
   );
   const hasPdf = !!(
-    selectedSummaryObj && (selectedSummaryObj as any).pdfFileId
+    selectedSummaryObj && (selectedSummaryObj as any).pdfFileKey
   );
 
   const handleDownload = async () => {
@@ -346,7 +351,9 @@ export function SummaryPanel({
       const response = await fetch(
         `${
           import.meta.env.VITE_API_URL
-        }/summaries/${selectedSummaryId}/download-pdf`,
+        }/summaries/${selectedSummaryId}/download-pdf?documentId=${
+          currentDocument?.id
+        }`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
@@ -367,6 +374,75 @@ export function SummaryPanel({
       toast.success("PDF downloaded successfully");
     } catch (error) {
       toast.error("Failed to download PDF");
+    }
+  };
+
+  // Print handler for summary
+  const handlePrintSummary = () => {
+    if (summaryRef.current) {
+      const printWindow = window.open("", "", "width=900,height=650");
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Print Summary</title>
+              <style>
+                body { font-family: sans-serif; margin: 0; padding: 2rem; }
+                .summary-content table {
+                  border-collapse: collapse;
+                  width: 100%;
+                  border: 2px solid #d1d5de;
+                  margin: 16px 0;
+                  font-size: 13px;
+                  background: #f1eada;
+                }
+                .summary-content th, .summary-content td {
+                  border: 1px solid #d1d5de;
+                  padding: 6px 8px;
+                  text-align: left;
+                }
+                .summary-content th {
+                  background: #f1eada;
+                  font-weight: 600;
+                }
+                .summary-content tr:nth-child(even) td {
+                  background: #f1eada;
+                }
+                @media print {
+                  .summary-content table {
+                    border-collapse: collapse !important;
+                    width: 100% !important;
+                    border: 2px solid #d1d5de !important;
+                    background: #f1eada !important;
+                  }
+                  .summary-content th, .summary-content td {
+                    border: 1px solid #d1d5de !important;
+                    padding: 6px 8px !important;
+                    text-align: left !important;
+                    background: #f1eada !important;
+                    color: #222 !important;
+                  }
+                  .summary-content th {
+                    background: #f1eada !important;
+                    font-weight: 600 !important;
+                  }
+                  .summary-content tr:nth-child(even) td {
+                    background: #f1eada !important;
+                  }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="summary-content">
+                ${summaryRef.current.innerHTML}
+              </div>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+      }
     }
   };
 
@@ -395,18 +471,33 @@ export function SummaryPanel({
               )}
             </Button>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  className="bg-white border border-border rounded-sm p-2 w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-foreground shadow-none"
-                  onClick={handleDownload}
-                  title="Download PDF file"
-                >
-                  <FileDown className="h-6 w-6 text-[#3F2306]" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>Download PDF file</TooltipContent>
-            </Tooltip>
+            {/* Download PDF and Print buttons side by side */}
+            <div className="flex gap-2 items-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="bg-white border border-border rounded-sm p-2 w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-foreground shadow-none"
+                    onClick={handleDownload}
+                    title="Download PDF file"
+                  >
+                    <FileDown className="h-6 w-6 text-[#3F2306]" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Download PDF file</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="bg-white border border-border rounded-sm p-2 w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-foreground shadow-none"
+                    onClick={handlePrintSummary}
+                    title="Print Summary"
+                  >
+                    <Printer className="h-6 w-6 text-gray-700" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Print Summary</TooltipContent>
+              </Tooltip>
+            </div>
           </div>
 
           <div
@@ -473,6 +564,7 @@ export function SummaryPanel({
             {/* HTML Content Display */}
             <div className="overflow-x-auto hide-scrollbar">
               <div
+                ref={summaryRef}
                 className="summary-content text-foreground/90 leading-relaxed"
                 style={{
                   width: "100%",

@@ -316,6 +316,8 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                   border: 1px solid #d1d5de;
                   padding: 6px 8px;
                   text-align: left;
+                  background: #f1eada;
+                  color: #222;
                 }
                 .summary-content th {
                   background: #f1eada;
@@ -324,10 +326,34 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                 .summary-content tr:nth-child(even) td {
                   background: #f1eada;
                 }
+                @media print {
+                  .summary-content table {
+                    border-collapse: collapse !important;
+                    width: 100% !important;
+                    border: 2px solid #d1d5de !important;
+                    background: #f1eada !important;
+                  }
+                  .summary-content th, .summary-content td {
+                    border: 1px solid #d1d5de !important;
+                    padding: 6px 8px !important;
+                    text-align: left !important;
+                    background: #f1eada !important;
+                    color: #222 !important;
+                  }
+                  .summary-content th {
+                    background: #f1eada !important;
+                    font-weight: 600 !important;
+                  }
+                  .summary-content tr:nth-child(even) td {
+                    background: #f1eada !important;
+                  }
+                }
               </style>
             </head>
             <body>
-              ${reportRef.current.innerHTML}
+              <div class="summary-content">
+                ${reportRef.current.innerHTML}
+              </div>
             </body>
           </html>
         `);
