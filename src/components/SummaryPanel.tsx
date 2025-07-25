@@ -338,9 +338,13 @@ export function SummaryPanel({
       toast.error("No summary selected");
       return;
     }
+    let loadingToast;
     try {
-      const loadingToast = toast.loading("Downloading PDF...");
+      loadingToast = toast.loading("Downloading PDF...");
       const blob = await summaryService.downloadHtmlPdf(selectedSummaryId);
+      if (blob.type !== "application/pdf" || blob.size < 100) {
+        throw new Error("Failed to generate PDF. Please try again later.");
+      }
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -349,10 +353,11 @@ export function SummaryPanel({
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.dismiss(loadingToast);
       toast.success("PDF downloaded successfully");
     } catch (error) {
       toast.error("Failed to download PDF");
+    } finally {
+      if (loadingToast) toast.dismiss(loadingToast);
     }
   };
 
@@ -520,7 +525,6 @@ export function SummaryPanel({
                 </TooltipTrigger>
                 <TooltipContent>Print Summary</TooltipContent>
               </Tooltip>
-              
             </div>
           </div>
 

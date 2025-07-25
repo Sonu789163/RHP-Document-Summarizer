@@ -236,8 +236,13 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
 
   const handleDownloadPdf = async () => {
     if (!selectedReport) return;
+    let loadingToast;
     try {
+      loadingToast = toast.loading("Downloading PDF...");
       const blob = await reportService.downloadHtmlPdf(selectedReport.id);
+      if (blob.type !== "application/pdf" || blob.size < 100) {
+        throw new Error("Failed to generate PDF. Please try again later.");
+      }
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -250,6 +255,8 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     } catch (error) {
       console.error("Error downloading PDF:", error);
       toast.error("Failed to download PDF");
+    } finally {
+      if (loadingToast) toast.dismiss(loadingToast);
     }
   };
 
