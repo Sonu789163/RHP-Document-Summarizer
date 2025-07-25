@@ -389,42 +389,6 @@ export function SummaryPanel({
     selectedSummaryObj && (selectedSummaryObj as any).pdfFileKey
   );
 
-  const handleDownload = async () => {
-    if (!selectedSummaryId || !hasPdf) {
-      toast.error("No PDF available for this summary");
-      return;
-    }
-    try {
-      const loadingToast = toast.loading("Downloading PDF...");
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL
-        }/summaries/${selectedSummaryId}/download-pdf?documentId=${
-          currentDocument?.id
-        }`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
-      if (!response.ok) throw new Error("Failed to download PDF");
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${currentDocument?.name || "document"}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.dismiss(loadingToast);
-      toast.success("PDF downloaded successfully");
-    } catch (error) {
-      toast.error("Failed to download PDF");
-    }
-  };
-
   // Print handler for summary
   const handlePrintSummary = () => {
     if (summaryRef.current) {
