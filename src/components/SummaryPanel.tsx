@@ -302,30 +302,40 @@ export function SummaryPanel({
   // Start the timeout when a new summary is requested
   const handleNewSummary = async () => {
     if (!currentDocument?.id) return;
-    setIsSummarizing(true);
-    // Persist processing state with timestamp
-    const jobStartedAt = Date.now();
-    localStorage.setItem(
-      `summary_processing_${currentDocument.id}`,
-      jobStartedAt.toString()
-    );
-    toast.info("Summary request processing...");
-    // Start 10-minute timeout
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      setIsSummarizing(false);
-      toast.error(
-        "Summary generation timed out after 10 minutes. Please try again."
+    // Find the previous summary for this document
+    const previousSummary = allSummaries[0]; // assuming sorted by updatedAt desc
+    try {
+      if (previousSummary) {
+        await summaryService.delete(previousSummary.id);
+      }
+      setIsSummarizing(true);
+      const jobStartedAt = Date.now();
+      localStorage.setItem(
+        `summary_processing_${currentDocument.id}`,
+        jobStartedAt.toString()
       );
-    }, 10 * 60 * 1000); // 10 minutes
-    await summaryN8nService.createSummary(
-      "Generate RHP Doc Summary",
-      sessionData,
-      [],
-      currentDocument.namespace,
-      currentDocument.userId,
-      currentDocument.id
-    );
+      toast.info("Summary request processing...");
+      // Start 10-minute timeout
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        setIsSummarizing(false);
+        toast.error(
+          "Summary generation timed out after 10 minutes. Please try again."
+        );
+      }, 10 * 60 * 1000); // 10 minutes
+      await summaryN8nService.createSummary(
+        "Generate RHP Doc Summary",
+        sessionData,
+        [],
+        currentDocument.namespace,
+        currentDocument.userId,
+        currentDocument.id
+      );
+    } catch (error) {
+      toast.error("Failed to create new summary");
+      setIsSummarizing(false);
+      localStorage.removeItem(`summary_processing_${currentDocument.id}`);
+    }
   };
 
   const handleCopySummary = () => {
@@ -475,6 +485,38 @@ export function SummaryPanel({
       }
     }
   };
+
+  useEffect(() => {
+    // Polling for new summaries if processing is ongoing
+    if (!currentDocument?.id) return;
+    let interval: NodeJS.Timeout | null = null;
+    if (isSummarizing) {
+      interval = setInterval(async () => {
+        const summaries = await summaryService.getByDocumentId(
+          currentDocument.id
+        );
+        setAllSummaries(summaries);
+      }, 5000); // Poll every 5 seconds
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isSummarizing, currentDocument?.id]);
+
+  useEffect(() => {
+    // Refetch summaries on window focus if processing is ongoing
+    if (!currentDocument?.id) return;
+    const onFocus = async () => {
+      if (isSummarizing) {
+        const summaries = await summaryService.getByDocumentId(
+          currentDocument.id
+        );
+        setAllSummaries(summaries);
+      }
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [isSummarizing, currentDocument?.id]);
 
   if (!isDocumentProcessed) {
     return null;

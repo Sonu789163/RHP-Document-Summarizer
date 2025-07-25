@@ -207,13 +207,48 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     return () => window.removeEventListener("focus", onFocus);
   }, [drhpId, drhp?.namespace, rhp?.rhpNamespace]);
 
+  useEffect(() => {
+    // Polling for new reports if processing is ongoing
+    if (!drhpId) return;
+    let interval: NodeJS.Timeout | null = null;
+    if (comparing) {
+      interval = setInterval(async () => {
+        await fetchDocumentsAndReports();
+      }, 5000); // Poll every 5 seconds
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [comparing, drhpId]);
+
+  useEffect(() => {
+    // Refetch reports on window focus if processing is ongoing
+    if (!drhpId) return;
+    const onFocus = async () => {
+      if (comparing) {
+        await fetchDocumentsAndReports();
+      }
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [comparing, drhpId]);
+
   const handleCreateReport = async () => {
     if (!drhp || !rhp) {
       toast.error("Both DRHP and RHP documents are required");
       return;
     }
     const prompt = "Compare these documents and provide a detailed analysis";
+    // Find the previous report for this DRHP/RHP pair
+    const previousReport = reports.find(
+      (r) =>
+        r.drhpNamespace === drhp.namespace ||
+        r.rhpNamespace === rhp.rhpNamespace
+    );
     try {
+      if (previousReport) {
+        await reportService.delete(previousReport.id);
+      }
       setComparing(true);
       // Persist processing state with timestamp
       if (drhpId) {
