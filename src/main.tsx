@@ -9,9 +9,11 @@ function checkGlobalReadyFlags() {
   Object.keys(localStorage).forEach((key) => {
     if (key.startsWith("summary_ready_")) {
       toast.success("Summary is ready!");
+      localStorage.removeItem(key); // Remove after showing toast
     }
     if (key.startsWith("report_ready_")) {
       toast.success("Comparison report is ready!");
+      localStorage.removeItem(key); // Remove after showing toast
     }
   });
 }
