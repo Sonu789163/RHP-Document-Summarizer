@@ -282,6 +282,19 @@ export const reportService = {
     });
     return response.data;
   },
+
+  async downloadHtmlPdf(id: string): Promise<Blob> {
+    console.log("downloading html pdf", id);
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.get(
+      `${API_URL}/reports/${id}/download-html-pdf`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: "blob",
+      }
+    );
+    return response.data;
+  },
 };
 
 export const summaryService = {
@@ -315,6 +328,18 @@ export const summaryService = {
     await axios.delete(`${API_URL}/summaries/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+  },
+
+  async downloadHtmlPdf(id: string): Promise<Blob> {
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.get(
+      `${API_URL}/summaries/${id}/download-html-pdf`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: "blob",
+      }
+    );
+    return response.data;
   },
 };
 

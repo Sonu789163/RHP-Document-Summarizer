@@ -333,6 +333,29 @@ export function SummaryPanel({
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!selectedSummaryId) {
+      toast.error("No summary selected");
+      return;
+    }
+    try {
+      const loadingToast = toast.loading("Downloading PDF...");
+      const blob = await summaryService.downloadHtmlPdf(selectedSummaryId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${currentDocument?.name || "summary"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.dismiss(loadingToast);
+      toast.success("PDF downloaded successfully");
+    } catch (error) {
+      toast.error("Failed to download PDF");
+    }
+  };
+
   // Find the selected summary object
   const selectedSummaryObj = allSummaries.find(
     (s) => s.id === selectedSummaryId
@@ -496,6 +519,18 @@ export function SummaryPanel({
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>Print Summary</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="p-2 rounded-sm bg-background shadow hover:bg-muted transition-colors"
+                    onClick={handleDownloadPdf}
+                    title="Download PDF file"
+                  >
+                    <FileDown className="h-5 w-5 text-red-700" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Download PDF file</TooltipContent>
               </Tooltip>
             </div>
           </div>
