@@ -339,6 +339,7 @@ export const summaryService = {
         responseType: "blob",
       }
     );
+    console.log("downloading html pdf", response);
     return response.data;
   },
 };

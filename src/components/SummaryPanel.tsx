@@ -500,7 +500,7 @@ export function SummaryPanel({
                 <TooltipTrigger asChild>
                   <button
                     className="bg-white border border-border rounded-sm p-2 w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-foreground shadow-none"
-                    onClick={handleDownload}
+                    onClick={handleDownloadPdf}
                     title="Download PDF file"
                   >
                     <FileDown className="h-6 w-6 text-[#3F2306]" />
@@ -520,18 +520,7 @@ export function SummaryPanel({
                 </TooltipTrigger>
                 <TooltipContent>Print Summary</TooltipContent>
               </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    className="p-2 rounded-sm bg-background shadow hover:bg-muted transition-colors"
-                    onClick={handleDownloadPdf}
-                    title="Download PDF file"
-                  >
-                    <FileDown className="h-5 w-5 text-red-700" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>Download PDF file</TooltipContent>
-              </Tooltip>
+              
             </div>
           </div>
 
