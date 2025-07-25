@@ -197,19 +197,33 @@ export function SummaryPanel({
     // On mount, check if summary processing is ongoing for this document
     if (!currentDocument?.id) return;
     const key = `summary_processing_${currentDocument.id}`;
-    if (localStorage.getItem(key)) {
+    const jobStartedAt = Number(localStorage.getItem(key));
+    if (jobStartedAt) {
       setIsSummarizing(true);
     }
   }, [currentDocument?.id]);
 
-  // When summaries are fetched and the latest is rendered, clear the processing flag
+  // When summaries are fetched and the latest is rendered, clear the processing flag only if a new summary is present
   useEffect(() => {
     if (!currentDocument?.id) return;
     const key = `summary_processing_${currentDocument.id}`;
-    if (isSummarizing && allSummaries && allSummaries.length > 0) {
-      // Assume new summary is present if allSummaries array is not empty
-      localStorage.removeItem(key);
-      setIsSummarizing(false);
+    const jobStartedAt = Number(localStorage.getItem(key));
+    if (
+      isSummarizing &&
+      allSummaries &&
+      allSummaries.length > 0 &&
+      jobStartedAt
+    ) {
+      // Find the latest summary
+      const latestSummary = allSummaries.reduce((a, b) =>
+        new Date(a.updatedAt).getTime() > new Date(b.updatedAt).getTime()
+          ? a
+          : b
+      );
+      if (new Date(latestSummary.updatedAt).getTime() > jobStartedAt) {
+        localStorage.removeItem(key);
+        setIsSummarizing(false);
+      }
     }
   }, [allSummaries, isSummarizing, currentDocument?.id]);
 
@@ -289,8 +303,12 @@ export function SummaryPanel({
   const handleNewSummary = async () => {
     if (!currentDocument?.id) return;
     setIsSummarizing(true);
-    // Persist processing state
-    localStorage.setItem(`summary_processing_${currentDocument.id}`, "1");
+    // Persist processing state with timestamp
+    const jobStartedAt = Date.now();
+    localStorage.setItem(
+      `summary_processing_${currentDocument.id}`,
+      jobStartedAt.toString()
+    );
     toast.info("Summary request processing...");
     // Start 10-minute timeout
     if (timeoutRef.current) clearTimeout(timeoutRef.current);

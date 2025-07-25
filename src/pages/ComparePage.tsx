@@ -99,20 +99,29 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     // On mount, check if report processing is ongoing for this DRHP
     if (drhpId) {
       const key = `report_processing_${drhpId}`;
-      if (localStorage.getItem(key)) {
+      const jobStartedAt = Number(localStorage.getItem(key));
+      if (jobStartedAt) {
         setComparing(true);
       }
     }
   }, [drhpId]);
 
-  // When reports are fetched and the latest is rendered, clear the processing flag
+  // When reports are fetched and the latest is rendered, clear the processing flag only if a new report is present
   useEffect(() => {
     if (!drhpId) return;
     const key = `report_processing_${drhpId}`;
-    if (comparing && reports && reports.length > 0) {
-      // Assume new report is present if reports array is not empty
-      localStorage.removeItem(key);
-      setComparing(false);
+    const jobStartedAt = Number(localStorage.getItem(key));
+    if (comparing && reports && reports.length > 0 && jobStartedAt) {
+      // Find the latest report
+      const latestReport = reports.reduce((a, b) =>
+        new Date(a.updatedAt).getTime() > new Date(b.updatedAt).getTime()
+          ? a
+          : b
+      );
+      if (new Date(latestReport.updatedAt).getTime() > jobStartedAt) {
+        localStorage.removeItem(key);
+        setComparing(false);
+      }
     }
   }, [reports, comparing, drhpId]);
 
@@ -206,8 +215,14 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     const prompt = "Compare these documents and provide a detailed analysis";
     try {
       setComparing(true);
-      // Persist processing state
-      if (drhpId) localStorage.setItem(`report_processing_${drhpId}`, "1");
+      // Persist processing state with timestamp
+      if (drhpId) {
+        const jobStartedAt = Date.now();
+        localStorage.setItem(
+          `report_processing_${drhpId}`,
+          jobStartedAt.toString()
+        );
+      }
       toast.info("Comparison request sent. Please wait...");
       await reportN8nService.createComparison(
         drhp.namespace,
