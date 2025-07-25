@@ -37,7 +37,7 @@ interface SummaryPanelProps {
     name: string;
     uploadedAt: string;
     namespace?: string;
-    userId: string; // <-- Add this line
+    // Removed: userId: string;
   } | null;
   onProcessingChange?: (isProcessing: boolean) => void;
   selectedSummaryId: string | null;
@@ -326,10 +326,10 @@ export function SummaryPanel({
       await summaryN8nService.createSummary(
         "Generate RHP Doc Summary",
         sessionData,
-        [],
+        undefined, // conversationHistory
         currentDocument.namespace,
-        currentDocument.userId,
-        currentDocument.id
+        currentDocument.id,
+        undefined // signal
       );
     } catch (error) {
       toast.error("Failed to create new summary");

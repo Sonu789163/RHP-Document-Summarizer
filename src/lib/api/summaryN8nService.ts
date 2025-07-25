@@ -24,7 +24,6 @@ export const summaryN8nService = {
     conversationHistory: ConversationMemory[] = [],
     namespace?: string,
     documentId?: string,
-    userId?: string,
     signal?: AbortSignal
   ): Promise<N8nSummaryResponse> {
     try {
@@ -48,9 +47,6 @@ export const summaryN8nService = {
       if (documentId) {
         params.append("documentId", documentId);
       }
-      if (userId) {
-        params.append("userId", userId);
-      }
 
       const response = await axios.get(
         `${SUMMARY_N8N_WEBHOOK_URL}?${params.toString()}`,
@@ -61,7 +57,7 @@ export const summaryN8nService = {
           signal,
         }
       );
-      console.log("Execution-response", response)
+      console.log("Execution-response", response);
 
       // Expecting immediate response: { executionId, status, documentId }
       return {

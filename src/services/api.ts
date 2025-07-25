@@ -41,8 +41,6 @@ export const documentService = {
     uploadedAt?: string;
     file?: any;
     fileType?: string;
-    microsoftId?: string;
-    userId?: string;
   }) {
     const token = localStorage.getItem("accessToken");
     const payload: any = {
@@ -55,8 +53,6 @@ export const documentService = {
     if (document.uploadedAt) payload.uploadedAt = document.uploadedAt;
     if (document.file) payload.file = document.file;
     if (document.fileType) payload.fileType = document.fileType;
-    if (document.microsoftId) payload.microsoftId = document.microsoftId;
-    if (document.userId) payload.userId = document.userId;
 
     const response = await axios.post(`${API_URL}/documents`, payload, {
       headers: { Authorization: `Bearer ${token}` },
@@ -177,13 +173,6 @@ export interface Summary {
   content: string;
   updatedAt: string;
   documentId: string;
-  metadata?: {
-    pageCount?: number;
-    url?: string;
-    pdfExpiry?: string;
-    duration?: number;
-    name?: string;
-  };
 }
 
 export interface Report {
@@ -195,13 +184,6 @@ export interface Report {
   rhpId: string;
   drhpNamespace: string;
   rhpNamespace: string;
-  metadata?: {
-    pageCount?: number;
-    url?: string;
-    pdfExpiry?: string;
-    duration?: number;
-    name?: string;
-  };
 }
 
 export const reportService = {
