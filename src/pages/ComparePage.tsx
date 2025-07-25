@@ -105,6 +105,17 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     }
   }, [drhpId]);
 
+  // When reports are fetched and the latest is rendered, clear the processing flag
+  useEffect(() => {
+    if (!drhpId) return;
+    const key = `report_processing_${drhpId}`;
+    if (comparing && reports && reports.length > 0) {
+      // Assume new report is present if reports array is not empty
+      localStorage.removeItem(key);
+      setComparing(false);
+    }
+  }, [reports, comparing, drhpId]);
+
   useEffect(() => {
     const socket = socketIOClient(
       process.env.NODE_ENV === "production"

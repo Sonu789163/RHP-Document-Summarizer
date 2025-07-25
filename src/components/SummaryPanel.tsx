@@ -194,6 +194,26 @@ export function SummaryPanel({
   }, [currentDocument?.id]);
 
   useEffect(() => {
+    // On mount, check if summary processing is ongoing for this document
+    if (!currentDocument?.id) return;
+    const key = `summary_processing_${currentDocument.id}`;
+    if (localStorage.getItem(key)) {
+      setIsSummarizing(true);
+    }
+  }, [currentDocument?.id]);
+
+  // When summaries are fetched and the latest is rendered, clear the processing flag
+  useEffect(() => {
+    if (!currentDocument?.id) return;
+    const key = `summary_processing_${currentDocument.id}`;
+    if (isSummarizing && allSummaries && allSummaries.length > 0) {
+      // Assume new summary is present if allSummaries array is not empty
+      localStorage.removeItem(key);
+      setIsSummarizing(false);
+    }
+  }, [allSummaries, isSummarizing, currentDocument?.id]);
+
+  useEffect(() => {
     // Connect to backend Socket.IO server
     const socket = socketIOClient(
       process.env.NODE_ENV === "production"
