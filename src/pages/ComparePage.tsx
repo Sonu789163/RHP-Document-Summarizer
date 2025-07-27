@@ -654,7 +654,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
             `}</style>
               {/* HTML Content Display */}
               <div
-                className="h-[78vh] hide-scrollbar border-2 border-gray-200 rounded-md overflow-y-auto"
+                className="h-[78vh] hide-scrollbar border-2 border-gray-200 bg-[#f6f2e9] rounded-md overflow-y-auto"
                 style={{ zoom: zoom }}
               >
                 <div
