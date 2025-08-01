@@ -276,17 +276,18 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
   };
 
   const handleDeleteRhp = async () => {
-    if (!drhp) return; // RHP is part of DRHP now
+    if (!rhp) return;
 
     try {
       setDeleting(true);
-      // We delete the DRHP itself, and the backend handles the linked RHP file
-      await documentService.delete(drhp.id);
-      toast.success("DRHP and linked RHP document deleted successfully");
-      navigate("/dashboard"); // Navigate away since the doc is gone
+      // Delete only the RHP document
+      await documentService.delete(rhp.id);
+      toast.success("RHP document deleted successfully");
+      // Refresh the page data to reflect the change
+      await fetchDocumentsAndReports();
     } catch (error) {
-      console.error("Error deleting document:", error);
-      toast.error("Failed to delete document");
+      console.error("Error deleting RHP document:", error);
+      toast.error("Failed to delete RHP document");
     } finally {
       setDeleting(false);
     }
