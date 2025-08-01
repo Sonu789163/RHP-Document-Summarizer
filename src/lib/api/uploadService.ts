@@ -180,9 +180,7 @@ export const uploadService = {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("namespace", namespace);
-    for (let pair of formData.entries()) {
-      console.log(pair[0] + ":", pair[1]);
-    }
+  
 
     const response = await fetch(
       `${import.meta.env.VITE_API_URL}/documents/upload`,

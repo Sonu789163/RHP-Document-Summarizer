@@ -77,7 +77,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       const filteredReports = allReports.filter(
         (r) =>
           r.drhpNamespace === drhpDoc.namespace ||
-          r.rhpNamespace === rhp.rhpNamespace
+          (rhp && r.rhpNamespace === rhp.rhpNamespace)
       );
       setReports(filteredReports);
       if (filteredReports.length > 0) {

@@ -39,7 +39,6 @@ const Root = () => {
 const AppRoutes = () => {
   // Add authentication protection
   useAuthProtection();
-  console.log('AppRoutes component rendered');
 
   return (
     <Routes>
