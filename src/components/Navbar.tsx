@@ -178,6 +178,22 @@ export const Navbar: React.FC<NavbarProps> = ({
               </Link>
             </nav>
           )}
+          {/* Compare BarChart icon for compare page */}
+          {location.pathname.startsWith("/compare") && (
+            <nav className="flex gap-[2vw]">
+              <Link
+                to={location.pathname}
+                className={`flex items-center gap-2 text-2xl font-bold ${
+                  location.pathname.startsWith("/compare")
+                    ? "text-[#FF7A1A]"
+                    : "text-[#232323]"
+                }`}
+                title="Compare"
+              >
+                <BarChart3 className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px]" />
+              </Link>
+            </nav>
+          )}
           <Link
             to="/dashboard"
             className={`flex items-center gap-2 text-2xl font-bold ${
