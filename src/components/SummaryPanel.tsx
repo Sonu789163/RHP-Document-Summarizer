@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Loader2,
   Download,
@@ -37,6 +38,8 @@ interface SummaryPanelProps {
     name: string;
     uploadedAt: string;
     namespace?: string;
+    rhpNamespace?: string; // Add rhpNamespace for RHP documents
+    type?: string; // Add type to determine document type
     // Removed: userId: string;
   } | null;
   onProcessingChange?: (isProcessing: boolean) => void;
@@ -146,19 +149,16 @@ export function SummaryPanel({
       onSummarySelect(sorted[0].id);
       return;
     }
-    if (selectedSummaryId && allSummaries.length > 0) {
-      const selectedSummary = allSummaries.find(
-        (s) => s.id === selectedSummaryId
-      );
-      if (selectedSummary) {
-        setSummary(selectedSummary.content);
-        setSummaryGenerated(true);
-        if (selectedSummary.metadata?.url) {
-          setPdfUrl(String(selectedSummary.metadata.url));
-          setPdfUrlExpiry(String(selectedSummary.metadata.pdfExpiry));
-        }
-        return;
-      }
+    const selectedSummary = allSummaries.find(
+      (s) => s.id === selectedSummaryId
+    );
+    if (selectedSummary) {
+      setSummary(selectedSummary.content);
+      setSummaryGenerated(true);
+      // Remove metadata access since Summary interface doesn't have metadata property
+      setPdfUrl(null);
+      setPdfUrlExpiry(null);
+      return;
     }
     setSummary("");
     setSummaryGenerated(false);
@@ -171,18 +171,29 @@ export function SummaryPanel({
     const checkSummaryReady = async () => {
       if (!currentDocument?.id) return;
       const key = `summary_processing_${currentDocument.id}`;
-      if (localStorage.getItem(key)) {
+      const jobStartedAt = Number(localStorage.getItem(key));
+
+      if (jobStartedAt) {
         // Fetch summaries
         const summaries = await summaryService.getByDocumentId(
           currentDocument.id
         );
         if (summaries && summaries.length > 0) {
-          setAllSummaries(summaries);
-          setIsSummarizing(false);
-          localStorage.removeItem(key);
-          // Set ready flag for global notification
-          localStorage.setItem(`summary_ready_${currentDocument.id}`, "1");
-          toast.success("Summary is ready!");
+          // Check if any summary was created after the job started
+          const newSummary = summaries.find(
+            (summary) => new Date(summary.updatedAt).getTime() > jobStartedAt
+          );
+
+          if (newSummary) {
+            setAllSummaries(summaries);
+            setIsSummarizing(false);
+            localStorage.removeItem(key);
+            // Set ready flag for global notification
+            localStorage.setItem(`summary_ready_${currentDocument.id}`, "1");
+            toast.success("Summary is ready!");
+            // Auto-select the new summary
+            onSummarySelect(newSummary.id);
+          }
         }
       }
     };
@@ -191,7 +202,7 @@ export function SummaryPanel({
     const onFocus = () => checkSummaryReady();
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-  }, [currentDocument?.id]);
+  }, [currentDocument?.id, onSummarySelect]);
 
   useEffect(() => {
     // On mount, check if summary processing is ongoing for this document
@@ -308,6 +319,10 @@ export function SummaryPanel({
       if (previousSummary) {
         await summaryService.delete(previousSummary.id);
       }
+      // Clear current summary and selection
+      setSummary("");
+      setSummaryGenerated(false);
+      onSummarySelect(null);
       setIsSummarizing(true);
       const jobStartedAt = Date.now();
       localStorage.setItem(
@@ -324,12 +339,16 @@ export function SummaryPanel({
         );
       }, 10 * 60 * 1000); // 10 minutes
       await summaryN8nService.createSummary(
-        "Generate RHP Doc Summary",
+        currentDocument.type === "RHP"
+          ? "Generate RHP Doc Summary"
+          : "Generate DRHP Doc Summary",
         sessionData,
         undefined, // conversationHistory
         currentDocument.namespace,
         currentDocument.id,
-        undefined // signal
+        undefined, // signal
+        currentDocument.type, // Pass type for dynamic webhook
+        currentDocument.rhpNamespace // Pass rhpNamespace for RHP documents
       );
     } catch (error) {
       toast.error("Failed to create new summary");
@@ -635,6 +654,14 @@ export function SummaryPanel({
             `}</style>
             {/* HTML Content Display */}
             <div className="overflow-x-auto hide-scrollbar">
+              {/* Document Type Badge */}
+              {currentDocument?.type && (
+                <div className="mb-2 absolute top-5 left-5 right-0 z-100">
+                  <Badge variant="default" className="text-xs ">
+                    {currentDocument.type}
+                  </Badge>
+                </div>
+              )}
               <div
                 ref={summaryRef}
                 className="summary-content text-foreground/90 leading-relaxed"
@@ -658,7 +685,8 @@ export function SummaryPanel({
             Generate summary
           </h3>
           <p className="text-muted-foreground text-base mb-6">
-            Click here to generate DRHP Summary
+            Click here to generate{" "}
+            {currentDocument?.type === "RHP" ? "RHP" : "DRHP"} Summary
           </p>
           <Button
             onClick={handleNewSummary}

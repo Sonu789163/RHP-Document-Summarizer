@@ -3,6 +3,8 @@ import { SessionData, ConversationMemory } from "./sessionService";
 
 const SUMMARY_N8N_WEBHOOK_URL =
   "https://n8n-excollo.azurewebsites.net/webhook/1/summary";
+const RHP_SUMMARY_N8N_WEBHOOK_URL =
+  "https://n8n-excollo.azurewebsites.net/webhook/1/rhp/summary";
 
 interface N8nSummaryResponse {
   executionId?: string;
@@ -24,7 +26,9 @@ export const summaryN8nService = {
     conversationHistory: ConversationMemory[] = [],
     namespace?: string,
     documentId?: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    type?: string, // Add type parameter to determine which webhook to use
+    rhpNamespace?: string // Add rhpNamespace parameter for RHP documents
   ): Promise<N8nSummaryResponse> {
     try {
       const params = new URLSearchParams({
@@ -41,22 +45,27 @@ export const summaryN8nService = {
         action: "summary",
       });
 
-      if (namespace) {
+      // Use rhpNamespace if type is 'RHP', otherwise use regular namespace
+      if (type === "RHP" && rhpNamespace) {
+        params.append("namespace", rhpNamespace);
+      } else if (namespace) {
         params.append("namespace", namespace);
       }
+
       if (documentId) {
         params.append("documentId", documentId);
       }
 
-      const response = await axios.get(
-        `${SUMMARY_N8N_WEBHOOK_URL}?${params.toString()}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          signal,
-        }
-      );
+      // Use RHP webhook if type is 'RHP', otherwise use default
+      const webhookUrl =
+        type === "RHP" ? RHP_SUMMARY_N8N_WEBHOOK_URL : SUMMARY_N8N_WEBHOOK_URL;
+
+      const response = await axios.get(`${webhookUrl}?${params.toString()}`, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        signal,
+      });
       console.log("Execution-response", response);
 
       // Expecting immediate response: { executionId, status, documentId }

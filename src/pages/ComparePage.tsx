@@ -20,6 +20,10 @@ import {
   Printer,
   Plus,
   Minus,
+  Menu,
+  X,
+  BarChart3,
+  Sidebar,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -33,6 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { io as socketIOClient } from "socket.io-client";
+import { SummaryPanel } from "../components/SummaryPanel";
 
 interface ComparePageProps {}
 
@@ -51,6 +56,13 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
   const [deleting, setDeleting] = useState(false);
   const [zoom, setZoom] = useState(1); // 1 = 100%
   const reportRef = useRef<HTMLDivElement>(null);
+  const [selectedRhpSummaryId, setSelectedRhpSummaryId] = useState<
+    string | null
+  >(null);
+  const [isRhpSummaryProcessing, setIsRhpSummaryProcessing] = useState(false);
+
+  // Sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const lastHandledRef = useRef<{
     jobId: string | null;
@@ -292,6 +304,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       setDeleting(false);
     }
   };
+
   function stripStyleTags(html: string): string {
     return html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
   }
@@ -448,235 +461,328 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
   }
 
   return (
-    <div className="min-h-screen w-[100vw]  flex flex-col">
-      <Navbar title="Compare Documents" />
-      <div className="flex flex-1">
-        {/* Left: Document Cards and Compare Button */}
-        <div className="w-[50%]  flex  flex-col items-center px-6 py-8 gap-6  bg-gray-50 border-r border-gray-200">
-          <div className="w-full flex  flex-row space-x-4 items-center ">
-            {/* DRHP Card */}
-            <Card className="w-full">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  DRHP Document
-                  {drhp.hasRhp && <Star className="h-5 w-5 text-yellow-500" />}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p>
-                    <strong>Name:</strong> {drhp.name}
-                  </p>
-                  <p>
-                    <strong>Namespace:</strong> {drhp.namespace}
-                  </p>
-                  <p>
-                    <strong>Uploaded:</strong>{" "}
-                    {new Date(drhp.uploadedAt).toLocaleDateString()}
-                  </p>
-                  <Badge variant="secondary">DRHP</Badge>
-                </div>
-              </CardContent>
-            </Card>
-            {/* RHP Card */}
-            <Card className="w-full relative">
-              {/* Delete button at top right */}
+    <div className="h-screen w-[100vw] flex flex-col overflow-x-hidden">
+      {/* Top 10vh - Navbar */}
+      <div className=" fixed top-0 left-0 right-0 z-50 h-[10vh]">
+        <Navbar title="Compare Documents" />
+      </div>
+
+      {/* Bottom 90vh - Main Content */}
+      <div className="h-[90vh] flex mt-[10vh]">
+        {/* Left Sidebar - ChatGPT Style */}
+        <div
+          className={`transition-all duration-300 ease-in-out ${
+            sidebarOpen ? "w-60" : "w-16"
+          } fixed top-[10vh] left-0 bg-white border-r border-gray-200 h-[90vh] flex flex-col overflow-hidden`}
+        >
+          {sidebarOpen && (
+            <>
+              {/* Sidebar Header */}
+              <div className="px-4 py-2 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-[#4B2A06]">
+                  Documents
+                </h2>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-md"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Document Cards */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* DRHP Card */}
+                <Card className="w-full">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-sm">
+                      <FileText className="h-4 w-4" />
+                      DRHP Document
+                      {drhp.hasRhp && (
+                        <Star className="h-4 w-4 text-yellow-500" />
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-1 text-xs">
+                      <p>
+                        <strong>Name:</strong> {drhp.name}
+                      </p>
+                      <p>
+                        <strong>Namespace:</strong> {drhp.namespace}
+                      </p>
+                      <p>
+                        <strong>Uploaded:</strong>{" "}
+                        {new Date(drhp.uploadedAt).toLocaleDateString()}
+                      </p>
+                      <Badge variant="secondary" className="text-xs">
+                        DRHP
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* RHP Card */}
+                <Card className="w-full relative">
+                  {rhp && (
+                    <div className="absolute top-2 right-2 z-10">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 w-6 p-0 hover:bg-gray/50"
+                            disabled={deleting}
+                            title="Delete Document"
+                          >
+                            {deleting ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Document</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this document and
+                              its linked RHP? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteRhp}>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  )}
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-sm">
+                      <FileText className="h-4 w-4" />
+                      RHP Document
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {rhp ? (
+                      <div className="space-y-1 text-xs">
+                        <p>
+                          <strong>Name:</strong> {rhp.name}
+                        </p>
+                        <p>
+                          <strong>Namespace:</strong> {rhp.rhpNamespace}
+                        </p>
+                        <p>
+                          <strong>Uploaded:</strong>{" "}
+                          {new Date(rhp.uploadedAt).toLocaleDateString()}
+                        </p>
+                        <Badge variant="secondary" className="text-xs">
+                          RHP
+                        </Badge>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-600 text-xs">
+                          No RHP document found
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Upload an RHP document to enable comparison
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Compare Button */}
               {rhp && (
-                <div className="absolute top-3 right-3 z-10">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="p-2 hover:bg-gray/50 "
-                        disabled={deleting}
-                        title="Delete Document"
-                      >
-                        {deleting ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Document</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this document and its
-                          linked RHP? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteRhp}>
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                <div className="px-4 py-2 border-t border-gray-200">
+                  <Button
+                    className="w-full bg-[#4B2A06] hover:bg-[#6b3a0a] text-white font-semibold"
+                    onClick={handleCreateReport}
+                    disabled={comparing}
+                  >
+                    {comparing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <BarChart3 className="mr-1 h-4 w-4" />
+                        Compare Documents
+                      </>
+                    )}
+                  </Button>
                 </div>
               )}
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  RHP Document
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {rhp ? (
-                  <div className="space-y-2">
-                    <p>
-                      <strong>Name:</strong> {rhp.name}
-                    </p>
-                    <p>
-                      <strong>Namespace:</strong> {rhp.rhpNamespace}
-                    </p>
-                    <p>
-                      <strong>Uploaded:</strong>{" "}
-                      {new Date(rhp.uploadedAt).toLocaleDateString()}
-                    </p>
-                    <Badge variant="secondary">RHP</Badge>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No RHP document found</p>
-                    <p className="text-sm text-gray-500">
-                      Upload an RHP document to enable comparison
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-          {/* Compare Button */}
-          {rhp && (
-            <Button
-              onClick={handleCreateReport}
-              disabled={comparing}
-              className="mt-4 w-48 bg-[#4B2A06] hover:bg-[#4B2A06] text-white font-semibold text-lg"
-            >
-              {comparing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  Compare <span className="ml-2">⇄</span>
-                </>
-              )}
-            </Button>
+            </>
           )}
         </div>
-        {/* Vertical Divider */}
-        {/* Right: Summary/Report */}
-        <div className="w-[50vw] flex-2 flex flex-col px-5 py-5 bg-gray-50">
-          {/* Header row with controls */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="font-bold text-lg">Comparision Report</div>
-            <div className="flex items-center gap-2">
-              {/* Zoom controls */}
-              <button
-                className="p-2 rounded hover:bg-gray-100"
-                onClick={handleZoomOut}
-                title="Zoom Out"
-                disabled={zoom <= 1}
-              >
-                <Minus className="h-5 w-5" />
-              </button>
-              <span className="w-12 text-center">
-                {Math.round(zoom * 100)}%
-              </span>
-              <button
-                className="p-2 rounded hover:bg-gray-100"
-                onClick={handleZoomIn}
-                title="Zoom In"
-                disabled={zoom >= 2}
-              >
-                <Plus className="h-5 w-5" />
-              </button>
-              {/* Download DOCX */}
-              <button
-                className="p-2 rounded hover:bg-gray-100"
-                onClick={handleDownloadDocx}
-                title="Download DOCX"
-              >
-                <FileText className="h-5 w-5" />
-              </button>
-              {/* Download PDF */}
-              <button
-                className="p-2 rounded hover:bg-gray-100"
-                onClick={handleDownloadPdf}
-                title="Download PDF"
-              >
-                <Download className="h-5 w-5" />
-              </button>
-              {/* Print */}
-              <button
-                className="p-2 rounded hover:bg-gray-100"
-                onClick={handlePrint}
-                title="Print"
-              >
-                <Printer className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-          {comparing ? (
-            <div className="flex flex-1 items-center justify-center">
-              <Loader2 className="h-12 w-12 animate-spin text-[#4B2A06]" />
-              <span className="ml-4 text-lg">Loading Summary......</span>
-            </div>
-          ) : selectedReport ? (
-            <div className="flex-1">
-              <style>{`
-              .summary-content table {
-                border-collapse: collapse;
-                width: 100%;
-                border: 2px solid #d1d5de;
-                margin: 16px 0;
-                font-size: 13px;
-                background: #f1eada;
-              }
-              .summary-content th, .summary-content td {
-                border: 1px solid #d1d5de;
-                padding: 6px 8px;
-                text-align: left;
-              }
-              .summary-content th {
-                background: #f1eada;
-                font-weight: 600;
-              }
-              .summary-content tr:nth-child(even) td {
-                background: #f1eada;
-              }
-            `}</style>
-              {/* HTML Content Display */}
-              <div
-                className="h-[78vh] hide-scrollbar border-2 border-gray-200 bg-[#f6f2e9] rounded-md overflow-y-auto"
-                style={{ zoom: zoom }}
-              >
-                <div
-                  ref={reportRef}
-                  className="summary-content text-foreground/90 leading-relaxed py-8 px-5"
-                  style={{
-                    width: "100%",
-                    wordBreak: "break-word",
-                    overflowWrap: "break-word",
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: stripStyleTags(selectedReport.content),
-                  }}
-                />
+
+        {/* Sidebar Toggle Button (when closed) */}
+        {!sidebarOpen && (
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="absolute top-[12vh] left-3 z-50 p-2 bg-white border border-gray-200 rounded-md shadow-md hover:bg-gray-50"
+          >
+            <Sidebar className="h-5 w-5" />
+          </button>
+        )}
+
+        {/* Main Content Area */}
+        <div
+          className={`flex-1 flex h-full flex-col lg:flex-row transition-all duration-300 ease-in-out ${
+            sidebarOpen ? "ml-60" : "ml-16"
+          }`}
+        >
+          {/* Middle: Comparison Report */}
+          <div className="flex-1 lg:w-[50%] flex flex-col bg-gray-50">
+            {/* Report Header */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 md:p-4 bg-white gap-2 sm:gap-0">
+              <div className="font-bold text-md md:text-lg">
+                Comparison Report
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {/* Zoom controls */}
+                <button
+                  className="p-1  rounded hover:bg-gray-100"
+                  onClick={handleZoomOut}
+                  title="Zoom Out"
+                  disabled={zoom <= 1}
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="w-8 text-center text-sm">
+                  {Math.round(zoom * 100)}%
+                </span>
+                <button
+                  className="p-1 rounded hover:bg-gray-100"
+                  onClick={handleZoomIn}
+                  title="Zoom In"
+                  disabled={zoom >= 2}
+                >
+                  <Plus className="h-4 w-4 " />
+                </button>
+                {/* Download DOCX */}
+                <button
+                  className="p-1  rounded hover:bg-gray-100"
+                  onClick={handleDownloadDocx}
+                  title="Download DOCX"
+                >
+                  <FileText className="h-4 w-4 " />
+                </button>
+                {/* Download PDF */}
+                <button
+                  className="p-1  rounded hover:bg-gray-100"
+                  onClick={handleDownloadPdf}
+                  title="Download PDF"
+                >
+                  <Download className="h-4 w-4 " />
+                </button>
+                {/* Print */}
+                <button
+                  className="p-1 rounded hover:bg-gray-100"
+                  onClick={handlePrint}
+                  title="Print"
+                >
+                  <Printer className="h-4 w-4 " />
+                </button>
               </div>
             </div>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-400">
-              No summary available.
+
+            {/* Report Content */}
+            <div className=" bg-white flex-1 overflow-hidden">
+              {comparing ? (
+                <div className="flex flex-1 items-center justify-center">
+                  <Loader2 className="h-12 w-12 animate-spin text-[#4B2A06]" />
+                  <span className="ml-4 text-lg">Loading Summary......</span>
+                </div>
+              ) : selectedReport ? (
+                <div className="h-full mx-5 my-4 ">
+                  <style>{`
+                  .summary-content table {
+                    border-collapse: collapse;
+                    width: 100%;
+                    border: 2px solid #d1d5de;
+                    margin: 16px 0;
+                    font-size: 13px;
+                    background: #f1eada;
+                  }
+                  .summary-content th, .summary-content td {
+                    border: 1px solid #d1d5de;
+                    padding: 6px 8px;
+                    text-align: left;
+                  }
+                  .summary-content th {
+                    background: #f1eada;
+                    font-weight: 600;
+                  }
+                  .summary-content tr:nth-child(even) td {
+                    background: #f1eada;
+                  }
+                `}</style>
+                  {/* HTML Content Display */}
+                  <div
+                    className="h-[95%] hide-scrollbar bg-[#f1eada] rounded-md overflow-y-auto"
+                    style={{ zoom: zoom }}
+                  >
+                    <div
+                      ref={reportRef}
+                      className="summary-content text-foreground/90 leading-relaxed py-8 px-5"
+                      style={{
+                        width: "100%",
+                        wordBreak: "break-word",
+                        overflowWrap: "break-word",
+                      }}
+                      dangerouslySetInnerHTML={{
+                        __html: stripStyleTags(selectedReport.content),
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 h-full flex items-center justify-center text-gray-400">
+                  <div className="text-center ">
+                    <BarChart3 className="h-12 w-12 m-auto mb-4 " />
+                    <p>No comparison report available</p>
+                    <p className="text-sm">
+                      Click "Compare Documents" to generate a report
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Right: RHP Summary Panel */}
+          <div className="lg:w-[50%] border-l mt-[-40vh] lg:mt-0 border-gray-200 bg-white flex flex-col">
+            <div className="px-2 md:px-4 lg:px-5 pb-2 md:pb-4 lg:pb-4.5 lg:mt-[2vh] flex-1 overflow-hidden">
+              {rhp ? (
+                <SummaryPanel
+                  isDocumentProcessed={true}
+                  currentDocument={rhp}
+                  onProcessingChange={setIsRhpSummaryProcessing}
+                  selectedSummaryId={selectedRhpSummaryId}
+                  onSummarySelect={setSelectedRhpSummaryId}
+                />
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">
+                  <div className="text-center">
+                    <AlertCircle className="h-12 w-12 mx-auto mb-4" />
+                    <p>No RHP document available</p>
+                    <p className="text-sm">
+                      Upload an RHP document to view summary
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
