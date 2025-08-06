@@ -231,7 +231,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <span className="cursor-pointer">
-                  <Avatar className="h-[2vw] w-[2vw] min-w-[32px] min-h-[32px]">
+                  <Avatar className="h-[5vh] w-[2.5vw] min-w-[32px] min-h-[32px]">
                     <AvatarFallback className="bg-primary text-primary-foreground">
                       {getUserInitials(user.email)}
                     </AvatarFallback>
