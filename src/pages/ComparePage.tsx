@@ -176,7 +176,12 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
           if (drhpId) localStorage.removeItem(`report_processing_${drhpId}`);
         } else if (cleanStatus === "processing") {
           setComparing(true);
-          if (drhpId) localStorage.setItem(`report_processing_${drhpId}`, "1");
+          if (drhpId) {
+            const key = `report_processing_${drhpId}`;
+            if (!localStorage.getItem(key)) {
+              localStorage.setItem(key, Date.now().toString());
+            }
+          }
         } else {
           setComparing(false);
           if (drhpId) localStorage.removeItem(`report_processing_${drhpId}`);
@@ -219,19 +224,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     return () => window.removeEventListener("focus", onFocus);
   }, [drhpId, drhp?.namespace, rhp?.rhpNamespace]);
 
-  useEffect(() => {
-    // Polling for new reports if processing is ongoing
-    if (!drhpId) return;
-    let interval: NodeJS.Timeout | null = null;
-    if (comparing) {
-      interval = setInterval(async () => {
-        await fetchDocumentsAndReports();
-      }, 5000); // Poll every 5 seconds
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [comparing, drhpId]);
+  // Removed periodic polling; rely on socket "completed" event to refresh
 
   useEffect(() => {
     // Refetch reports on window focus if processing is ongoing
