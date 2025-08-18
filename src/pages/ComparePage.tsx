@@ -254,7 +254,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     // Find the previous report for this DRHP/RHP pair
     const previousReport = reports.find(
       (r) =>
-        r.drhpNamespace === drhp.namespace ||
+        r.drhpNamespace === drhp.namespace &&
         r.rhpNamespace === rhp.rhpNamespace
     );
     try {

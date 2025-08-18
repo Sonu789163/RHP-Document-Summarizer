@@ -210,7 +210,7 @@ export const reportService = {
   ): Promise<{ jobId: string; report: Report; reportId: string }> {
     const token = localStorage.getItem("accessToken");
     const response = await axios.post(
-      `${API_URL}/reports/create`,
+      `${API_URL}/reports/create-report`,
       {
         drhpNamespace,
         rhpNamespace,
@@ -242,9 +242,17 @@ export const reportService = {
 
   async delete(id: string): Promise<void> {
     const token = localStorage.getItem("accessToken");
-    await axios.delete(`${API_URL}/reports/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    try {
+      await axios.delete(`${API_URL}/reports/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        // If the report doesn't exist, treat as successfully deleted
+        return;
+      }
+      throw error;
+    }
   },
 
   async downloadPdf(id: string): Promise<Blob> {
