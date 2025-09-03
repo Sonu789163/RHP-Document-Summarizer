@@ -44,6 +44,28 @@ export default function ChatSummaryLayout() {
 
   const chatId = searchParams.get("chatId");
 
+  // Handle click outside to close sidebar
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sidebarOpen) {
+        const sidebar = document.querySelector('[data-sidebar="true"]');
+
+        // Close if click is outside the sidebar area
+        if (sidebar && !sidebar.contains(event.target as Node)) {
+          setSidebarOpen(false);
+        }
+      }
+    };
+
+    if (sidebarOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [sidebarOpen]);
+
   useEffect(() => {
     let isMounted = true;
     const fetchAndSetDocument = async () => {
@@ -156,12 +178,14 @@ export default function ChatSummaryLayout() {
           sidebarOpen ? "w-[15%] min-w-[200px]" : "w-0 min-w-0 max-w-0"
         } bg-white shadow-xl`}
         style={{ overflow: "hidden" }}
+        data-sidebar="true"
       >
         {sidebarOpen && (
           <Sidebar
             selectedDocumentId={currentDocument?.id}
             selectedChatId={chatId}
             onBack={() => setSidebarOpen(false)}
+            onClose={() => setSidebarOpen(false)}
             onSelectDocument={handleSelectDocument}
             onSelectChat={handleSelectChat}
             onNewChat={handleNewChat}
@@ -230,9 +254,9 @@ export default function ChatSummaryLayout() {
           {/* Divider */}
           <div
             style={{
-              width: 4,
+              width: 2,
               cursor: "col-resize",
-              background: "#f1eada",
+              background: "#4B2A06",
               zIndex: 5,
               display: "flex",
               alignItems: "center",

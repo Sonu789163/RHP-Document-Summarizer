@@ -4,6 +4,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
+
+/* Custom scrollbar styling for webkit browsers */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
 @layer base {
   :root {
     /* Light mode variables (Refined Palette) */
@@ -124,7 +153,7 @@
     /* Kept original as it works for dark mode */
     background-image: radial-gradient(
       circle at top right,
-      rgba(255, 255, 255, 0.200) 0%,
+      rgba(255, 255, 255, 0.2) 0%,
       rgba(255, 255, 255, 0) 30%
     );
   }
@@ -173,21 +202,4 @@
       content: "";
     }
   }
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 0px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-muted; /* Use muted background for track */
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground rounded-full; /* Use muted foreground for thumb */
-}
-
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-primary; /* Use primary color on hover */
 }

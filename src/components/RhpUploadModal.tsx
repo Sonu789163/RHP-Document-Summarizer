@@ -127,6 +127,7 @@ export const RhpUploadModal: React.FC<RhpUploadModalProps> = ({
               id="file"
               type="file"
               accept=".pdf"
+              className="file:bg-[#F5F3EF] file:text-[#4B2a09] file:text-sm file:font-medium file:border-none file:cursor-pointer border border-[#E5E5E5] rounded-md"
               onChange={handleFileSelect}
               ref={fileInputRef}
               disabled={uploading}

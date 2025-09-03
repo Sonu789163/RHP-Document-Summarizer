@@ -121,6 +121,48 @@ export const documentService = {
 
 // Chat Services
 export const chatService = {
+  // Current user's chats
+  getMine: async () => {
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.get(`${API_URL}/chats`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+  // Admin: get all chats
+  getAllAdmin: async () => {
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.get(`${API_URL}/chats/admin`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+
+  // Admin: get chat monitoring stats
+  getStats: async (): Promise<{
+    totalChats: number;
+    chatsPerUser: Array<{
+      _id: { microsoftId?: string; userId?: string };
+      count: number;
+    }>;
+    chatsPerDocument: Array<{ _id: string; count: number }>;
+    messagesPerChat: Array<{ id: string; count: number; documentId: string }>;
+  }> => {
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.get(`${API_URL}/chats/admin/stats`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+
+  // Admin: delete any chat
+  deleteAnyAdmin: async (id: string) => {
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.delete(`${API_URL}/chats/admin/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
   getByDocumentId: async (documentId: string) => {
     const token = localStorage.getItem("accessToken");
     const response = await axios.get(
@@ -173,6 +215,8 @@ export interface Summary {
   content: string;
   updatedAt: string;
   documentId: string;
+  userId?: string;
+  microsoftId?: string;
 }
 
 export interface Report {
@@ -184,6 +228,8 @@ export interface Report {
   rhpId: string;
   drhpNamespace: string;
   rhpNamespace: string;
+  userId?: string;
+  microsoftId?: string;
 }
 
 export const reportService = {
@@ -288,6 +334,14 @@ export const reportService = {
 };
 
 export const summaryService = {
+  async getAll(): Promise<Summary[]> {
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.get(`${API_URL}/summaries`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+
   async getByDocumentId(documentId: string): Promise<Summary[]> {
     const token = localStorage.getItem("accessToken");
     const response = await axios.get(
@@ -333,5 +387,8 @@ export const summaryService = {
     return response.data;
   },
 };
+
+// OpenAI Monitoring Services
+// OpenAI monitoring removed
 
 export default axios;

@@ -17,9 +17,32 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { authService } from "@/services/authService";
 
+// Define allowed domains and special emails - this should match backend configuration
+const ALLOWED_DOMAINS = ["excollo.com"];
+const ALLOWED_SPECIAL_EMAILS = ["test@gmail.com"];
+
 const formSchema = z
   .object({
-    email: z.string().email({ message: "Invalid email address." }),
+    email: z
+      .string()
+      .email({ message: "Invalid email address." })
+      .refine(
+        (email) => {
+          // Check if this is a special allowed email
+          if (ALLOWED_SPECIAL_EMAILS.includes(email.toLowerCase())) {
+            return true;
+          }
+
+          // Check if domain is allowed
+          const domain = email.split("@")[1]?.toLowerCase();
+          return domain && ALLOWED_DOMAINS.includes(domain);
+        },
+        {
+          message: `Only emails from these domains are allowed: ${ALLOWED_DOMAINS.join(
+            ", "
+          )} or specific emails: ${ALLOWED_SPECIAL_EMAILS.join(", ")}`,
+        }
+      ),
     password: z
       .string()
       .min(8, { message: "Password must be at least 8 characters long." })
@@ -72,6 +95,7 @@ export function RegisterForm({
       const errorMessage =
         error?.response?.data?.message ||
         "Registration failed. Please try again.";
+
       if (errorMessage.toLowerCase().includes("user already exists")) {
         toast.error("Email already registered.", {
           action: {
@@ -79,6 +103,18 @@ export function RegisterForm({
             onClick: onSwitchToLogin,
           },
         });
+      } else if (
+        errorMessage.toLowerCase().includes("domain not allowed") ||
+        errorMessage.toLowerCase().includes("only emails from")
+      ) {
+        toast.error(
+          `You are not eligible to register on this platform. Only users with email addresses from ${ALLOWED_DOMAINS.join(
+            ", "
+          )} or specific emails: ${ALLOWED_SPECIAL_EMAILS.join(
+            ", "
+          )} are allowed to register.`,
+          { duration: 6000 }
+        );
       } else {
         toast.error(errorMessage);
       }
@@ -109,7 +145,7 @@ export function RegisterForm({
                     {...field}
                   />
                 </FormControl>
-                {/* <FormMessage /> */}
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -145,7 +181,7 @@ export function RegisterForm({
                     </button>
                   </div>
                 </FormControl>
-                {/* <FormMessage /> */}
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -183,7 +219,7 @@ export function RegisterForm({
                     </button>
                   </div>
                 </FormControl>
-                {/* <FormMessage /> */}
+                <FormMessage />
               </FormItem>
             )}
           />

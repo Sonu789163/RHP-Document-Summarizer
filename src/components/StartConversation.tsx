@@ -12,6 +12,11 @@ import {
   X,
   Star,
   BarChart3,
+  Users,
+  Globe,
+  Shield,
+  ArrowLeft,
+  Plus,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -32,6 +37,7 @@ import { toast } from "sonner";
 import { useRefreshProtection } from "../hooks/useRefreshProtection";
 import { Navbar } from "./Navbar";
 import { RhpUploadModal } from "./RhpUploadModal";
+import { Sidebar } from "./Sidebar";
 
 export const StartConversation: React.FC = () => {
   const [documents, setDocuments] = useState<any[]>([]);
@@ -56,6 +62,7 @@ export const StartConversation: React.FC = () => {
   const [highlightedDocId, setHighlightedDocId] = useState<string | null>(null);
   const docRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [showRhpModal, setShowRhpModal] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useRefreshProtection(
     isUploading,
@@ -104,7 +111,8 @@ export const StartConversation: React.FC = () => {
     documentService
       .getAll()
       .then((docs) => {
-        setDocuments(docs);
+        const drhpOnly = (docs || []).filter((d: any) => d?.type === "DRHP");
+        setDocuments(drhpOnly);
         setLoading(false);
       })
       .catch((err) => {
@@ -273,47 +281,227 @@ export const StartConversation: React.FC = () => {
     setUploadedDoc(null);
   };
 
+  // Sidebar handlers
+  const handleSidebarBack = () => {
+    navigate("/dashboard");
+  };
+
+  const handleSidebarClose = () => {
+    setSidebarOpen(false);
+  };
+
+  const handleSelectDocument = (doc: any) => {
+    if (doc) {
+      navigate(`/doc/${doc.id}`);
+    }
+    setSidebarOpen(false);
+  };
+
+  const handleSelectChat = (chat: any) => {
+    if (chat) {
+      navigate(`/doc/${chat.documentId}?chatId=${chat.id}`);
+    }
+    setSidebarOpen(false);
+  };
+
+  const handleNewChat = () => {
+    setSidebarOpen(false);
+  };
+
+  // Handle click outside to close sidebar
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sidebarOpen) {
+        const sidebar = document.querySelector('[data-sidebar="true"]');
+        const hamburger = document.querySelector('[data-hamburger="true"]');
+
+        if (
+          sidebar &&
+          !sidebar.contains(event.target as Node) &&
+          hamburger &&
+          !hamburger.contains(event.target as Node)
+        ) {
+          setSidebarOpen(false);
+        }
+      }
+    };
+
+    if (sidebarOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [sidebarOpen]);
+
   return (
     <div
       className="min-h-screen bg-white flex flex-col font-sans"
       style={{ fontFamily: "Inter, Arial, sans-serif" }}
     >
-      <Navbar showSearch searchValue={search} onSearchChange={setSearch} />
+      <Navbar
+        showSearch
+        searchValue={search}
+        onSearchChange={setSearch}
+        onSidebarOpen={() => setSidebarOpen(true)}
+        sidebarOpen={sidebarOpen}
+      />
+
+      {/* Sidebar */}
+      <div
+        className={`fixed top-0 left-0 h-full z-50 transition-all duration-300 ${
+          sidebarOpen ? "w-[15%] min-w-[200px]" : "w-0 min-w-0 max-w-0"
+        } bg-white shadow-xl`}
+        style={{ overflow: "hidden" }}
+        data-sidebar="true"
+      >
+        {sidebarOpen && (
+          <div className="h-full flex flex-col">
+            {/* Top Navigation Bar */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <button
+                onClick={handleSidebarBack}
+                className="flex items-center gap-2 text-[#7C7C7C] hover:text-[#4B2A06] transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5" />
+                <span className="text-sm font-medium">Back</span>
+              </button>
+              <button
+                onClick={handleSidebarClose}
+                className="text-[#7C7C7C] hover:text-[#4B2A06] transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* New Chat Button */}
+            <div className="p-4">
+              <button
+                className="w-full flex items-center justify-between bg-[#ECE9E2] rounded-2xl px-5 py-4 text-[#4B2A06] text-[1.1rem] font-bold shadow-none border-none hover:bg-[#E0D7CE] transition"
+                style={{
+                  fontWeight: 700,
+                  fontSize: "1.1rem",
+                  borderRadius: "18px",
+                }}
+                onClick={handleNewChat}
+              >
+                <span>New Chat</span>
+                <Plus className="h-7 w-7 text-[#4B2A06]" />
+              </button>
+            </div>
+
+            {/* Sidebar Content */}
+            <div className="flex-1 overflow-hidden">
+              <Sidebar
+                selectedDocumentId={null}
+                selectedChatId={null}
+                onBack={handleSidebarBack}
+                onClose={handleSidebarClose}
+                onSelectDocument={handleSelectDocument}
+                onSelectChat={handleSelectChat}
+                onNewChat={handleNewChat}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Main Content */}
-      <main className="flex-1 flex flex-col pt-[2vw] pb-[4vh] relative max-w-[92vw] mx-auto w-full min-h-0">
-        {/* Upload button at top right */}
-        <div className="flex justify-between mt-[1vw]">
-          <h1
-            className="text-5xl font-extrabold mb-[2vw]"
-            style={{ color: "#232323", fontFamily: "Inter, Arial, sans-serif" }}
-          >
-            Start New <span style={{ color: "#FF7A1A" }}>Conversation</span>
-          </h1>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-            accept=".pdf"
-            className="hidden outline-none"
-            disabled={isUploading}
-          />
-          <button
-            className="flex items-center gap-[0.5vw] bg-[#4B2A06] text-white font-semibold px-[2vw] py-0 rounded-xl shadow-lg text-lg transition hover:bg-[#3A2004] focus:outline-none my-[1vw]"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-          >
-            {isUploading ? (
-              <>
-                <Loader2 className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px] animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                Upload{" "}
-                <Upload className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px]" />
-              </>
-            )}
-          </button>
+      <main
+        className={`flex-1 flex flex-col pt-[1.5vw] pb-[4vh] relative max-w-[92vw] mx-auto w-full min-h-0 transition-all duration-300 ${
+          sidebarOpen ? "ml-[15%] max-w-[77vw]" : ""
+        }`}
+      >
+        {/* Header Section with Title and Upload Button */}
+        <div className="flex flex-col space-y-[1.5vw] mb-[1.5vw]">
+          {/* Title and Admin Navigation Row */}
+          <div className="flex justify-between items-start">
+            <div className="flex flex-col">
+              <h1
+                className="text-5xl font-extrabold"
+                style={{
+                  color: "#232323",
+                  fontFamily: "Inter, Arial, sans-serif",
+                }}
+              >
+                Start New <span style={{ color: "#FF7A1A" }}>Conversation</span>
+              </h1>
+
+              {/* Admin Navigation Links */}
+              {user?.role === "admin" && (
+                <div className="flex gap-[1vw] mt-[1vw]">
+                  <button
+                    onClick={() => navigate("/admin")}
+                    className="flex items-center gap-[0.5vw] bg-[#4B2A06] text-white font-semibold px-[1.5vw] py-[0.5vw] rounded-lg text-base hover:bg-[#3A2004] transition-colors"
+                  >
+                    <Shield className="h-[1vw] w-[1vw] min-w-[16px] min-h-[16px]" />
+                    Admin Dashboard
+                  </button>
+                  <button
+                    onClick={() => navigate("/admin/users")}
+                    className="flex items-center gap-[0.5vw] bg-[#FF7A1A] text-white font-semibold px-[1.5vw] py-[0.5vw] rounded-lg text-base hover:bg-[#E56A0A] transition-colors"
+                  >
+                    <Users className="h-[1vw] w-[1vw] min-w-[16px] min-h-[16px]" />
+                    User Management
+                  </button>
+                  <button
+                    onClick={() => navigate("/admin/domains")}
+                    className="flex items-center gap-[0.5vw] bg-[#FF7A1A] text-white font-semibold px-[1.5vw] py-[0.5vw] rounded-lg text-base hover:bg-[#E56A0A] transition-colors"
+                  >
+                    <Globe className="h-[1vw] w-[1vw] min-w-[16px] min-h-[16px]" />
+                    Domain Config
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Upload Button - Always visible but with different behavior for non-admins */}
+            <div className="flex flex-col items-end">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                accept=".pdf"
+                className="hidden outline-none"
+                disabled={isUploading || user?.role !== "admin"}
+              />
+              <button
+                className="flex items-center gap-[0.5vw] bg-[#4B2A06] text-white font-semibold px-[1vw] h-[8vh] py-0 rounded-xl shadow-lg text-lg transition hover:bg-[#3A2004] focus:outline-none"
+                onClick={() => {
+                  if (user?.role === "admin") {
+                    fileInputRef.current?.click();
+                  } else {
+                    toast.error(
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 text-destructive" />
+                        <span>Only administrators can upload documents.</span>
+                      </div>,
+                      { duration: 4000 }
+                    );
+                  }
+                }}
+                disabled={isUploading}
+                title={
+                  user?.role !== "admin"
+                    ? "Only admins can upload documents"
+                    : undefined
+                }
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px] animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Upload DRHP{" "}
+                    <Upload className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px]" />
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
         {/* Filters and Search */}
         <div className="flex gap-[1vw] mb-[2vw] items-center">
@@ -365,7 +553,11 @@ export const StartConversation: React.FC = () => {
         </div>
         {/* Document Grid - make this area scrollable only */}
         <div className="flex-1 min-h-0">
-          <div className="h-[60vh] overflow-y-auto">
+          <div
+            className={`${
+              user?.role === "admin" ? "h-[55vh]" : "h-[62.5vh]"
+            } overflow-y-auto`}
+          >
             {loading ? (
               <div className="flex justify-center items-center h-[10vh] text-lg text-muted-foreground">
                 Loading documents...
@@ -375,7 +567,7 @@ export const StartConversation: React.FC = () => {
                 {error}
               </div>
             ) : (
-              <div className="grid grid-cols-4 gap-[2vw] mb-[3vw]">
+              <div className="grid grid-cols-4 gap-[1.5vw] mb-[1vw]">
                 {filteredDocs.length === 0 ? (
                   <div className="col-span-4 text-center text-muted-foreground">
                     No documents found.
@@ -463,12 +655,19 @@ export const StartConversation: React.FC = () => {
                             <Pencil className="h-[1vw] w-[1vw] min-w-[16px] min-h-[16px]" />
                           </button>
                           <button
-                            className="ml-[0.5vw] text-muted-foreground hover:text-destructive p-[0.3vw]"
+                            className="ml-[0.5vw] text-muted-foreground hover:text-destructive p-[0.3vw] disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteDoc(doc);
+                              if (user?.role === "admin") {
+                                handleDeleteDoc(doc);
+                              }
                             }}
-                            title="Delete document"
+                            disabled={user?.role !== "admin"}
+                            title={
+                              user?.role !== "admin"
+                                ? "Only admins can delete documents"
+                                : "Delete document"
+                            }
                           >
                             <Trash2 className="h-[1vw] w-[1vw] min-w-[16px] min-h-[16px]" />
                           </button>
@@ -509,6 +708,7 @@ export const StartConversation: React.FC = () => {
                           }}
                         >
                           {doc.name}
+                          {doc.relatedRhpId ? " +drhp" : ""}
                         </span>
                       )}
                       <span className="text-[#A1A1AA] text-sm">

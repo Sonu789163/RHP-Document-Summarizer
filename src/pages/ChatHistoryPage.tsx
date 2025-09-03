@@ -1,96 +1,174 @@
-import React from "react";
-// import { TopNav } from "@/components/TopNav";
+import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-
-// Dummy chat data (replace with real data fetching later)
-const dummyChats = [
-  {
-    id: 1,
-    user: "You",
-    message: "How do I generate a summary?",
-    date: "2024-06-01 17:00",
-  },
-  {
-    id: 2,
-    user: "AI",
-    message: "Click the 'Generate SOP Summary' button.",
-    date: "2024-06-01 17:01",
-  },
-  {
-    id: 3,
-    user: "You",
-    message: "Show me the last uploaded document.",
-    date: "2024-05-29 10:15",
-  },
-  // ...more dummy data
-];
+import { chatService } from "@/services/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+import { Navbar } from "@/components/Navbar";
+import { Search, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function ChatHistoryPage() {
-  // Filter for last 30 days
-  const now = new Date();
-  const chats = dummyChats.filter((chat) => {
-    const chatDate = new Date(chat.date);
-    return (now.getTime() - chatDate.getTime()) / (1000 * 60 * 60 * 24) <= 30;
-  });
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const [loading, setLoading] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [chats, setChats] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Get the last namespace from the most recent chat
-  const lastNamespace = chats.length > 0 ? chats[0].id.toString() : null;
+  const fetchChats = async () => {
+    setLoading(true);
+    try {
+      const data =
+        showAll && isAdmin
+          ? await chatService.getAllAdmin()
+          : await chatService.getMine();
+      setChats(Array.isArray(data) ? data : []);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchChats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAll]);
+
+  const chatsLast30Days = useMemo(() => {
+    const now = new Date().getTime();
+    const thirtyDays = 1000 * 60 * 60 * 24 * 30;
+    return chats.filter((c) => {
+      const ts = new Date(c.updatedAt || c.createdAt || Date.now()).getTime();
+      return now - ts <= thirtyDays;
+    });
+  }, [chats]);
+
+  const filteredChats = useMemo(() => {
+    if (!searchTerm) return chatsLast30Days;
+    return chatsLast30Days.filter((chat) => {
+      const title =
+        chat.title || `Chat ${String(chat.id || chat._id).slice(-6)}`;
+      const documentId = chat.documentId || "";
+      return (
+        title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        documentId.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    });
+  }, [chatsLast30Days, searchTerm]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* <TopNav lastNamespace={lastNamespace} /> */}
-      <div className="flex-1 flex flex-col items-center p-8">
-        <Card className="w-full max-w-6xl border-border bg-card shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-foreground">
-              Chat History (Last 30 Days)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[60vh] pr-4">
-              {dummyChats.length === 0 ? (
-                <div className="text-muted-foreground text-center py-8">
-                  No chat history in the last 30 days.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {dummyChats.map((chat) => (
-                    <div
-                      key={chat.id}
-                      className={cn(
-                        "flex flex-col gap-1 rounded-lg p-4 border",
-                        chat.user === "You"
-                          ? "bg-primary/10 border-primary/20"
-                          : "bg-muted border-border"
-                      )}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span
-                          className={cn(
-                            "font-semibold",
-                            chat.user === "You"
-                              ? "text-primary"
-                              : "text-foreground"
-                          )}
-                        >
-                          {chat.user}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {chat.date}
-                        </span>
-                      </div>
-                      <div className="text-foreground/90 mt-1">
-                        {chat.message}
+    <div className="min-h-screen bg-white">
+      <Navbar
+        title="Chat History"
+        showSearch={false}
+        searchValue=""
+        onSearchChange={() => {}}
+      />
+
+      <div className="w-[90vw] mx-auto py-8">
+        {/* Main Title and Filter */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Chat History (Last 30 Days)
+          </h1>
+          {isAdmin && (
+            <div className="text-sm text-gray-500">
+              {isAdmin && (
+                <Button
+                  size="sm"
+                  onClick={() => setShowAll((v) => !v)}
+                >
+                  {showAll ? "Showing: All Users" : "Showing: My Chats"}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search Chats"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-gray-100 border-gray-200 rounded-lg"
+            />
+          </div>
+        </div>
+
+        {/* Chat Sessions List */}
+        <div className="space-y-4">
+          {loading ? (
+            <div className="text-center py-8 text-gray-600">
+              Loading chats...
+            </div>
+          ) : filteredChats.length === 0 ? (
+            <div className="text-center py-8 text-gray-600">
+              No chat history in the last 30 days.
+            </div>
+          ) : (
+            filteredChats.map((chat) => (
+              <Card
+                key={chat.id || chat._id}
+                className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 text-lg mb-2">
+                        {chat.title || "New Chat"}
+                      </h3>
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-600">
+                          Messages:{" "}
+                          {Array.isArray(chat.messages)
+                            ? chat.messages.length
+                            : 0}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Document: {chat.documentId || "—"}
+                        </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </CardContent>
-        </Card>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>View Chat</DropdownMenuItem>
+                        <DropdownMenuItem>Delete Chat</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+
+        {/* Admin Toggle Button */}
+        {isAdmin && (
+          <div className="mt-6 flex justify-center">
+            <Button
+              variant="outline"
+              onClick={() => setShowAll((v) => !v)}
+              className="px-6"
+            >
+              {showAll ? "Show My Chats Only" : "Show All Users' Chats"}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

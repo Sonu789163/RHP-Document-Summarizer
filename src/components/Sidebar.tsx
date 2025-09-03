@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { FileText, Plus, Search, ArrowLeft, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { FileText, Plus, Search, ArrowLeft, Trash2, X } from "lucide-react";
 import { documentService, chatService } from "@/services/api";
 import { format } from "date-fns";
 import {
@@ -63,6 +64,7 @@ export interface SidebarProps {
   onSelectChat?: (chat: any) => void;
   onNewChat?: () => void;
   onBack?: () => void;
+  onClose?: () => void;
 }
 export const Sidebar: React.FC<SidebarProps> = ({
   selectedDocumentId,
@@ -71,7 +73,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectChat,
   onNewChat,
   onBack,
+  onClose,
 }) => {
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState<any[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);
   const [docSearch, setDocSearch] = useState("");
@@ -211,10 +215,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         height: "100vh",
       }}
     >
-      {/* Back arrow */}
-      <button className="mb-4" onClick={onBack}>
-        <ArrowLeft className="h-6 w-6 text-[#7C7C7C]" />
-      </button>
+      {/* Top Navigation Bar with Back and Close buttons */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          className="flex items-center gap-2 text-[#7C7C7C] hover:text-[#4B2A06] transition-colors"
+          onClick={() => navigate("/dashboard")}
+        >
+          <ArrowLeft className="h-5 w-5" />
+          <span className="text-sm font-medium">Back</span>
+        </button>
+        <button
+          className="text-[#7C7C7C] hover:text-[#4B2A06] transition-colors"
+          onClick={onClose || onBack}
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
       {/* New Chat Button */}
       <button
         className="w-full flex items-center justify-between bg-[#ECE9E2] rounded-2xl px-5 py-4 mb-6 text-[#4B2A06] text-[1.1rem] font-bold shadow-none border-none hover:bg-[#E0D7CE] transition"
@@ -228,7 +244,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex-1 flex flex-col gap-6 min-h-0">
         {/* Documents Section (top 50%) */}
         <div
-          className="flex-1 min-h-0 overflow-y-auto pr-1"
+          className="flex-1 min-h-0 overflow-y-auto pr-1 scrollbar-hide"
           style={{ maxHeight: "50%" }}
         >
           <div className="flex items-center justify-between mb-4 mt-2">

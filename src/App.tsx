@@ -20,6 +20,10 @@ import { Loader2 } from "lucide-react";
 import { MainLayout } from "./components/MainLayout";
 import StartConversationPage from "./pages/StartConversationPage";
 import ComparePage from "./pages/ComparePage";
+import ProfilePage from "./pages/ProfilePage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
+import DomainConfigPage from "./pages/DomainConfigPage";
 import { useAuthProtection } from "./hooks/useAuthProtection";
 
 const queryClient = new QueryClient();
@@ -53,6 +57,13 @@ const AppRoutes = () => {
         <Route element={<ProtectedLayout />}>
           <Route path="/dashboard" element={<StartConversationPage />} />
           <Route path="/compare/:drhpId" element={<ComparePage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminDashboardPage />} />
+          <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/domains" element={<DomainConfigPage />} />
+
           <Route element={<MainLayout />}>
             <Route path="/doc/:namespace" element={<ChatSummaryLayout />} />
             <Route path="/chat-history" element={<ChatHistoryPage />} />

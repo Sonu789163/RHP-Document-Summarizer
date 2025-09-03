@@ -18,8 +18,31 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 import { authService } from "@/services/authService";
 import { useNavigate } from "react-router-dom";
 
+// Define allowed domains and special emails - this should match backend configuration
+const ALLOWED_DOMAINS = ["excollo.com"];
+const ALLOWED_SPECIAL_EMAILS = ["test@gmail.com"];
+
 const formSchema = z.object({
-  email: z.string().email({ message: "Invalid email address." }),
+  email: z
+    .string()
+    .email({ message: "Invalid email address." })
+    .refine(
+      (email) => {
+        // Check if this is a special allowed email
+        if (ALLOWED_SPECIAL_EMAILS.includes(email.toLowerCase())) {
+          return true;
+        }
+
+        // Check if domain is allowed
+        const domain = email.split("@")[1]?.toLowerCase();
+        return domain && ALLOWED_DOMAINS.includes(domain);
+      },
+      {
+        message: `Only emails from these domains are allowed: ${ALLOWED_DOMAINS.join(
+          ", "
+        )} or specific emails: ${ALLOWED_SPECIAL_EMAILS.join(", ")}`,
+      }
+    ),
   password: z
     .string()
     .min(6, { message: "Password must be at least 6 characters." }),
@@ -44,11 +67,27 @@ export function LoginForm() {
       );
       login(accessToken, refreshToken);
       toast.success("Login successful!");
-    } catch (error: Error | unknown) {
+    } catch (error: any) {
       const errorMessage =
-        error instanceof Error ? error.message :  
+        error?.response?.data?.message ||
+        error?.message ||
         "Login failed. Please check your credentials.";
-      toast.error(errorMessage);
+
+      if (
+        errorMessage.toLowerCase().includes("domain not allowed") ||
+        errorMessage.toLowerCase().includes("only emails from")
+      ) {
+        toast.error(
+          `You are not eligible to access this platform. Only users with email addresses from ${ALLOWED_DOMAINS.join(
+            ", "
+          )} or specific emails: ${ALLOWED_SPECIAL_EMAILS.join(
+            ", "
+          )} are allowed.`,
+          { duration: 6000 }
+        );
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -78,6 +117,7 @@ export function LoginForm() {
                   {...field}
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -122,7 +162,7 @@ export function LoginForm() {
             className="text-[#4B2A06] text-base font-semibold hover:underline focus:outline-none"
             onClick={(e) => {
               e.preventDefault();
-              console.log('Forgot Password link clicked');
+              console.log("Forgot Password link clicked");
               // Try direct window location change instead of React Router
               window.location.href = "/forgot-password";
             }}

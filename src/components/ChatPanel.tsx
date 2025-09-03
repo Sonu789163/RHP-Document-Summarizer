@@ -632,7 +632,7 @@ export function ChatPanel({
           )}
         </div>
       </ScrollArea>
-      <div className="p-4 flex-shrink-0 border-t">
+      <div className="p-4 flex-shrink-0 border-t mb-8 bg-white">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -707,7 +707,7 @@ export function DocumentPopover({
     setLoading(true);
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_API_URL}/documents/${documentId} ` //||"http://localhost:5000/api/documents/upload",
+        `${import.meta.env.VITE_API_URL}/documents/${documentId}`
       );
       setDocDetails(res.data);
     } catch (e) {
@@ -748,18 +748,21 @@ export function DocumentPopover({
     setShowPdf(true); // Show modal immediately
     const token = localStorage.getItem("accessToken");
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/documents/download/${documentId}`,
+      const response = await axios.get(
+        `${
+          import.meta.env.VITE_API_URL
+        }/documents/download/${documentId}?inline=1`,
         {
           headers: { Authorization: `Bearer ${token}` },
+          responseType: "blob",
         }
       );
-      if (!response.ok) throw new Error("Failed to fetch PDF");
-      const blob = await response.blob();
+      const blob = new Blob([response.data], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);
     } catch (err) {
-      alert("Failed to load PDF: " + err.message);
+      const message = err instanceof Error ? err.message : "Unknown error";
+      alert("Failed to load PDF: " + message);
       setShowPdf(false);
     } finally {
       setPdfLoading(false);
@@ -861,7 +864,7 @@ export function DocumentPopover({
                   />
                   <button
                     onClick={handleDownload}
-                    className="absolute bottom-4 right-4 px-4 py-2 bg-[#4B2A06] text-white rounded hover:bg-[#3A2004] shadow"
+                    className="absolute top-4 right-4 px-4 py-2 bg-[#4B2A06] text-white rounded hover:bg-[#3A2004] shadow"
                   >
                     Download PDF
                   </button>

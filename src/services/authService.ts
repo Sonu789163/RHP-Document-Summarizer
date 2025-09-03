@@ -87,22 +87,26 @@ export const authService = {
 
   // Forgot Password - Send reset email
   async forgotPassword(email: string): Promise<{ message: string }> {
-    console.log('authService.forgotPassword called with email:', email);
-    console.log('API URL:', `${API_URL}/auth/forgot-password`);
+    console.log("authService.forgotPassword called with email:", email);
+    console.log("API URL:", `${API_URL}/auth/forgot-password`);
     try {
       const response = await axios.post(`${API_URL}/auth/forgot-password`, {
         email,
       });
-      console.log('forgotPassword API response:', response.data);
+      console.log("forgotPassword API response:", response.data);
       return response.data;
     } catch (error) {
-      console.error('Error in authService.forgotPassword:', error);
+      console.error("Error in authService.forgotPassword:", error);
       throw error;
     }
   },
 
   // Reset Password with token
-  async resetPassword(email: string, token: string, password: string): Promise<{ message: string }> {
+  async resetPassword(
+    email: string,
+    token: string,
+    password: string
+  ): Promise<{ message: string }> {
     const response = await axios.post(`${API_URL}/auth/reset-password`, {
       email,
       token,

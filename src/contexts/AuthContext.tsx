@@ -15,6 +15,10 @@ import { authService } from "@/services/authService";
 interface User {
   userId: string;
   email: string;
+  name?: string;
+  role?: string; // User role (admin or user)
+  phoneNumber?: string;
+  gender?: "male" | "female" | "other" | "prefer-not-to-say";
   exp?: number; // JWT expiration timestamp
 }
 
@@ -233,7 +237,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (tokenCheckInterval.current) {
         clearInterval(tokenCheckInterval.current);
       }
-      tokenCheckInterval.current = setInterval(validateToken, 24 * 60 * 60 * 1000);
+      tokenCheckInterval.current = setInterval(
+        validateToken,
+        24 * 60 * 60 * 1000
+      );
 
       navigate("/dashboard");
     } catch (error) {
