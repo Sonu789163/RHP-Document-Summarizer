@@ -864,10 +864,10 @@ export function DocumentPopover({
                   />
                   <button
                     onClick={handleDownload}
-                    className="absolute top-4 right-10 px-4 py-2 bg-[#3c3c3c] text-white rounded hover:bg-[#3d3d3d] shadow"
+                    className="absolute top-4 right-20 px-4 py-2 bg-[#3c3c3c] text-white rounded hover:bg-[#3a3a3a] shadow"
                   >
                     <svg
-                      className="h-8 w-8 text-gray-600"
+                      className="h-5 w-5 text-white"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
