@@ -864,9 +864,21 @@ export function DocumentPopover({
                   />
                   <button
                     onClick={handleDownload}
-                    className="absolute top-4 right-4 px-4 py-2 bg-[#4B2A06] text-white rounded hover:bg-[#3A2004] shadow"
+                    className="absolute top-4 right-10 px-4 py-2 bg-[#3c3c3c] text-white rounded hover:bg-[#3d3d3d] shadow"
                   >
-                    Download PDF
+                    <svg
+                      className="h-8 w-8 text-gray-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      />
+                    </svg>
                   </button>
                 </>
               )
