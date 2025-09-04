@@ -39,13 +39,13 @@
     --background: 39 82% 96%; /* rgb(253, 246, 238) */
     --foreground: 30 26% 16%; /* rgb(51, 40, 30) */
 
-    --card: 39 46% 94%; /* rgb(247, 240, 232) */
+    --card: 37 3% 90%; /* rgb(230, 227, 222)  */
     --card-foreground: 30 26% 16%; /* Matches foreground */
 
-    --popover: 39 46% 94%; /* rgb(247, 240, 232) */
+    --popover: 37 3% 90%; /* rgb(230, 227, 222) */
     --popover-foreground: 30 26% 16%; /* Matches foreground */
 
-    --primary: 39 46% 94%; /* rgb(247, 240, 232) for button backgrounds */
+    --primary: 37 3% 90%; /* rgb(230, 227, 222) for button backgrounds */
     --primary-foreground: 30 26% 16%; /* Dark text for buttons */
 
     --secondary: 39 46% 90%; /* Slightly darker shade for secondary elements */

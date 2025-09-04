@@ -304,15 +304,15 @@ export default function AdminDashboardPage() {
           {/* Left Column - Key Metrics */}
           <div className="flex-shrink-0 w-[25vw]">
             <div className="grid grid-cols-2 gap-4">
-              <div className=" p-4">
+              <div>
                 <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-                  <CardTitle className="text-xl font-medium text-[rgba(99,117,135,1)]">
+                  <CardTitle className="text-md font-bold text-[rgba(114, 120, 127, 1)]">
                     Total Users
                   </CardTitle>
-                  <User className="h-4 ml-2 w-4 text-[rgba(99,117,135,1)]" />
+                  <User className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="  ml-2 text-2xl font-bold text-[rgba(99,117,135,1)]">
+                  <div className="  ml-2 text-2xl font-bold text-[rgba(38,40,43,1)]">
                     {dashboardLoading ? (
                       <div className="animate-pulse bg-white/20 h-8 w-16 rounded"></div>
                     ) : (
@@ -322,15 +322,15 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </div>
 
-              <div className=" p-4">
+              <div>
                 <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-                  <CardTitle className="text-xl font-medium text-[rgba(99,117,135,1)]">
+                  <CardTitle className="text-md font-bold text-[rgba(114, 120, 127, 1)]">
                     Total Documents
                   </CardTitle>
-                  <InputIcon className="h-4 ml-2 w-4 text-[rgba(99,117,135,1)]" />
+                  <InputIcon className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl ml-2 font-bold text-[rgba(99,117,135,1)]">
+                  <div className="text-2xl ml-2 font-bold text-[rgba(38,40,43,1)]">
                     {dashboardLoading ? (
                       <div className="animate-pulse bg-white/20 h-8 w-16 rounded"></div>
                     ) : (
@@ -340,15 +340,15 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </div>
 
-              <div className=" p-4">
-                <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-                  <CardTitle className="text-xl font-medium text-[rgba(99,117,135,1)]">
+              <div>
+                <CardHeader className="flex flex-row items-center space-y-0 mt-10 pb-2">
+                  <CardTitle className="text-md font-bold text-[rgba(114, 120, 127, 1)]">
                     Total Summaries
                   </CardTitle>
-                  <FileText className="h-4 ml-2 w-4 text-[rgba(99,117,135,1)]" />
+                  <FileText className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl ml-2 font-bold text-[rgba(99,117,135,1)]">
+                  <div className="text-2xl ml-2 font-bold text-[rgba(38,40,43,1)]">
                     {dashboardLoading ? (
                       <div className="animate-pulse bg-white/20 h-8 w-16 rounded"></div>
                     ) : (
@@ -358,15 +358,15 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </div>
 
-              <div className=" p-4">
-                <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-                  <CardTitle className="text-xl font-medium text-[rgba(99,117,135,1)]">
+              <div>
+                <CardHeader className="flex flex-row items-center space-y-0 mt-10 pb-2">
+                  <CardTitle className="text-md font-bold text-[rgba(114, 120, 127, 1)]">
                     Total Reports
                   </CardTitle>
-                  <BarChart3 className="h-4 ml-2 w-4 text-[rgba(99,117,135,1)]" />
+                  <BarChart3 className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl ml-2 font-bold text-[rgba(99,117,135,1)]">
+                  <div className="text-2xl ml-2 font-bold text-[rgba(38,40,43,1)]">
                     {dashboardLoading ? (
                       <div className="animate-pulse bg-white/20 h-8 w-16 rounded"></div>
                     ) : (
@@ -379,13 +379,13 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Middle Column - Total Chats Chart */}
-          <div className="flex-shrink-0 w-[15vw] flex flex-col items-center justify-center  ">
-            <div className="text-lg font-bold text-gray-900 mb-4">
+          <div className="flex-shrink-0 w-[15vw] min-w-[220px] flex flex-col items-center ">
+            <div className="text-lg font-bold text-gray-900 my-5">
               Total Chats
             </div>
-            <div className="relative w-24 h-24">
+            <div className="relative mt-10 w-40 h-40">
               <svg
-                className="w-24 h-24 transform -rotate-90"
+                className="w-40 h-40 transform -rotate-90"
                 viewBox="0 0 36 36"
               >
                 <path
@@ -408,7 +408,7 @@ export default function AdminDashboardPage() {
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-2xl font-bold text-gray-900">
+                <span className="text-3xl font-bold text-gray-900">
                   {stats.totalChats}
                 </span>
               </div>
@@ -598,7 +598,7 @@ export default function AdminDashboardPage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick View</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card
-              className="bg-[rgba(99,117,135,1)] text-white cursor-pointer hover:bg-[rgba(99,117,135,0.9)] transition-colors"
+              className="bg-[rgba(99,117,135,0.9)] text-white cursor-pointer hover:bg-[rgba(99,117,135,0.9)] transition-colors"
               onClick={() => navigate("/admin/users")}
             >
               <CardContent className="p-6">
@@ -612,7 +612,7 @@ export default function AdminDashboardPage() {
             {/* Domain Configuration card removed */}
 
             <Card
-              className="bg-[rgba(99,117,135,1)] text-white cursor-pointer hover:bg-[rgba(99,117,135,0.9)] transition-colors"
+              className="bg-[rgba(99,117,135,0.9)] text-white cursor-pointer hover:bg-[rgba(99,117,135,0.9)] transition-colors"
               onClick={() => navigate("/dashboard")}
             >
               <CardContent className="p-6">
@@ -624,12 +624,26 @@ export default function AdminDashboardPage() {
             </Card>
 
             <Card
-              className="bg-[rgba(99,117,135,1)] text-white cursor-pointer hover:bg-[rgba(99,117,135,0.9)] transition-colors"
+              className="bg-[rgba(99,117,135,0.9)] text-white cursor-pointer hover:bg-[rgba(99,117,135,0.9)] transition-colors"
               onClick={() => navigate("/chat-history")}
             >
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-2">Chat Management</h3>
                 <p className="text-sm text-white/80">Manage chats history</p>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="bg-[rgba(99,117,135,0.9)] text-white cursor-pointer hover:bg-[rgba(99,117,135,0.9)] transition-colors"
+              onClick={() => navigate("/settings")}
+            >
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-2">
+                  Profile Management
+                </h3>
+                <p className="text-sm text-white/80">
+                  Manage profile and settings
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -646,13 +660,13 @@ export default function AdminDashboardPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="">
                   <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-                    <CardTitle className="text-xl font-medium text-[rgba(99,117,135,1)]">
+                    <CardTitle className="text-md font-bold text-[rgba(114, 120, 127, 1)]">
                       Total Chats
                     </CardTitle>
-                    <MessageSquare className="h-4 ml-2 w-4 text-[rgba(99,117,135,1)]" />
+                    <MessageSquare className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" />
                   </CardHeader>
                   <CardContent>
-                    <div className="ml-2 text-2xl font-bold text-[rgba(99,117,135,1)]">
+                    <div className="ml-2 text-2xl font-bold text-[rgba(38,40,43,1)]">
                       {dashboardLoading ? (
                         <div className="animate-pulse bg-white/20 h-8 w-16 rounded"></div>
                       ) : (
@@ -664,13 +678,13 @@ export default function AdminDashboardPage() {
 
                 <div className="">
                   <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-                    <CardTitle className="text-xl font-medium text-[rgba(99,117,135,1)]">
+                    <CardTitle className="text-md font-bold text-[rgba(114, 120, 127, 1)]">
                       Avg Messages
                     </CardTitle>
-                    <BarChart3 className="h-4 ml-2 w-4 text-[rgba(99,117,135,1)]" />
+                    <BarChart3 className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl ml-2 font-bold text-[rgba(99,117,135,1)]">
+                    <div className="text-2xl ml-2 font-bold text-[rgba(38,40,43,1)]">
                       {dashboardLoading ? (
                         <div className="animate-pulse bg-white/20 h-8 w-16 rounded"></div>
                       ) : chatStats?.messagesPerChat?.length ? (
@@ -689,13 +703,13 @@ export default function AdminDashboardPage() {
 
                 <div>
                   <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-                    <CardTitle className="text-xl font-medium text-[rgba(99,117,135,1)]">
+                    <CardTitle className="text-md font-bold text-[rgba(114, 120, 127, 1)]">
                       Last 30 days
                     </CardTitle>
-                    <FileText className="h-4 ml-2 w-4 text-[rgba(99,117,135,1)]" />
+                    <FileText className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl ml-2 font-bold text-[rgba(99,117,135,1)]">
+                    <div className="text-2xl ml-2 font-bold text-[rgba(38,40,43,1)]">
                       {dashboardLoading ? (
                         <div className="animate-pulse bg-white/20 h-8 w-16 rounded"></div>
                       ) : (
@@ -707,13 +721,13 @@ export default function AdminDashboardPage() {
 
                 <div>
                   <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-                    <CardTitle className="text-xl font-medium text-[rgba(99,117,135,1)]">
+                    <CardTitle className="text-md font-bold text-[rgba(114, 120, 127, 1)]">
                       Active users
                     </CardTitle>
-                    <User className="h-4 ml-2 w-4 text-[rgba(99,117,135,1)]" />
+                    <User className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl ml-2 font-bold text-[rgba(99,117,135,1)]">
+                    <div className="text-2xl ml-2 font-bold text-[rgba(38,40,43,1)]">
                       {dashboardLoading ? (
                         <div className="animate-pulse bg-white/20 h-8 w-16 rounded"></div>
                       ) : (
@@ -862,7 +876,7 @@ export default function AdminDashboardPage() {
 
         {/* System Information Section */}
         <div className="mt-8 border-t border-gray-200 pt-4 ">
-          <h2 className="text-2xl font-bold text-[#8B4513] mb-6">
+          <h2 className="text-lg  font-bold text-[rgba(114, 120, 127, 1)] mb-6">
             System Information
           </h2>
           <div className="text-sm text-gray-900 mb-6 ml-4">
@@ -872,7 +886,7 @@ export default function AdminDashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Environment Section */}
             <div>
-              <h3 className="text-lg font-bold text-[#8B4513] mb-4">
+              <h3 className="text-lg  font-bold text-[rgba(114, 120, 127, 1)] mb-4">
                 Environment
               </h3>
               <div className="ml-4 space-y-2">
@@ -885,7 +899,7 @@ export default function AdminDashboardPage() {
 
             {/* DataBase Section */}
             <div>
-              <h3 className="text-lg font-bold text-[#8B4513] mb-4">
+              <h3 className="text-lg  font-bold text-[rgba(114, 120, 127, 1)] mb-4">
                 DataBase
               </h3>
               <div className="ml-4 space-y-2">

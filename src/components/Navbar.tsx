@@ -339,7 +339,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onSelect={() => navigate("/profile")}
-                  className="cursor-pointer hover:bg-[#FFF3E8] focus:bg-[#FFF3E8] "
+                  className="cursor-pointer hover:bg-[rgba(62,36,7,0.13)] focus:bg-[rgba(62,36,7,0.13)] "
                 >
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
@@ -349,14 +349,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onSelect={() => navigate("/admin")}
-                      className="cursor-pointer hover:bg-[#FFF3E8] focus:bg-[#FFF3E8] "
+                      className="cursor-pointer hover:bg-[rgba(62,36,7,0.13)] focus:bg-[rgba(62,36,7,0.13)] "
                     >
                       <Shield className="mr-2 h-4 w-4" />
                       <span>Admin Dashboard</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onSelect={() => navigate("/admin/users")}
-                      className="cursor-pointer hover:bg-[#FFF3E8] focus:bg-[#FFF3E8] "
+                      className="cursor-pointer hover:bg-[rgba(62,36,7,0.13)] focus:bg-[rgba(62,36,7,0.13)] "
                     >
                       <Users className="mr-2 h-4 w-4" />
                       <span>User Management</span>
@@ -367,7 +367,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onSelect={() => logout()}
-                  className="cursor-pointer hover:bg-[#FFF3E8] focus:bg-[#FFF3E8]"
+                  className="cursor-pointer hover:bg-[rgba(62,36,7,0.13)] focus:bg-[rgba(62,36,7,0.13)]"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
