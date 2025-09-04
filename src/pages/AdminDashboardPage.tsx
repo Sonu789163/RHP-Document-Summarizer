@@ -636,7 +636,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Chat Management Section */}
-        <div className="mt-8">
+        <div className="mt-8 border-t border-gray-200 pt-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left Column - Chat Statistics */}
             <div className="space-y-4">
@@ -781,7 +781,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Report Management Section - Full Width */}
-        <div className="mt-8">
+        <div className="mt-8 border-t border-gray-200 pt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             Report Management
           </h2>
@@ -861,7 +861,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* System Information Section */}
-        <div className="mt-8">
+        <div className="mt-8 border-t border-gray-200 pt-4 ">
           <h2 className="text-2xl font-bold text-[#8B4513] mb-6">
             System Information
           </h2>

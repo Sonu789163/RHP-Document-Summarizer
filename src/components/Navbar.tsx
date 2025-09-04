@@ -291,7 +291,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
           {/* Settings icon */}
           <span
-            className="cursor-pointer"
+            className={`cursor-pointer ${
+              location.pathname === "/profile" ? "text-[#FF7A1A]" : ""
+            }`}
             onClick={() => navigate("/profile")}
             title="Settings"
           >
@@ -335,18 +337,27 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => navigate("/profile")}>
+                <DropdownMenuItem
+                  onSelect={() => navigate("/profile")}
+                  className="cursor-pointer hover:bg-[#FFF3E8] focus:bg-[#FFF3E8] "
+                >
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
                 {user?.role === "admin" && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={() => navigate("/admin")}>
+                    <DropdownMenuItem
+                      onSelect={() => navigate("/admin")}
+                      className="cursor-pointer hover:bg-[#FFF3E8] focus:bg-[#FFF3E8] "
+                    >
                       <Shield className="mr-2 h-4 w-4" />
                       <span>Admin Dashboard</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => navigate("/admin/users")}>
+                    <DropdownMenuItem
+                      onSelect={() => navigate("/admin/users")}
+                      className="cursor-pointer hover:bg-[#FFF3E8] focus:bg-[#FFF3E8] "
+                    >
                       <Users className="mr-2 h-4 w-4" />
                       <span>User Management</span>
                     </DropdownMenuItem>
@@ -354,7 +365,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => logout()}>
+                <DropdownMenuItem
+                  onSelect={() => logout()}
+                  className="cursor-pointer hover:bg-[#FFF3E8] focus:bg-[#FFF3E8]"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
