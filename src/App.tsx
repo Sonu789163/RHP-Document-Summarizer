@@ -23,7 +23,6 @@ import ComparePage from "./pages/ComparePage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
-import DomainConfigPage from "./pages/DomainConfigPage";
 import { useAuthProtection } from "./hooks/useAuthProtection";
 
 const queryClient = new QueryClient();
@@ -62,7 +61,7 @@ const AppRoutes = () => {
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
-          <Route path="/admin/domains" element={<DomainConfigPage />} />
+          {/* Domain Config removed */}
 
           <Route element={<MainLayout />}>
             <Route path="/doc/:namespace" element={<ChatSummaryLayout />} />

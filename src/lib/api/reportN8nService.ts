@@ -30,6 +30,16 @@ export const reportN8nService = {
         rhpDocumentId,
         sessionId: sessionData.id,
         timestamp: new Date().toISOString(),
+        domain: (() => {
+          try {
+            const token = localStorage.getItem("accessToken");
+            if (!token) return undefined;
+            const jwt = JSON.parse(atob(token.split(".")[1]));
+            return jwt?.domain;
+          } catch {
+            return undefined;
+          }
+        })(),
       };
 
       const response = await axios.post(REPORT_N8N_WEBHOOK_URL, payload, {

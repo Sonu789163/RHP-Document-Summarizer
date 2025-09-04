@@ -56,6 +56,20 @@ export const summaryN8nService = {
         params.append("documentId", documentId);
       }
 
+      // Attach domain from JWT if present
+      try {
+        const token = localStorage.getItem("accessToken");
+        if (token) {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          let domain: string | undefined = payload?.domain;
+          if (!domain && typeof payload?.email === "string") {
+            const parts = payload.email.split("@");
+            if (parts.length === 2) domain = parts[1].toLowerCase();
+          }
+          if (domain) params.append("domain", domain);
+        }
+      } catch {}
+
       // Use RHP webhook if type is 'RHP', otherwise use default
       const webhookUrl =
         type === "RHP" ? RHP_SUMMARY_N8N_WEBHOOK_URL : SUMMARY_N8N_WEBHOOK_URL;

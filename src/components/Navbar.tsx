@@ -19,7 +19,6 @@ import {
   BarChart3,
   User,
   Users,
-  Globe,
   Shield,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -287,17 +286,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <Users className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px]" />
               </Link>
-              <Link
-                to="/admin/domains"
-                className={`flex items-center gap-2 text-2xl font-bold ${
-                  location.pathname === "/admin/domains"
-                    ? "text-[#FF7A1A]"
-                    : "text-[#232323]"
-                }`}
-                title="Domain Configuration"
-              >
-                <Globe className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px]" />
-              </Link>
+              {/* Domain Configuration link removed */}
             </>
           )}
           {/* Settings icon */}
@@ -361,12 +350,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <Users className="mr-2 h-4 w-4" />
                       <span>User Management</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => navigate("/admin/domains")}
-                    >
-                      <Globe className="mr-2 h-4 w-4" />
-                      <span>Domain Configuration</span>
-                    </DropdownMenuItem>
+                    {/* Domain Configuration menu removed */}
                   </>
                 )}
                 <DropdownMenuSeparator />

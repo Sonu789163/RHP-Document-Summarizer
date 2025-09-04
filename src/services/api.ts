@@ -2,11 +2,30 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+// Helper function to get user domain from stored user data
+const getUserDomain = (): string | null => {
+  try {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) return null;
+
+    // Decode JWT token to get user info
+    const payload = JSON.parse(atob(accessToken.split(".")[1]));
+    return payload.domain || null;
+  } catch (error) {
+    console.error("Error getting user domain:", error);
+    return null;
+  }
+};
+
 // Document Services
 export const documentService = {
   async getAll() {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.get(`${API_URL}/documents`, {
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/documents?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/documents`;
+    const response = await axios.get(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -16,7 +35,11 @@ export const documentService = {
     try {
       // First try to get by id
       const token = localStorage.getItem("accessToken");
-      const response = await axios.get(`${API_URL}/documents/${id}`, {
+      const domain = getUserDomain();
+      const url = domain
+        ? `${API_URL}/documents/${id}?domain=${encodeURIComponent(domain)}`
+        : `${API_URL}/documents/${id}`;
+      const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data;
@@ -43,10 +66,12 @@ export const documentService = {
     fileType?: string;
   }) {
     const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
     const payload: any = {
       id: document.id,
       name: document.name,
       namespace: document.namespace,
+      domain: domain, // Include domain in payload
     };
     // if (document.namespace) payload.namespace = document.namespace;
     if (document.status) payload.status = document.status;
@@ -70,7 +95,11 @@ export const documentService = {
     }>
   ) {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.put(`${API_URL}/documents/${id}`, document, {
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/documents/${id}?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/documents/${id}`;
+    const response = await axios.put(url, document, {
       headers: { Authorization: `Bearer ${token}` },
     });
     console.log("check namespace:", response);
@@ -79,7 +108,11 @@ export const documentService = {
 
   async delete(id: string) {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.delete(`${API_URL}/documents/${id}`, {
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/documents/${id}?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/documents/${id}`;
+    const response = await axios.delete(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -87,14 +120,17 @@ export const documentService = {
 
   async checkExistingByNamespace(namespace: string) {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.get(
-      `${API_URL}/documents/check-existing?namespace=${encodeURIComponent(
-        namespace
-      )}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/documents/check-existing?namespace=${encodeURIComponent(
+          namespace
+        )}&domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/documents/check-existing?namespace=${encodeURIComponent(
+          namespace
+        )}`;
+    const response = await axios.get(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
   },
 
@@ -124,7 +160,11 @@ export const chatService = {
   // Current user's chats
   getMine: async () => {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.get(`${API_URL}/chats`, {
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/chats?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/chats`;
+    const response = await axios.get(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -165,18 +205,23 @@ export const chatService = {
   },
   getByDocumentId: async (documentId: string) => {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.get(
-      `${API_URL}/chats/document/${documentId}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/chats/document/${documentId}?domain=${encodeURIComponent(
+          domain
+        )}`
+      : `${API_URL}/chats/document/${documentId}`;
+    const response = await axios.get(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
   },
 
   create: async (chat: any) => {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.post(`${API_URL}/chats`, chat, {
+    const domain = getUserDomain();
+    const payload = { ...chat, domain }; // Include domain in chat data
+    const response = await axios.post(`${API_URL}/chats`, payload, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -184,17 +229,25 @@ export const chatService = {
 
   addMessage: async (chatId: string, message: any) => {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.post(
-      `${API_URL}/chats/${chatId}/messages`,
-      message,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/chats/${chatId}/messages?domain=${encodeURIComponent(
+          domain
+        )}`
+      : `${API_URL}/chats/${chatId}/messages`;
+    const response = await axios.post(url, message, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
   },
 
   update: async (id: string, chat: any) => {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.put(`${API_URL}/chats/${id}`, chat, {
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/chats/${id}?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/chats/${id}`;
+    const response = await axios.put(url, chat, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -202,7 +255,11 @@ export const chatService = {
 
   delete: async (id: string) => {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.delete(`${API_URL}/chats/${id}`, {
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/chats/${id}?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/chats/${id}`;
+    const response = await axios.delete(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -235,7 +292,11 @@ export interface Report {
 export const reportService = {
   async getAll(): Promise<Report[]> {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.get(`${API_URL}/reports`, {
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/reports?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/reports`;
+    const response = await axios.get(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -243,7 +304,11 @@ export const reportService = {
 
   async getById(id: string): Promise<Report> {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.get(`${API_URL}/reports/${id}`, {
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/reports/${id}?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/reports/${id}`;
+    const response = await axios.get(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -255,14 +320,17 @@ export const reportService = {
     prompt?: string
   ): Promise<{ jobId: string; report: Report; reportId: string }> {
     const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const payload = {
+      drhpNamespace,
+      rhpNamespace,
+      domain, // Include domain in payload
+      prompt:
+        prompt || "Compare these documents and provide a detailed analysis",
+    };
     const response = await axios.post(
       `${API_URL}/reports/create-report`,
-      {
-        drhpNamespace,
-        rhpNamespace,
-        prompt:
-          prompt || "Compare these documents and provide a detailed analysis",
-      },
+      payload,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -272,7 +340,9 @@ export const reportService = {
 
   async create(report: Omit<Report, "id" | "updatedAt">): Promise<Report> {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.post(`${API_URL}/reports`, report, {
+    const domain = getUserDomain();
+    const payload = { ...report, domain }; // Include domain in payload
+    const response = await axios.post(`${API_URL}/reports`, payload, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -280,7 +350,11 @@ export const reportService = {
 
   async update(id: string, report: Partial<Report>): Promise<Report> {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.put(`${API_URL}/reports/${id}`, report, {
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/reports/${id}?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/reports/${id}`;
+    const response = await axios.put(url, report, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -288,8 +362,12 @@ export const reportService = {
 
   async delete(id: string): Promise<void> {
     const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/reports/${id}?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/reports/${id}`;
     try {
-      await axios.delete(`${API_URL}/reports/${id}`, {
+      await axios.delete(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch (error) {
@@ -336,7 +414,11 @@ export const reportService = {
 export const summaryService = {
   async getAll(): Promise<Summary[]> {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.get(`${API_URL}/summaries`, {
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/summaries?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/summaries`;
+    const response = await axios.get(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -344,16 +426,23 @@ export const summaryService = {
 
   async getByDocumentId(documentId: string): Promise<Summary[]> {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.get(
-      `${API_URL}/summaries/document/${documentId}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/summaries/document/${documentId}?domain=${encodeURIComponent(
+          domain
+        )}`
+      : `${API_URL}/summaries/document/${documentId}`;
+    const response = await axios.get(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
   },
 
   async create(summary: Omit<Summary, "id" | "updatedAt">): Promise<Summary> {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.post(`${API_URL}/summaries`, summary, {
+    const domain = getUserDomain();
+    const payload = { ...summary, domain }; // Include domain in payload
+    const response = await axios.post(`${API_URL}/summaries`, payload, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -361,7 +450,11 @@ export const summaryService = {
 
   async update(id: string, summary: Partial<Summary>): Promise<Summary> {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.put(`${API_URL}/summaries/${id}`, summary, {
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/summaries/${id}?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/summaries/${id}`;
+    const response = await axios.put(url, summary, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -369,7 +462,11 @@ export const summaryService = {
 
   async delete(id: string): Promise<void> {
     const token = localStorage.getItem("accessToken");
-    await axios.delete(`${API_URL}/summaries/${id}`, {
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/summaries/${id}?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/summaries/${id}`;
+    await axios.delete(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
   },

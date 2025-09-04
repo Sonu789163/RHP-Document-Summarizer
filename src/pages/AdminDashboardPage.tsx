@@ -19,7 +19,6 @@ import {
   Download,
   Trash2,
   MessageSquare,
-  Globe,
   Shield,
   Settings,
 } from "lucide-react";
@@ -417,7 +416,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Right Columns - Management Lists */}
-          <div className="flex gap-4 w-[50vw]">
+          <div className="flex  w-[50vw]">
             {/* Document Management */}
 
             <div className="flex-shrink-0 w-[25vw]  p-4">
@@ -595,7 +594,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Bottom Section - Quick View */}
-        <div>
+        <div className="border-t border-gray-200 pt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick View</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card
@@ -610,19 +609,7 @@ export default function AdminDashboardPage() {
               </CardContent>
             </Card>
 
-            <Card
-              className="bg-[rgba(99,117,135,1)] text-white cursor-pointer hover:bg-[rgba(99,117,135,0.9)] transition-colors"
-              onClick={() => navigate("/admin/domains")}
-            >
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-2">
-                  Domain Configuration
-                </h3>
-                <p className="text-sm text-white/80">
-                  Manage Domains and Permissions
-                </p>
-              </CardContent>
-            </Card>
+            {/* Domain Configuration card removed */}
 
             <Card
               className="bg-[rgba(99,117,135,1)] text-white cursor-pointer hover:bg-[rgba(99,117,135,0.9)] transition-colors"
