@@ -20,6 +20,11 @@ import {
   User,
   Users,
   Shield,
+  ChartBar,
+  ChartNoAxesCombinedIcon,
+  LayoutDashboard,
+  BookDashedIcon,
+  LayoutDashboardIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -273,7 +278,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }`}
                 title="Admin Dashboard"
               >
-                <Shield className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px]" />
+                <LayoutDashboardIcon className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px]" />
+               
               </Link>
               <Link
                 to="/admin/users"

@@ -23,12 +23,11 @@ import {
   Shield,
   Calendar,
   Mail,
-  Eye,
-  EyeOff,
   Phone,
   Users,
   LogOut,
   Trash2,
+  FileText,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -267,7 +266,7 @@ export default function ProfilePage() {
               }`}
             >
               <div className="flex items-center gap-2 text-base font-semibold">
-                <span className="inline-block w-4 h-0.5 bg-current mr-1 align-middle" />
+                <FileText className="h-4 w-4" />
                 Account summary
               </div>
               <div className="text-xs leading-snug">
