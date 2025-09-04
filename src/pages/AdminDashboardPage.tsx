@@ -635,7 +635,7 @@ export default function AdminDashboardPage() {
 
             <Card
               className="bg-[rgba(99,117,135,0.9)] text-white cursor-pointer hover:bg-[rgba(99,117,135,0.9)] transition-colors"
-              onClick={() => navigate("/settings")}
+              onClick={() => navigate("/profile")}
             >
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-2">
