@@ -309,7 +309,7 @@ export default function AdminDashboardPage() {
                   <CardTitle className="text-md font-bold text-[rgba(114, 120, 127, 1)]">
                     Total Users
                   </CardTitle>
-                  <User className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" />
+                  {/* <User className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" /> */}
                 </CardHeader>
                 <CardContent>
                   <div className="  ml-2 text-2xl font-bold text-[rgba(38,40,43,1)]">
@@ -327,7 +327,7 @@ export default function AdminDashboardPage() {
                   <CardTitle className="text-md font-bold text-[rgba(114, 120, 127, 1)]">
                     Total Documents
                   </CardTitle>
-                  <InputIcon className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" />
+                  {/* <InputIcon className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" /> */}
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl ml-2 font-bold text-[rgba(38,40,43,1)]">
@@ -345,7 +345,7 @@ export default function AdminDashboardPage() {
                   <CardTitle className="text-md font-bold text-[rgba(114, 120, 127, 1)]">
                     Total Summaries
                   </CardTitle>
-                  <FileText className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" />
+                  {/* <FileText className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" /> */}
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl ml-2 font-bold text-[rgba(38,40,43,1)]">
@@ -363,7 +363,7 @@ export default function AdminDashboardPage() {
                   <CardTitle className="text-md font-bold text-[rgba(114, 120, 127, 1)]">
                     Total Reports
                   </CardTitle>
-                  <BarChart3 className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" />
+                  {/* <BarChart3 className="h-4 ml-2 w-4 text-[rgba(114, 120, 127, 1)]" /> */}
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl ml-2 font-bold text-[rgba(38,40,43,1)]">
