@@ -23,6 +23,8 @@ import {
   Settings,
 } from "lucide-react";
 import { Navbar } from "../components/Navbar";
+import { downloadWithAuth } from "@/utils/downloadUtils";
+import { toast } from "sonner";
 import {
   documentService,
   chatService,
@@ -180,8 +182,19 @@ export default function AdminDashboardPage() {
 
   const handleDownloadDocument = async (doc: Document) => {
     try {
-      // For now, just log - implement actual download logic
-      console.log("Downloading document:", doc._id);
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        toast.error("Authentication required");
+        return;
+      }
+
+      const downloadUrl = `${import.meta.env.VITE_API_URL}/documents/download/${
+        doc._id
+      }`;
+
+      await downloadWithAuth(downloadUrl, token, {
+        filename: doc.name || "document.pdf",
+      });
     } catch (error) {
       console.error("Error downloading document:", error);
     }

@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { n8nService } from "@/lib/api/n8nService";
 import { sessionService } from "@/lib/api/sessionService";
 import { summaryService, Summary } from "@/services/api";
+import { downloadWithAuth, downloadWithToast } from "@/utils/downloadUtils";
 import {
   Tooltip,
   TooltipTrigger,
@@ -372,31 +373,21 @@ export function SummaryPanel({
       return;
     }
     try {
-      const loadingToast = toast.loading("Downloading DOCX...");
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL
-        }/summaries/${selectedSummaryId}/download-docx`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
-      if (!response.ok) throw new Error("Failed to download DOCX");
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${currentDocument?.name || "summary"}.docx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.dismiss(loadingToast);
-      toast.success("DOCX downloaded successfully");
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        toast.error("Authentication required");
+        return;
+      }
+
+      const downloadUrl = `${
+        import.meta.env.VITE_API_URL
+      }/summaries/${selectedSummaryId}/download-docx`;
+
+      await downloadWithAuth(downloadUrl, token, {
+        filename: `${currentDocument?.name || "summary"}.docx`,
+      });
     } catch (error) {
-      toast.error("Failed to download DOCX");
+      console.error("Download error:", error);
     }
   };
 
@@ -405,26 +396,17 @@ export function SummaryPanel({
       toast.error("No summary selected");
       return;
     }
-    let loadingToast;
     try {
-      loadingToast = toast.loading("Downloading PDF...");
       const blob = await summaryService.downloadHtmlPdf(selectedSummaryId);
       if (blob.type !== "application/pdf" || blob.size < 100) {
         throw new Error("Failed to generate PDF. Please try again later.");
       }
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${currentDocument?.name || "summary"}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success("PDF downloaded successfully");
+
+      await downloadWithToast(blob, {
+        filename: `${currentDocument?.name || "summary"}.pdf`,
+      });
     } catch (error) {
-      toast.error("Failed to download PDF");
-    } finally {
-      if (loadingToast) toast.dismiss(loadingToast);
+      console.error("Download error:", error);
     }
   };
 

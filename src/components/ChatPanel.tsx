@@ -22,6 +22,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
+import { downloadWithAuth } from "@/utils/downloadUtils";
 import axios from "axios";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -460,30 +461,23 @@ export function ChatPanel({
 
   const handleDownload = async () => {
     const token = localStorage.getItem("accessToken");
+    if (!token) {
+      toast.error("Authentication required");
+      return;
+    }
+
     try {
-      const response = await fetch(
+      const downloadUrl =
         `${import.meta.env.VITE_API_URL}/documents/download/${
           currentDocument?.id
-        } ` ||
-          `http://localhost:5000/api/documents/download/${currentDocument?.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (!response.ok) throw new Error("Failed to download file");
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = currentDocument?.name || "document.pdf";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+        }` ||
+        `http://localhost:5000/api/documents/download/${currentDocument?.id}`;
+
+      await downloadWithAuth(downloadUrl, token, {
+        filename: currentDocument?.name || "document.pdf",
+      });
     } catch (err) {
-      alert("Download failed: " + err.message);
+      console.error("Download error:", err);
     }
   };
 
@@ -719,27 +713,21 @@ export function DocumentPopover({
 
   const handleDownload = async () => {
     const token = localStorage.getItem("accessToken");
+    if (!token) {
+      toast.error("Authentication required");
+      return;
+    }
+
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/documents/download/${documentId} `, // ||`http://localhost:5000/api/documents/download/${documentId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (!response.ok) throw new Error("Failed to download file");
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = documentName || "document.pdf";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      const downloadUrl = `${
+        import.meta.env.VITE_API_URL
+      }/documents/download/${documentId}`;
+
+      await downloadWithAuth(downloadUrl, token, {
+        filename: documentName || "document.pdf",
+      });
     } catch (err) {
-      alert("Download failed: " + err.message);
+      console.error("Download error:", err);
     }
   };
 

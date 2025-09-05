@@ -6,6 +6,7 @@ import { reportN8nService } from "../lib/api/reportN8nService";
 import { sessionService } from "../lib/api/sessionService";
 import { toast } from "sonner";
 import { Navbar } from "../components/Navbar";
+import { downloadWithToast } from "@/utils/downloadUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -304,27 +305,17 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
 
   const handleDownloadPdf = async () => {
     if (!selectedReport) return;
-    let loadingToast;
     try {
-      loadingToast = toast.loading("Downloading PDF...");
       const blob = await reportService.downloadHtmlPdf(selectedReport.id);
       if (blob.type !== "application/pdf" || blob.size < 100) {
         throw new Error("Failed to generate PDF. Please try again later.");
       }
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${selectedReport.title}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.success("PDF downloaded successfully");
+
+      await downloadWithToast(blob, {
+        filename: `${selectedReport.title}.pdf`,
+      });
     } catch (error) {
       console.error("Error downloading PDF:", error);
-      toast.error("Failed to download PDF");
-    } finally {
-      if (loadingToast) toast.dismiss(loadingToast);
     }
   };
 
@@ -332,18 +323,12 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     if (!selectedReport) return;
     try {
       const blob = await reportService.downloadDocx(selectedReport.id);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${selectedReport.title}.docx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.success("DOCX downloaded successfully");
+
+      await downloadWithToast(blob, {
+        filename: `${selectedReport.title}.docx`,
+      });
     } catch (error) {
       console.error("Error downloading DOCX:", error);
-      toast.error("Failed to download DOCX");
     }
   };
 
