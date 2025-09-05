@@ -23,7 +23,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Navbar } from "../components/Navbar";
-import { downloadWithAuth } from "@/utils/downloadUtils";
+import { downloadWithAuth, downloadWithToast } from "@/utils/downloadUtils";
 import { toast } from "sonner";
 import {
   documentService,
@@ -56,6 +56,7 @@ interface Summary {
 
 interface Report {
   id: string;
+  title: string;
   drhpNamespace: string;
   updatedAt: string;
   userId?: string;
@@ -216,7 +217,14 @@ export default function AdminDashboardPage() {
 
   const handleDownloadSummaryPdf = async (summary: Summary) => {
     try {
-      await summaryService.downloadHtmlPdf(summary.id);
+      const blob = await summaryService.downloadHtmlPdf(summary.id);
+      if (blob.type !== "application/pdf" || blob.size < 100) {
+        throw new Error("Failed to generate PDF. Please try again later.");
+      }
+
+      await downloadWithToast(blob, {
+        filename: `${summary.title || "summary"}.pdf`,
+      });
     } catch (error) {
       console.error("Error downloading summary PDF:", error);
     }
@@ -238,7 +246,14 @@ export default function AdminDashboardPage() {
 
   const handleDownloadReportPdf = async (report: Report) => {
     try {
-      await reportService.downloadPdf(report.id);
+      const blob = await reportService.downloadHtmlPdf(report.id);
+      if (blob.type !== "application/pdf" || blob.size < 100) {
+        throw new Error("Failed to generate PDF. Please try again later.");
+      }
+
+      await downloadWithToast(blob, {
+        filename: report.title || `report-${report.id}.pdf`,
+      });
     } catch (error) {
       console.error("Error downloading report PDF:", error);
     }
