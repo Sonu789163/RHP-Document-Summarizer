@@ -373,19 +373,8 @@ export function SummaryPanel({
     }
     let loadingToast;
     try {
-      loadingToast = toast.loading("Downloading DOCX...");
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL
-        }/summaries/${selectedSummaryId}/download-docx`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
-      if (!response.ok) throw new Error("Failed to download DOCX");
-      const blob = await response.blob();
+      loadingToast = toast.loading("Download processing...");
+      const blob = await summaryService.downloadDocx(selectedSummaryId);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -409,7 +398,7 @@ export function SummaryPanel({
     }
     let loadingToast;
     try {
-      loadingToast = toast.loading("Downloading PDF...");
+      loadingToast = toast.loading("Download processing...");
       const blob = await summaryService.downloadHtmlPdf(selectedSummaryId);
       if (blob.type !== "application/pdf" || blob.size < 100) {
         throw new Error("Failed to generate PDF. Please try again later.");
@@ -422,11 +411,11 @@ export function SummaryPanel({
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+      toast.dismiss(loadingToast);
       toast.success("PDF downloaded successfully");
     } catch (error) {
+      toast.dismiss(loadingToast);
       toast.error("Failed to download PDF");
-    } finally {
-      if (loadingToast) toast.dismiss(loadingToast);
     }
   };
 

@@ -212,13 +212,46 @@ export default function AdminDashboardPage() {
     let loadingToast;
     try {
       loadingToast = toast.loading("Download processing...");
-      await summaryService.downloadHtmlPdf(summary.id);
+      const blob = await summaryService.downloadHtmlPdf(summary.id);
+      if (blob.type !== "application/pdf" || blob.size < 100) {
+        throw new Error("Failed to generate PDF. Please try again later.");
+      }
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${summary.title || "summary"}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
       toast.dismiss(loadingToast);
       toast.success("Summary PDF downloaded successfully");
     } catch (error) {
       toast.dismiss(loadingToast);
       toast.error("Error downloading summary PDF: " + error.message);
       console.error("Error downloading summary PDF:", error);
+    }
+  };
+
+  const handleDownloadSummaryDocx = async (summary: Summary) => {
+    let loadingToast;
+    try {
+      loadingToast = toast.loading("Download processing...");
+      const blob = await summaryService.downloadDocx(summary.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${summary.title || "summary"}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.dismiss(loadingToast);
+      toast.success("Summary DOCX downloaded successfully");
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error("Error downloading summary DOCX: " + error.message);
+      console.error("Error downloading summary DOCX:", error);
     }
   };
 
@@ -240,13 +273,46 @@ export default function AdminDashboardPage() {
     let loadingToast;
     try {
       loadingToast = toast.loading("Download processing...");
-      await reportService.downloadPdf(report.id);
+      const blob = await reportService.downloadHtmlPdf(report.id);
+      if (blob.type !== "application/pdf" || blob.size < 100) {
+        throw new Error("Failed to generate PDF. Please try again later.");
+      }
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${report.drhpNamespace || "report"}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
       toast.dismiss(loadingToast);
       toast.success("Report PDF downloaded successfully");
     } catch (error) {
       toast.dismiss(loadingToast);
       toast.error("Error downloading report PDF: " + error.message);
       console.error("Error downloading report PDF:", error);
+    }
+  };
+
+  const handleDownloadReportDocx = async (report: Report) => {
+    let loadingToast;
+    try {
+      loadingToast = toast.loading("Download processing...");
+      const blob = await reportService.downloadDocx(report.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${report.drhpNamespace || "report"}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.dismiss(loadingToast);
+      toast.success("Report DOCX downloaded successfully");
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error("Error downloading report DOCX: " + error.message);
+      console.error("Error downloading report DOCX:", error);
     }
   };
 
@@ -585,6 +651,25 @@ export default function AdminDashboardPage() {
                           </button>
                           <button
                             className="p-1 hover:bg-gray-100 rounded"
+                            onClick={() => handleDownloadSummaryDocx(summary)}
+                            title="Download DOCX"
+                          >
+                            <svg
+                              className="h-4 w-4 text-gray-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            className="p-1 hover:bg-gray-100 rounded"
                             onClick={() => handleDeleteSummary(summary)}
                             title="Delete"
                           >
@@ -864,6 +949,25 @@ export default function AdminDashboardPage() {
                           strokeLinejoin="round"
                           strokeWidth={2}
                           d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      className="p-1 hover:bg-gray-100 rounded"
+                      onClick={() => handleDownloadReportDocx(report)}
+                      title="Download DOCX"
+                    >
+                      <svg
+                        className="h-4 w-4 text-gray-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                         />
                       </svg>
                     </button>

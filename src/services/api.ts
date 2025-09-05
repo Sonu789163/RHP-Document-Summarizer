@@ -381,10 +381,13 @@ export const reportService = {
 
   async downloadPdf(id: string): Promise<Blob> {
     const token = localStorage.getItem("accessToken");
-    const response = await axios.get(`${API_URL}/reports/${id}/download-pdf`, {
-      headers: { Authorization: `Bearer ${token}` },
-      responseType: "blob",
-    });
+    const response = await axios.get(
+      `${API_URL}/reports/${id}/download-html-pdf`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: "blob",
+      }
+    );
     return response.data;
   },
 
@@ -469,6 +472,18 @@ export const summaryService = {
     await axios.delete(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
+  },
+
+  async downloadDocx(id: string): Promise<Blob> {
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.get(
+      `${API_URL}/summaries/${id}/download-docx`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: "blob",
+      }
+    );
+    return response.data;
   },
 
   async downloadHtmlPdf(id: string): Promise<Blob> {
