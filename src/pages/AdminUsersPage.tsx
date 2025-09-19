@@ -101,6 +101,10 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [bucketDialogFor, setBucketDialogFor] = useState<User | null>(null);
+  const [bucketValue, setBucketValue] = useState<
+    "today" | "last7" | "last15" | "last30" | "last90" | "all"
+  >("today");
 
   // Forms
   const createForm = useForm<z.infer<typeof createUserSchema>>({
@@ -386,12 +390,12 @@ export default function AdminUsersPage() {
               onOpenChange={setIsCreateDialogOpen}
             >
               <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
+                <Button className="flex items-center gap-2 bg-[#ECE9E2] hover:bg-[#ECE9E2] text-[#4B2A06]">
                   <UserPlus className="h-4 w-4" />
                   Add User
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
+              <DialogContent className="sm:max-w-md bg-white">
                 <DialogHeader>
                   <DialogTitle>Create New User</DialogTitle>
                 </DialogHeader>
@@ -407,7 +411,7 @@ export default function AdminUsersPage() {
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="user@example.com" {...field} />
+                            <Input placeholder="user@example.com" className="bg-white border border-gray-100 rounded-lg focus:outline-none focus:ring-0" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -420,7 +424,7 @@ export default function AdminUsersPage() {
                         <FormItem>
                           <FormLabel>Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="Full Name" {...field} />
+                            <Input placeholder="Full Name" className="bg-white border border-gray-100 rounded-lg focus:outline-none focus:ring-0" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -436,6 +440,7 @@ export default function AdminUsersPage() {
                             <Input
                               type="password"
                               placeholder="Password"
+                              className="bg-white border border-gray-100 rounded-lg focus:outline-none focus:ring-0"
                               {...field}
                             />
                           </FormControl>
@@ -454,13 +459,13 @@ export default function AdminUsersPage() {
                             defaultValue={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select role" />
+                              <SelectTrigger className="bg-gray-100 shadow-md  border-none focus:outline-none focus:ring-0">
+                                <SelectValue className="bg-white" placeholder="Select role" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
-                              <SelectItem value="user">User</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
+                            <SelectContent className="bg-white border border-gray-200">
+                              <SelectItem className="bg-white hover:bg-gray-100 data-[highlighted]:bg-gray-100 hover:text-[#4B2A06] " value="user">User</SelectItem>
+                              <SelectItem className="bg-white hover:bg-gray-100 data-[highlighted]:bg-gray-100 hover:text-[#4B2A06] " value="admin">Admin</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -472,12 +477,14 @@ export default function AdminUsersPage() {
                         type="button"
                         variant="outline"
                         onClick={() => setIsCreateDialogOpen(false)}
+                        className="bg-gray-200 text-[#4B2A06] hover:bg-gray-200 border-none hover:text-[#4B2A06]"
                       >
                         Cancel
                       </Button>
                       <Button
                         type="submit"
                         disabled={actionLoading === "create"}
+                        className="bg-[#4B2A06] text-white hover:bg-[#4B2A06]/90 border-none hover:text-white"
                       >
                         {actionLoading === "create" && (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -497,11 +504,11 @@ export default function AdminUsersPage() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              <div className=" overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="text-left p-3">
+                      <th className="text-left w-[20vw] p-3">
                         <input
                           type="checkbox"
                           checked={
@@ -512,19 +519,19 @@ export default function AdminUsersPage() {
                           className="rounded border-gray-300"
                         />
                       </th>
-                      <th className="text-left p-3 font-medium text-gray-900">
+                      <th className="text-center w-[20vw] p-3 font-medium text-gray-900">
                         User ID
                       </th>
-                      <th className="text-left p-3 font-medium text-gray-900">
+                      <th className="text-center w-[20vw] p-3 font-medium text-gray-900">
                         User Name
                       </th>
-                      <th className="text-left p-3 font-medium text-gray-900">
+                      <th className="text-center w-[20vw] p-3 font-medium text-gray-900">
                         Role
                       </th>
-                      <th className="text-left p-3 font-medium text-gray-900">
+                      <th className="text-center w-[20vw] p-3 font-medium text-gray-900">
                         Status
                       </th>
-                      <th className="text-left p-3 font-medium text-gray-900">
+                      <th className="text-right w-[20vw] p-3 font-medium text-gray-900">
                         Actions
                       </th>
                     </tr>
@@ -535,7 +542,7 @@ export default function AdminUsersPage() {
                         key={user._id}
                         className="border-b border-gray-100 hover:bg-gray-50"
                       >
-                        <td className="p-3">
+                        <td className=" w-[20vw] p-3">
                           <input
                             type="checkbox"
                             checked={selectedUsers.includes(user._id)}
@@ -543,16 +550,16 @@ export default function AdminUsersPage() {
                             className="rounded border-gray-300"
                           />
                         </td>
-                        <td className="p-3 text-gray-600">
+                        <td className="w-[20vw] text-center p-3 text-gray-600">
                           #{user._id.slice(-4)}
                         </td>
-                        <td className="p-3 font-medium text-gray-900">
+                        <td className="w-[20vw] text-center p-3 font-medium text-gray-900">
                           {user.name || user.email}
                         </td>
-                        <td className="p-3 text-gray-600 capitalize">
+                        <td className="w-[20vw] text-center p-3 text-gray-600 capitalize">
                           {user.role}
                         </td>
-                        <td className="p-3">
+                        <td className="w-[20vw] text-center p-3">
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${
                               user.status === "active"
@@ -563,24 +570,35 @@ export default function AdminUsersPage() {
                             {user.status}
                           </span>
                         </td>
-                        <td className="p-3">
+                        <td className="w-[20vw] text-right p-3">
                           <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
+                            <DropdownMenuTrigger asChild className="hover:bg-[#ECE9E2] hover:text-[#4B2A06]">
                               <Button variant="ghost" size="sm">
-                                <MoreVertical className="h-4 w-4" />
+                                <MoreVertical className="h-4 w-4 " />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" className="bg-white border border-gray-200 " >
                               <DropdownMenuItem
                                 onClick={() => openEditDialog(user)}
+                                className="hover:bg-white data-[highlighted]:bg-gray-100 hover:text-[#4B2A06] "
                               >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setBucketDialogFor(user);
+                                  setBucketValue("last7");
+                                }}
+                                className="hover:bg-white data-[highlighted]:bg-gray-100 hover:text-[#4B2A06] "
+                              >
+                                <Shield className="mr-2 h-4 w-4" />
+                                Update Document Access
+                              </DropdownMenuItem>
                               {user.status === "active" ? (
                                 <DropdownMenuItem
                                   onClick={() => handleDeleteUser(user._id)}
-                                  className="text-red-600"
+                                  className="text-red-600 hover:bg-white data-[highlighted]:bg-gray-100 hover:text-[#4B2A06] "
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
                                   Suspend
@@ -588,7 +606,7 @@ export default function AdminUsersPage() {
                               ) : (
                                 <DropdownMenuItem
                                   onClick={() => handleActivateUser(user._id)}
-                                  className="text-green-600"
+                                  className="text-green-600 hover:bg-white data-[highlighted]:bg-gray-100 hover:text-[#4B2A06] "
                                 >
                                   <UserCheck className="mr-2 h-4 w-4" />
                                   Activate
@@ -720,6 +738,75 @@ export default function AdminUsersPage() {
                 </div>
               </form>
             </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Update Buckets Dialog */}
+        <Dialog
+          open={!!bucketDialogFor}
+          onOpenChange={() => setBucketDialogFor(null)}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Update Document Access</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600">
+                Set how much history the user can access in this workspace.
+              </div>
+              <Select
+                value={bucketValue}
+                onValueChange={(v: any) => setBucketValue(v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="last7">Last 7 days</SelectItem>
+                  <SelectItem value="last15">Last 15 days</SelectItem>
+                  <SelectItem value="last30">Last 30 days</SelectItem>
+                  <SelectItem value="last90">Last 3 months</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setBucketDialogFor(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (!bucketDialogFor) return;
+                    try {
+                      setActionLoading("update-buckets");
+                      const svc = (
+                        await import("@/services/workspaceInvitationService")
+                      ).default;
+                      await svc.updateUserBuckets(bucketDialogFor.email, [
+                        bucketValue,
+                      ]);
+                      toast.success("Access updated");
+                      setBucketDialogFor(null);
+                    } catch (e: any) {
+                      toast.error(
+                        e.response?.data?.message || "Failed to update"
+                      );
+                    } finally {
+                      setActionLoading(null);
+                    }
+                  }}
+                  disabled={actionLoading === "update-buckets"}
+                >
+                  {actionLoading === "update-buckets" && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Update
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

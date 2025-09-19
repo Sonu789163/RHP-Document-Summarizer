@@ -30,6 +30,13 @@ export interface ExistingDocumentResponse {
 }
 
 export const uploadService = {
+  normalizeNamespace(fileName: string): string {
+    let s = fileName.trim();
+    s = s.replace(/\.pdf$/i, "");
+    s = s.replace(/[\-_]+/g, " ");
+    s = s.replace(/\s+/g, " ");
+    return s.trim();
+  },
   // async uploadFile(
   //   file: File,
   //   sessionData: SessionData
@@ -148,7 +155,7 @@ export const uploadService = {
     fileName: string
   ): Promise<ExistingDocumentResponse> {
     try {
-      const namespace = fileName.replace(/\.pdf$/i, "");
+      const namespace = this.normalizeNamespace(fileName);
       const response = await documentService.checkExistingByNamespace(
         namespace
       );
@@ -164,7 +171,7 @@ export const uploadService = {
 
   async uploadFileToBackend(file: File): Promise<any> {
     // Always use filename without .pdf as namespace
-    const namespace = file.name; //.replace(/\.pdf$/i, "")
+    const namespace = this.normalizeNamespace(file.name);
     // First check if document already exists
     const existingCheck = await this.checkExistingDocument(file.name);
 
@@ -192,6 +199,16 @@ export const uploadService = {
       }
     );
     if (!response.ok) {
+      // Gracefully handle 409 duplicate from backend
+      if (response.status === 409) {
+        const data = await response.json();
+        return {
+          success: false,
+          existingDocument: data.existingDocument,
+          message: data.error || "Document already exists",
+          error: "Document already exists",
+        };
+      }
       throw new Error("Failed to upload file to backend");
     }
     return response.json();

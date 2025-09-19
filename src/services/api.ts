@@ -1,6 +1,55 @@
 import axios from "axios";
+import { getCurrentWorkspace } from "./workspaceContext";
 
 const API_URL = import.meta.env.VITE_API_URL;
+// Attach shared link token to every request if present
+const getSharedLinkToken = (): string | null => {
+  try {
+    return localStorage.getItem("sharedLinkToken");
+  } catch {
+    return null;
+  }
+};
+
+axios.interceptors.request.use((config) => {
+  const linkToken = getSharedLinkToken();
+  if (linkToken) {
+    // Axios v1 uses AxiosHeaders; prefer set when available
+    if (config.headers && typeof (config.headers as any).set === "function") {
+      (config.headers as any).set("x-link-token", linkToken);
+    } else {
+      config.headers = {
+        ...(config.headers as any),
+        "x-link-token": linkToken,
+      } as any;
+    }
+  }
+  return config;
+});
+
+// If a revoked/invalid link is used, clear it and let app fall back gracefully
+axios.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    try {
+      const status = error?.response?.status as number | undefined;
+      const url: string = error?.config?.url || "";
+      const hasLinkToken = !!getSharedLinkToken();
+      if (hasLinkToken) {
+        // If link resolve returns 404/410, or any 403 while a link token is attached, purge it
+        if (
+          url.includes("/shares/link/") &&
+          (status === 404 || status === 410)
+        ) {
+          localStorage.removeItem("sharedLinkToken");
+        } else if (status === 403) {
+          localStorage.removeItem("sharedLinkToken");
+        }
+      }
+    } catch {}
+    return Promise.reject(error);
+  }
+);
 
 // Helper function to get user domain from stored user data
 const getUserDomain = (): string | null => {
@@ -19,28 +68,41 @@ const getUserDomain = (): string | null => {
 
 // Document Services
 export const documentService = {
-  async getAll() {
+  async getAll(params?: { directoryId?: string; includeDeleted?: boolean }) {
     const token = localStorage.getItem("accessToken");
     const domain = getUserDomain();
-    const url = domain
-      ? `${API_URL}/documents?domain=${encodeURIComponent(domain)}`
-      : `${API_URL}/documents`;
+    const currentWorkspace = getCurrentWorkspace();
+    const search = new URLSearchParams();
+    if (domain) search.set("domain", domain);
+    if (params?.directoryId) search.set("directoryId", params.directoryId);
+    if (params?.includeDeleted) search.set("includeDeleted", "1");
+    const qs = search.toString();
+    const url = qs ? `${API_URL}/documents?${qs}` : `${API_URL}/documents`;
     const response = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
 
-  async getById(id: string) {
+  async getById(id: string, linkToken?: string) {
     try {
       // First try to get by id
       const token = localStorage.getItem("accessToken");
       const domain = getUserDomain();
-      const url = domain
-        ? `${API_URL}/documents/${id}?domain=${encodeURIComponent(domain)}`
-        : `${API_URL}/documents/${id}`;
+      const currentWorkspace = getCurrentWorkspace();
+      const params = new URLSearchParams();
+      if (domain) params.set("domain", domain);
+      if (linkToken) params.set("linkToken", linkToken);
+
+      const url = `${API_URL}/documents/${id}?${params.toString()}`;
       const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+        },
       });
       return response.data;
     } catch (error) {
@@ -64,9 +126,11 @@ export const documentService = {
     uploadedAt?: string;
     file?: any;
     fileType?: string;
+    directoryId?: string | null;
   }) {
     const token = localStorage.getItem("accessToken");
     const domain = getUserDomain();
+    const currentWorkspace = getCurrentWorkspace();
     const payload: any = {
       id: document.id,
       name: document.name,
@@ -78,9 +142,16 @@ export const documentService = {
     if (document.uploadedAt) payload.uploadedAt = document.uploadedAt;
     if (document.file) payload.file = document.file;
     if (document.fileType) payload.fileType = document.fileType;
+    if (typeof document.directoryId !== "undefined") {
+      payload.directoryId =
+        document.directoryId === null ? "root" : document.directoryId;
+    }
 
     const response = await axios.post(`${API_URL}/documents`, payload, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     console.log("for namespace:", response);
     return response.data;
@@ -92,15 +163,25 @@ export const documentService = {
       status: string;
       name: string;
       namespace: string;
+      directoryId: string | null;
     }>
   ) {
     const token = localStorage.getItem("accessToken");
     const domain = getUserDomain();
+    const currentWorkspace = getCurrentWorkspace();
     const url = domain
       ? `${API_URL}/documents/${id}?domain=${encodeURIComponent(domain)}`
       : `${API_URL}/documents/${id}`;
-    const response = await axios.put(url, document, {
-      headers: { Authorization: `Bearer ${token}` },
+    const payload: any = { ...document };
+    if (typeof document.directoryId !== "undefined") {
+      payload.directoryId =
+        document.directoryId === null ? "root" : document.directoryId;
+    }
+    const response = await axios.put(url, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     console.log("check namespace:", response);
     return response.data;
@@ -109,10 +190,28 @@ export const documentService = {
   async delete(id: string) {
     const token = localStorage.getItem("accessToken");
     const domain = getUserDomain();
+    const currentWorkspace = getCurrentWorkspace();
     const url = domain
       ? `${API_URL}/documents/${id}?domain=${encodeURIComponent(domain)}`
       : `${API_URL}/documents/${id}`;
     const response = await axios.delete(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
+    });
+    return response.data;
+  },
+
+  async restore(id: string) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/documents/${id}/restore?domain=${encodeURIComponent(
+          domain
+        )}`
+      : `${API_URL}/documents/${id}/restore`;
+    const response = await axios.post(url, null, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -121,6 +220,7 @@ export const documentService = {
   async checkExistingByNamespace(namespace: string) {
     const token = localStorage.getItem("accessToken");
     const domain = getUserDomain();
+    const currentWorkspace = getCurrentWorkspace();
     const url = domain
       ? `${API_URL}/documents/check-existing?namespace=${encodeURIComponent(
           namespace
@@ -129,7 +229,10 @@ export const documentService = {
           namespace
         )}`;
     const response = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
@@ -152,6 +255,285 @@ export const documentService = {
       }
     );
     return response.data;
+  },
+};
+
+// Directory Services
+export const directoryService = {
+  async create(name: string, parentId?: string | null) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const currentWorkspace = getCurrentWorkspace();
+    const payload: any = { name };
+    if (typeof parentId !== "undefined") {
+      payload.parentId = parentId === null ? "root" : parentId;
+    }
+    const url = domain
+      ? `${API_URL}/directories?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/directories`;
+    const res = await axios.post(url, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
+    });
+    return res.data;
+  },
+  async getById(id: string) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const currentWorkspace = getCurrentWorkspace();
+    const url = domain
+      ? `${API_URL}/directories/${id}?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/directories/${id}`;
+    const res = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
+    });
+    return res.data;
+  },
+  async listChildren(
+    id: string,
+    opts?: {
+      page?: number;
+      pageSize?: number;
+      sort?: string;
+      order?: "asc" | "desc";
+      includeDeleted?: boolean;
+    }
+  ) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const params = new URLSearchParams();
+    if (domain) params.set("domain", domain);
+    if (opts?.page) params.set("page", String(opts.page));
+    if (opts?.pageSize) params.set("pageSize", String(opts.pageSize));
+    if (opts?.sort) params.set("sort", opts.sort);
+    if (opts?.order) params.set("order", opts.order);
+    if (opts?.includeDeleted) params.set("includeDeleted", "1");
+    const url = `${API_URL}/directories/${id}/children?${params.toString()}`;
+    const res = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(getCurrentWorkspace() && { "x-workspace": getCurrentWorkspace() }),
+      },
+    });
+    return res.data;
+  },
+  async update(
+    id: string,
+    data: Partial<{ name: string; parentId: string | null }>
+  ) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const payload: any = { ...data };
+    if (typeof data.parentId !== "undefined") {
+      payload.parentId = data.parentId === null ? "root" : data.parentId;
+    }
+    const url = domain
+      ? `${API_URL}/directories/${id}?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/directories/${id}`;
+    const res = await axios.patch(url, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(getCurrentWorkspace() && { "x-workspace": getCurrentWorkspace() }),
+      },
+    });
+    return res.data;
+  },
+  async move(id: string, newParentId?: string | null) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const payload: any = {
+      newParentId:
+        typeof newParentId === "undefined"
+          ? undefined
+          : newParentId === null
+          ? "root"
+          : newParentId,
+    };
+    const url = domain
+      ? `${API_URL}/directories/${id}/move?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/directories/${id}/move`;
+    const res = await axios.post(url, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(getCurrentWorkspace() && { "x-workspace": getCurrentWorkspace() }),
+      },
+    });
+    return res.data;
+  },
+  async delete(id: string) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/directories/${id}?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/directories/${id}`;
+    const res = await axios.delete(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(getCurrentWorkspace() && { "x-workspace": getCurrentWorkspace() }),
+      },
+    });
+    return res.data;
+  },
+  async softDelete(id: string) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/directories/${id}?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/directories/${id}`;
+    const res = await axios.delete(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  },
+  async restore(id: string) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const url = domain
+      ? `${API_URL}/directories/${id}/restore?domain=${encodeURIComponent(
+          domain
+        )}`
+      : `${API_URL}/directories/${id}/restore`;
+    const res = await axios.post(url, null, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  },
+};
+
+// Share Services
+export const shareService = {
+  async resolveTokenRole(): Promise<"viewer" | "editor" | "owner" | null> {
+    const token = localStorage.getItem("sharedLinkToken");
+    if (!token) return null;
+    try {
+      const res = await axios.get(
+        `${API_URL}/shares/link/${encodeURIComponent(token)}`
+      );
+      return (res.data?.role as any) || null;
+    } catch {
+      return null;
+    }
+  },
+  async list(resourceType: "directory" | "document", resourceId: string) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const params = new URLSearchParams({ resourceType, resourceId });
+    if (domain) params.set("domain", domain);
+    const res = await axios.get(`${API_URL}/shares?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  },
+  async create(input: {
+    resourceType: "directory" | "document";
+    resourceId: string;
+    scope: "user" | "workspace" | "link";
+    principalId?: string;
+    role: "viewer" | "editor" | "owner";
+    expiresAt?: string;
+  }) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const payload = { ...input } as any;
+    if (domain) (payload as any).domain = domain;
+    const res = await axios.post(`${API_URL}/shares`, payload, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  },
+  async revoke(id: string) {
+    const token = localStorage.getItem("accessToken");
+    const res = await axios.delete(`${API_URL}/shares/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  },
+  async createOrRotateLink(
+    resourceType: "directory" | "document",
+    resourceId: string,
+    role: "viewer" | "editor",
+    expiresAt?: string
+  ) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const payload: any = { resourceType, resourceId, role };
+    if (expiresAt) payload.expiresAt = expiresAt;
+    if (domain) payload.domain = domain;
+    const res = await axios.post(`${API_URL}/shares/link`, payload, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data as { token: string };
+  },
+  async resolveLink(tokenValue: string) {
+    const res = await axios.get(
+      `${API_URL}/shares/link/${encodeURIComponent(tokenValue)}`
+    );
+    return res.data;
+  },
+};
+
+// Trash Services
+export const trashService = {
+  async list(opts?: { page?: number; pageSize?: number }) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const params = new URLSearchParams();
+    if (domain) params.set("domain", domain);
+    if (opts?.page) params.set("page", String(opts.page));
+    if (opts?.pageSize) params.set("pageSize", String(opts.pageSize));
+    const res = await axios.get(`${API_URL}/trash?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  },
+};
+
+// Notifications Services
+export const notificationsService = {
+  async list(opts?: { unread?: boolean; page?: number; pageSize?: number }) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const params = new URLSearchParams();
+    if (domain) params.set("domain", domain);
+    if (opts?.unread) params.set("unread", "true");
+    if (opts?.page) params.set("page", String(opts.page));
+    if (opts?.pageSize) params.set("pageSize", String(opts.pageSize));
+    console.log(
+      "Notifications API call:",
+      `${API_URL}/notifications?${params.toString()}`
+    );
+    const res = await axios.get(
+      `${API_URL}/notifications?${params.toString()}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    console.log("Notifications API response:", res.data);
+    return res.data;
+  },
+  async markRead(id: string) {
+    const token = localStorage.getItem("accessToken");
+    const res = await axios.post(`${API_URL}/notifications/${id}/read`, null, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  },
+  async markAllRead() {
+    const token = localStorage.getItem("accessToken");
+    const res = await axios.post(`${API_URL}/notifications/read-all`, null, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  },
+  async delete(id: string) {
+    const token = localStorage.getItem("accessToken");
+    const res = await axios.delete(`${API_URL}/notifications/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
   },
 };
 

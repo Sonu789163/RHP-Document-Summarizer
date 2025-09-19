@@ -25,23 +25,23 @@ export function ForgotPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const navigate = useNavigate();
-  
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { email: "" },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log('Form submitted with email:', values.email);
+    console.log("Form submitted with email:", values.email);
     setIsLoading(true);
     try {
-      console.log('Calling authService.forgotPassword');
+      console.log("Calling authService.forgotPassword");
       await authService.forgotPassword(values.email);
-      console.log('forgotPassword API call successful');
+      console.log("forgotPassword API call successful");
       setEmailSent(true);
       toast.success("If that email is registered, a reset link has been sent.");
     } catch (error) {
-      console.error('Error in forgotPassword:', error);
+      console.error("Error in forgotPassword:", error);
       // We don't show specific errors to prevent email enumeration
       toast.success("If that email is registered, a reset link has been sent.");
       setEmailSent(true);
@@ -53,11 +53,10 @@ export function ForgotPasswordForm() {
   if (emailSent) {
     return (
       <div className="w-full max-w-lg mx-auto text-center space-y-6">
-        <h2 className="text-2xl font-bold text-[#444]">
-          Check your email
-        </h2>
+        <h2 className="text-2xl font-bold text-[#444]">Check your email</h2>
         <p className="text-[#666]">
-          We've sent a password reset link to your email address. Please check your inbox and follow the instructions.
+          We've sent a password reset link to your email address. Please check
+          your inbox and follow the instructions.
         </p>
         <Button
           onClick={() => navigate("/login")}
@@ -80,10 +79,11 @@ export function ForgotPasswordForm() {
             Forgot your password?
           </h2>
           <p className="text-[#666]">
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your email address and we'll send you a link to reset your
+            password.
           </p>
         </div>
-        
+
         <FormField
           control={form.control}
           name="email"
@@ -98,7 +98,7 @@ export function ForgotPasswordForm() {
               <FormControl>
                 <Input
                   placeholder="Your email"
-                  className="outline-none border border-input rounded-xl px-6 py-6 text-lg focus:ring-2 focus:ring-[#4B2A06] focus:border-[#4B2A06] shadow-none bg-white h-16"
+                  className="outline-none border border-input rounded-xl px-6 py-6 text-lg focus:ring-0 focus:border-[#E5E5E5] shadow-none bg-white h-16"
                   {...field}
                 />
               </FormControl>
@@ -106,7 +106,7 @@ export function ForgotPasswordForm() {
             </FormItem>
           )}
         />
-        
+
         <div className="flex flex-col space-y-4">
           <Button
             type="submit"
@@ -117,7 +117,7 @@ export function ForgotPasswordForm() {
             {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
             Send Reset Link
           </Button>
-          
+
           <Button
             type="button"
             variant="outline"

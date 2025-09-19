@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Plus, Search, ArrowLeft, Trash2, X } from "lucide-react";
+import { FileText, Plus, Search, ArrowLeft, Trash2, X, Share2 } from "lucide-react";
 import { documentService, chatService } from "@/services/api";
+import { ShareDialog } from "./ShareDialog";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -84,6 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [chatSearchVisible, setChatSearchVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<any | null>(null);
+  const [shareDocId, setShareDocId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -240,6 +242,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <span>New Chat</span>
         <Plus className="h-7 w-7 text-[#4B2A06]" />
       </button>
+      {/* Share Current Document */}
+      <button
+        className="w-full flex items-center justify-between bg-[#ECE9E2] rounded-2xl px-5 py-4 mb-6 text-[#4B2A06] text-[1.1rem] font-bold shadow-none border-none hover:bg-[#E0D7CE] transition disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{ fontWeight: 700, fontSize: "1.1rem", borderRadius: "18px" }}
+        onClick={() => selectedDocumentId && setShareDocId(selectedDocumentId)}
+        disabled={!selectedDocumentId}
+      >
+        <span>Share</span>
+        <Share2 className="h-6 w-6 text-[#4B2A06]" />
+      </button>
       {/* Split area for Documents and Chat History */}
       <div className="flex-1 flex flex-col gap-6 min-h-0">
         {/* Documents Section (top 50%) */}
@@ -285,13 +297,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <FileText className="h-5 w-5 flex-shrink-0" />
                   <span className="truncate">{doc.name}</span>
                 </div>
-                <button
-                  className="ml-2 text-muted-foreground hover:text-destructive p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => handleDeleteDocClick(e, doc)}
-                  title="Delete document"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    className="text-muted-foreground hover:text-[#4B2A06] p-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShareDocId(doc.id);
+                    }}
+                    title="Share document"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    className="text-muted-foreground hover:text-destructive p-1"
+                    onClick={(e) => handleDeleteDocClick(e, doc)}
+                    title="Delete document"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -399,6 +423,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Share dialog */}
+      <ShareDialog
+        resourceType="document"
+        resourceId={shareDocId}
+        open={!!shareDocId}
+        onOpenChange={(o) => !o && setShareDocId(null)}
+      />
     </div>
   );
 };

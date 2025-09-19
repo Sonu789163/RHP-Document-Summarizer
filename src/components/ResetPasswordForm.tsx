@@ -46,12 +46,12 @@ export function ResetPasswordForm() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get token and email from URL parameters
   const params = new URLSearchParams(location.search);
   const token = params.get("token");
   const email = params.get("email");
-  
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -65,7 +65,7 @@ export function ResetPasswordForm() {
       toast.error("Invalid reset link. Please request a new password reset.");
       return;
     }
-    
+
     setIsLoading(true);
     try {
       await authService.resetPassword(email, token, values.password);
@@ -84,11 +84,10 @@ export function ResetPasswordForm() {
   if (!token || !email) {
     return (
       <div className="w-full max-w-lg mx-auto text-center space-y-6">
-        <h2 className="text-2xl font-bold text-[#444]">
-          Invalid Reset Link
-        </h2>
+        <h2 className="text-2xl font-bold text-[#444]">Invalid Reset Link</h2>
         <p className="text-[#666]">
-          The password reset link is invalid or has expired. Please request a new password reset.
+          The password reset link is invalid or has expired. Please request a
+          new password reset.
         </p>
         <Button
           onClick={() => navigate("/login")}
@@ -107,7 +106,8 @@ export function ResetPasswordForm() {
           Password Reset Complete
         </h2>
         <p className="text-[#666]">
-          Your password has been reset successfully. You can now log in with your new password.
+          Your password has been reset successfully. You can now log in with
+          your new password.
         </p>
         <Button
           onClick={() => navigate("/login")}
@@ -126,11 +126,9 @@ export function ResetPasswordForm() {
           <h2 className="text-2xl font-bold text-[#444] mb-2">
             Reset Your Password
           </h2>
-          <p className="text-[#666]">
-            Please enter your new password below.
-          </p>
+          <p className="text-[#666]">Please enter your new password below.</p>
         </div>
-        
+
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
             control={form.control}
@@ -148,7 +146,7 @@ export function ResetPasswordForm() {
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter new password"
-                      className="rounded-xl border border-[#E5E5E5] px-6 py-6 text-lg focus:ring-2 focus:ring-[#4B2A06] focus:border-[#4B2A06] shadow-none bg-white pr-12 h-16 outline-none"
+                      className="rounded-xl border border-[#E5E5E5] px-6 py-6 text-lg focus:ring-0 focus:border-[#E5E5E5] shadow-none bg-white pr-12 h-16 outline-none"
                       {...field}
                     />
                     <button
@@ -184,7 +182,7 @@ export function ResetPasswordForm() {
                     <Input
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm new password"
-                      className="rounded-xl border border-[#E5E5E5] px-6 py-6 text-lg focus:ring-2 focus:ring-[#4B2A06] focus:border-[#4B2A06] shadow-none bg-white pr-12 h-16 outline-none"
+                      className="rounded-xl border border-[#E5E5E5] px-6 py-6 text-lg focus:ring-0 focus:border-[#E5E5E5] shadow-none bg-white pr-12 h-16 outline-none"
                       {...field}
                     />
                     <button

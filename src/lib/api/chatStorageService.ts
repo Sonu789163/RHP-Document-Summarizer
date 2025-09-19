@@ -55,6 +55,19 @@ export const chatStorageService = {
 
   async saveChatForDoc(documentId: string, chat: ChatSession) {
     try {
+      // Only persist chats that have at least 1 user message or >1 bot messages
+      const userCount = chat.messages.filter((m) => m.isUser).length;
+      const botCount = chat.messages.filter((m) => !m.isUser).length;
+      const shouldPersist = userCount >= 1 || botCount > 1;
+
+      if (!shouldPersist) {
+        // If chat exists on backend, delete it; else, simply skip creating
+        if (chat.id) {
+          try { await chatService.delete(chat.id); } catch {}
+        }
+        return;
+      }
+
       // If chat has exactly two messages (bot greeting + first user message) and title is 'New Chat', update title to first user message
       if (
         chat.messages.length === 2 &&
@@ -65,14 +78,26 @@ export const chatStorageService = {
           chat.messages[1].content.slice(0, 30) +
           (chat.messages[1].content.length > 30 ? "..." : "");
       }
-      if (chat.id) {
-        await chatService.update(chat.id, chat);
-      } else {
+      if (!chat.id) {
         const newChat = await chatService.create({
           ...chat,
           documentId,
         });
         chat.id = newChat.id;
+      } else {
+        try {
+          await chatService.update(chat.id, chat);
+        } catch (err: any) {
+          if (err?.response?.status === 404) {
+            const newChat = await chatService.create({
+              ...chat,
+              documentId,
+            });
+            chat.id = newChat.id;
+          } else {
+            throw err;
+          }
+        }
       }
     } catch (error) {
       console.error("Error saving chat:", error);
@@ -88,6 +113,7 @@ export const chatStorageService = {
     documentId: string,
     initialMessage: ChatMessage
   ): Promise<ChatSession> {
+    // Create chat in memory first; only persist after eligibility check in saveChatForDoc
     const chat: ChatSession = {
       id: Date.now().toString(),
       title: "New Chat", // Always use 'New Chat' as the default title
@@ -95,14 +121,7 @@ export const chatStorageService = {
       updatedAt: new Date().toISOString(),
       documentId,
     };
-
-    try {
-      const newChat = await chatService.create(chat);
-      return newChat;
-    } catch (error) {
-      console.error("Error creating chat:", error);
-      throw error;
-    }
+    return chat;
   },
 
   async updateChatTitle(documentId: string, chatId: string, title: string) {

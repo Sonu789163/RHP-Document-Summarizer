@@ -109,14 +109,7 @@ export default function AuthPage() {
               ) : (
                 <LoginForm />
               )}
-              <div className="flex justify-center gap-4 mt-2 mb-2">
-                <button className="bg-white border-none shadow-none p-0">
-                  <GoogleLogo />
-                </button>
-                <button className="bg-white border-none shadow-none p-0">
-                  <MicrosoftLogo />
-                </button>
-              </div>
+              
               <div
                 className="text-center text-xl mt-6"
                 style={{

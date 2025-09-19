@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { Send, User, Loader2, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +50,7 @@ interface ChatPanelCustomStyles {
   removeHeader?: boolean;
   removeInputBorder?: boolean;
   inputPlaceholder?: string;
+  inputFocusClassName?: string; // optional className applied to the input for focus styles
 }
 
 interface ChatPanelProps {
@@ -136,6 +138,21 @@ export function ChatPanel({
   const inputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [lastDocumentId, setLastDocumentId] = useState<string | null>(null);
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Quick prompt chips for funds-related agencies
+  const quickPrompts = [
+    "Summarise key risk factors relevant to investors.",
+    "What is the issue size, price band, and lot size?",
+    "How will the proceeds be used (utilisation of funds)?",
+    "Who are the lead managers, registrar, and their roles?",
+  ];
+
+  const handleQuickAsk = (prompt: string) => {
+    if (!isDocumentProcessed) return;
+    setInputValue(prompt);
+    setTimeout(() => handleSendMessage(), 0);
+  };
 
   useEffect(() => {
     // Cleanup on unmount
@@ -143,34 +160,24 @@ export function ChatPanel({
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
     };
   }, []);
 
   const handleNewChat = async () => {
     if (!currentDocument) return;
-
-    const newChat = await chatStorageService.createChatForDoc(
-      currentDocument.id,
+    // Start a fresh transient chat (not persisted) with only the greeting
+    setCurrentChatId(null);
+    setMessages([
       {
-        id: "initial",
+        id: "greet",
         content: `Hello! I'm your DRHP document assistant. Ask a question about ${currentDocument.name} to start a chat.`,
         isUser: false,
-        timestamp: new Date().toISOString(),
-      }
-    );
-
-    const chats = await chatStorageService.getChatsForDoc(currentDocument.id);
-    const reloadedChat = chats.find((c) => c.id === newChat.id);
-
-    if (reloadedChat) {
-      setMessages(
-        reloadedChat.messages.map((m) => ({
-          ...m,
-          timestamp: new Date(m.timestamp),
-        }))
-      );
-      setCurrentChatId(reloadedChat.id);
-    }
+        timestamp: new Date(),
+      },
+    ]);
   };
 
   useEffect(() => {
@@ -183,10 +190,30 @@ export function ChatPanel({
     inputRef.current?.focus();
   }, []);
 
-  // Always open a new chat when the document changes to a new id
+  // Start inactivity countdown on mount and when session changes
+  useEffect(() => {
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    inactivityTimerRef.current = setTimeout(() => {
+      setCurrentChatId(null);
+      setMessages([
+        {
+          id: "greet",
+          content:
+            "Hello! I'm your DRHP document assistant. Ask a question to start a chat.",
+          isUser: false,
+          timestamp: new Date(),
+        },
+      ]);
+    }, 20 * 60 * 1000);
+    return () => {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    };
+  }, [sessionData.id]);
+
+  // On document change, do NOT auto-create chat history.
+  // Let loadChat decide whether to show a local greeting without saving.
   useEffect(() => {
     if (currentDocument && currentDocument.id !== lastDocumentId) {
-      handleNewChat();
       setLastDocumentId(currentDocument.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -202,6 +229,20 @@ export function ChatPanel({
       }
 
       try {
+        // If session expired (based on last user activity) OR we just reset session on init, show a fresh greeting
+        if (sessionService.isSessionExpired(sessionData) || sessionData.resetOnInit) {
+          setMessages([
+            {
+              id: "greet",
+              content:
+                "Hello! I'm your DRHP document assistant. Ask a question to start a chat.",
+              isUser: false,
+              timestamp: new Date(),
+            },
+          ]);
+          setCurrentChatId(null);
+          return;
+        }
         if (chatId) {
           const chats = await chatStorageService.getChatsForDoc(
             currentDocument.id
@@ -217,29 +258,17 @@ export function ChatPanel({
             setCurrentChatId(chat.id);
           }
         } else {
-          const chats = await chatStorageService.getChatsForDoc(
-            currentDocument.id
-          );
-          if (chats && chats.length > 0 && Array.isArray(chats[0].messages)) {
-            setMessages(
-              chats[0].messages.map((m) => ({
-                ...m,
-                timestamp: new Date(m.timestamp),
-              }))
-            );
-            setCurrentChatId(chats[0].id);
-          } else {
-            setMessages([
-              {
-                id: "1",
-                content:
-                  "Hello! I'm your DRHP document assistant. Ask a question about it to start a chat.",
-                isUser: false,
-                timestamp: new Date(),
-              },
-            ]);
-            setCurrentChatId(null);
-          }
+          // Always show a transient greeting in UI without loading previous chats
+          setMessages([
+            {
+              id: "greet",
+              content:
+                "Hello! I'm your DRHP document assistant. Ask a question to start a chat.",
+              isUser: false,
+              timestamp: new Date(),
+            },
+          ]);
+          setCurrentChatId(null);
         }
       } catch (error) {
         console.error("Error loading chat:", error);
@@ -265,6 +294,15 @@ export function ChatPanel({
   const handleSendMessage = async () => {
     if (!inputValue.trim() || !currentDocument) return;
 
+    // On user intervention, if session expired, reset to a new session and new chat
+    if (sessionService.isSessionExpired(sessionData)) {
+      const fresh = sessionService.clearSession();
+      setSessionData(fresh);
+      setCurrentChatId(null);
+      // Start a new transient chat object for this message
+      // so that the first user message persists as a new chat
+    }
+
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       content: inputValue,
@@ -284,31 +322,53 @@ export function ChatPanel({
     setIsTyping(true);
     onProcessingChange?.(true);
 
+    // Update last activity ONLY on user messages and restart inactivity timer
+    setSessionData((prev) => sessionService.updateSessionActivity(prev));
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    inactivityTimerRef.current = setTimeout(() => {
+      // After inactivity, start a new chat UI and clear currentChatId
+      setCurrentChatId(null);
+      setMessages([
+        {
+          id: "greet",
+          content:
+            "Hello! I'm your DRHP document assistant. Ask a question to start a chat.",
+          isUser: false,
+          timestamp: new Date(),
+        },
+      ]);
+    }, 20 * 60 * 1000);
+
     let chat: ChatSession | undefined;
     let newChatId = currentChatId;
     let newMessages: Message[] = [];
 
     try {
       if (!currentChatId) {
-        // Create chat with initial bot greeting
+        // Create chat with initial bot greeting (UI only; not persisted until user replies)
         const initialBotMessage: ChatMessage = {
           id: (Date.now() - 1).toString(),
           content: `Hello! I'm your DRHP document assistant. Ask a question about ${currentDocument.name} to start a chat.`,
           isUser: false,
           timestamp: new Date().toISOString(),
         };
+        // Create a chat object in memory; persistence happens after eligibility check in saveChatForDoc
         chat = await chatStorageService.createChatForDoc(
           currentDocument.id,
           initialBotMessage
         );
-        newChatId = chat.id;
-        setCurrentChatId(newChatId);
-        if (onChatCreated) onChatCreated(newChatId);
+        newChatId = chat.id || undefined;
 
         // Add user message to the chat
         chat.messages.push(userMessage);
         chat.updatedAt = new Date().toISOString();
         await chatStorageService.saveChatForDoc(currentDocument.id, chat);
+        // After save, ensure we have an id and set it as current
+        if (!newChatId && chat.id) {
+          newChatId = chat.id;
+          setCurrentChatId(newChatId);
+          if (onChatCreated) onChatCreated(newChatId);
+        }
 
         newMessages = chat.messages.map((m) => ({
           ...m,
@@ -460,9 +520,7 @@ export function ChatPanel({
 
   const handleDownload = async () => {
     const token = localStorage.getItem("accessToken");
-    let loadingToast;
     try {
-      loadingToast = toast.loading("Download processing...");
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/documents/download/${
           currentDocument?.id
@@ -484,11 +542,8 @@ export function ChatPanel({
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-      toast.dismiss(loadingToast);
-      toast.success("Document downloaded successfully");
     } catch (err) {
-      toast.dismiss(loadingToast);
-      toast.error("Download failed: " + err.message);
+      alert("Download failed: " + err.message);
     }
   };
 
@@ -549,7 +604,7 @@ export function ChatPanel({
               )}
             >
               {!message.isUser && (
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                <div className="h-8 w-8 rounded-full bg-[#ECE9E2] flex items-center justify-center flex-shrink-0">
                   <Bot className="h-4 w-4 text-muted-foreground" />
                 </div>
               )}
@@ -557,8 +612,8 @@ export function ChatPanel({
                 className={cn(
                   "rounded-2xl p-4 max-w-[75%]",
                   message.isUser
-                    ? "rounded-br-none"
-                    : "rounded-bl-none whitespace-pre-wrap"
+                    ? "rounded-br-none whitespace-pre-wrap"
+                    : "rounded-bl-none"
                 )}
                 style={{
                   background: message.isUser ? "#e6e3df" : "#e7ebee",
@@ -574,6 +629,34 @@ export function ChatPanel({
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
+                        h1: ({ children }) => (
+                          <h1 className="text-[18px] font-bold text-[#1F2937] my-2">{children}</h1>
+                        ),
+                        h2: ({ children }) => (
+                          <h2 className="text-[16px] font-bold text-[#1F2937] my-2">{children}</h2>
+                        ),
+                        h3: ({ children }) => (
+                          <h3 className="text-[15px] font-bold text-[#1F2937] my-2">{children}</h3>
+                        ),
+                        h4: ({ children }) => (
+                          <h4 className="text-[14px] font-bold text-[#1F2937] my-1.5">{children}</h4>
+                        ),
+                        h5: ({ children }) => (
+                          <h5 className="text-[13px] font-semibold text-[#1F2937] my-1.5">{children}</h5>
+                        ),
+                        h6: ({ children }) => (
+                          <h6 className="text-[12px] font-semibold text-[#1F2937] my-1">{children}</h6>
+                        ),
+                        p: ({ children }) => (
+                          <p className="my-1 leading-relaxed">{children}</p>
+                        ),
+                        ul: ({ children }) => (
+                          <ul className="list-disc pl-5 my-1 space-y-1">{children}</ul>
+                        ),
+                        ol: ({ children }) => (
+                          <ol className="list-decimal pl-5 my-1 space-y-1">{children}</ol>
+                        ),
+                        li: ({ children }) => <li className="leading-relaxed">{children}</li>,
                         table: ({ children }) => (
                           <table className="min-w-full border border-gray-300 my-2">
                             {children}
@@ -615,7 +698,7 @@ export function ChatPanel({
                 </span>
               </div>
               {message.isUser && (
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                <div className="h-8 w-8 rounded-full bg-[#ECE9E2]  flex items-center justify-center flex-shrink-0">
                   <User className="h-4 w-4 text-muted-foreground" />
                 </div>
               )}
@@ -637,13 +720,30 @@ export function ChatPanel({
           )}
         </div>
       </ScrollArea>
-      <div className="p-4 flex-shrink-0 border-t mb-8 bg-white">
+      <div className="p-4 flex-shrink-0  mb-8 bg-white">
+        {/* Quick prompts (chips) */}
+        <div className="flex flex-wrap gap-2 mb-3">
+          {quickPrompts.map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => handleQuickAsk(p)}
+              disabled={!isDocumentProcessed}
+              className={cn(
+                "px-3 py-1.5 text-sm rounded-full border border-[#E5E5E5] bg-[#F9F6F2] text-[#4B2A06] hover:bg-[#F1EDE6]",
+                !isDocumentProcessed && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
         <form
           onSubmit={(e) => {
             e.preventDefault();
             handleSendMessage();
           }}
-          className="flex items-center gap-2"
+          className="flex items-center border-t pt-4 gap-2"
         >
           <Input
             ref={inputRef}
@@ -653,7 +753,10 @@ export function ChatPanel({
               customStyles.inputPlaceholder ||
               "Ask a question about your document..."
             }
-            className="flex-1"
+            className={cn(
+              "flex-1 chat-input-focus focus:outline-none ring-0",
+              customStyles.inputFocusClassName
+            )}
             style={{
               background: customStyles.inputBg || undefined,
               borderColor: customStyles.inputBorder || undefined,
@@ -698,9 +801,15 @@ export function ChatPanel({
 export function DocumentPopover({
   documentId,
   documentName,
+  renderAsButton = false,
+  buttonLabel = "View Document",
+  buttonClassName = "text-sm text-[#4B2A06]",
 }: {
   documentId: string;
   documentName: string;
+  renderAsButton?: boolean;
+  buttonLabel?: string;
+  buttonClassName?: string;
 }) {
   const [docDetails, setDocDetails] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(false);
@@ -724,9 +833,7 @@ export function DocumentPopover({
 
   const handleDownload = async () => {
     const token = localStorage.getItem("accessToken");
-    let loadingToast;
     try {
-      loadingToast = toast.loading("Download processing...");
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/documents/download/${documentId} `, // ||`http://localhost:5000/api/documents/download/${documentId}`,
         {
@@ -745,11 +852,8 @@ export function DocumentPopover({
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-      toast.dismiss(loadingToast);
-      toast.success("Document downloaded successfully");
     } catch (err) {
-      toast.dismiss(loadingToast);
-      toast.error("Download failed: " + err.message);
+      alert("Download failed: " + err.message);
     }
   };
 
@@ -788,13 +892,27 @@ export function DocumentPopover({
 
   return (
     <>
-      {/* Document name directly opens PDF modal */}
-      <span
-        className="cursor-pointer underline text-base font-semibold text-[#4B2A06] mx-4"
-        onClick={handleViewPdf}
-      >
-        {documentName}
-      </span>
+      {/* Trigger to open PDF modal */}
+      {renderAsButton ? (
+        <button
+          type="button"
+          className={buttonClassName}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleViewPdf();
+          }}
+        >
+          {buttonLabel}
+        </button>
+      ) : (
+        <span
+          className="cursor-pointer underline text-base font-semibold text-[#4B2A06] mx-4"
+          onClick={handleViewPdf}
+        >
+          {documentName}
+        </span>
+      )}
       <Popover
         onOpenChange={(open) => {
           if (open && !docDetails && !loading) fetchDocDetails();
@@ -847,55 +965,57 @@ export function DocumentPopover({
           )}
         </PopoverContent>
       </Popover>
-      {showPdf && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/60">
-          <div className="bg-white rounded-lg shadow-lg p-2 w-full max-w-5xl h-[90vh] flex flex-col relative">
-            <button
-              className="absolute top-3 right-4 text-2xl font-bold text-gray-500 hover:text-gray-800 z-10"
-              onClick={handleClosePdf}
-              aria-label="Close PDF"
-            >
-              ×
-            </button>
-            {pdfLoading ? (
-              <div className="flex-1 flex items-center justify-center">
-                <span className="text-lg font-semibold">Processing...</span>
-              </div>
-            ) : (
-              pdfUrl && (
-                <>
-                  <iframe
-                    src={pdfUrl}
-                    title="PDF Viewer"
-                    width="100%"
-                    height="100%"
-                    className="flex-1 rounded"
-                    style={{ border: "none" }}
-                  />
-                  <button
-                    onClick={handleDownload}
-                    className="z-99 absolute top-5 right-24 p-1.5 bg-[#3c3c3c] text-white rounded hover:bg-[#515a5a] rounded-full"
-                  >
-                    <svg
-                      className="h-5 w-5 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+      {showPdf &&
+        ReactDOM.createPortal(
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40">
+            <div className="bg-white rounded-lg shadow-2xl p-2 w-full max-w-5xl h-[90vh] flex flex-col relative">
+              <button
+                className="absolute top-3 right-4 text-2xl font-bold text-gray-500 hover:text-gray-800 z-10"
+                onClick={handleClosePdf}
+                aria-label="Close PDF"
+              >
+                ×
+              </button>
+              {pdfLoading ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <span className="text-lg font-semibold">Processing...</span>
+                </div>
+              ) : (
+                pdfUrl && (
+                  <>
+                    <iframe
+                      src={pdfUrl}
+                      title="PDF Viewer"
+                      width="100%"
+                      height="100%"
+                      className="flex-1 rounded"
+                      style={{ border: "none" }}
+                    />
+                    <button
+                      onClick={handleDownload}
+                      className="z-[1001] absolute top-5 right-24 p-1.5 bg-[#3c3c3c] text-white hover:bg-[#515a5a] rounded-full"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                      />
-                    </svg>
-                  </button>
-                </>
-              )
-            )}
-          </div>
-        </div>
-      )}
+                      <svg
+                        className="h-5 w-5 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                        />
+                      </svg>
+                    </button>
+                  </>
+                )
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </>
   );
 }

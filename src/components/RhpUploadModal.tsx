@@ -112,7 +112,10 @@ export const RhpUploadModal: React.FC<RhpUploadModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent
+        className="sm:max-w-[500px] bg-white"
+        onClick={(e) => e.stopPropagation()}
+      >
         <DialogHeader>
           <DialogTitle>Upload RHP Document</DialogTitle>
           <DialogDescription>
@@ -127,7 +130,7 @@ export const RhpUploadModal: React.FC<RhpUploadModalProps> = ({
               id="file"
               type="file"
               accept=".pdf"
-              className="file:bg-[#F5F3EF] file:text-[#4B2a09] file:text-sm file:font-medium file:border-none file:cursor-pointer border border-[#E5E5E5] rounded-md"
+              className=" bg-white text-gray-400  file:text-[#4B2a09] file:text-sm file:font-medium file:border-none file:cursor-pointer border border-[#E5E5E5] rounded-md"
               onChange={handleFileSelect}
               ref={fileInputRef}
               disabled={uploading}
@@ -158,16 +161,23 @@ export const RhpUploadModal: React.FC<RhpUploadModalProps> = ({
           <Button
             type="button"
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenChange(false);
+            }}
+            className="bg-gray-200 text-[#4B2A06] hover:bg-gray-200 border-none hover:text-[#4B2A06]"
             disabled={uploading}
           >
             Cancel
           </Button>
           <Button
             type="button"
-            onClick={() => file && handleUpload(file)}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (file) handleUpload(file);
+            }}
             disabled={!file || uploading}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-[#4B2A06] text-white hover:bg-[#4B2A06]/90 border-none hover:text-white"
           >
             {uploading ? (
               <>

@@ -1,11 +1,13 @@
 import { v4 as uuidv4 } from "uuid";
 
 const SESSION_STORAGE_KEY = "chat_session";
-const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+const SESSION_TIMEOUT = 20 * 60 * 1000; // 20 minutes
 
 export interface SessionData {
   id: string;
   lastActivity: number;
+  // Indicates that initializeSession created a fresh session because the prior one was missing/expired
+  resetOnInit?: boolean;
 }
 
 export interface ConversationMemory {
@@ -27,13 +29,14 @@ export const sessionService = {
       const parsed = JSON.parse(savedSession);
       const now = Date.now();
       if (now - parsed.lastActivity < SESSION_TIMEOUT) {
-        return parsed;
+        return { ...parsed, resetOnInit: false };
       }
     }
     // Create new session with UUID if none exists or is expired
-    const newSession = {
+    const newSession: SessionData = {
       id: `session_${uuidv4()}`,
       lastActivity: Date.now(),
+      resetOnInit: true,
     };
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newSession));
     return newSession;
@@ -49,9 +52,10 @@ export const sessionService = {
   },
 
   clearSession(): SessionData {
-    const newSession = {
+    const newSession: SessionData = {
       id: `session_${uuidv4()}`,
       lastActivity: Date.now(),
+      resetOnInit: true,
     };
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newSession));
     return newSession;

@@ -5,7 +5,7 @@ import { ChatPanel } from "@/components/ChatPanel";
 import { Loader2 } from "lucide-react";
 import { uploadService } from "@/lib/api/uploadService";
 import { sessionService } from "@/lib/api/sessionService";
-import { documentService } from "@/services/api";
+import { documentService, shareService } from "@/services/api";
 import { Sidebar } from "@/components/Sidebar";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -43,6 +43,7 @@ export default function ChatSummaryLayout() {
   const [isRhpUploading, setIsRhpUploading] = useState(false);
 
   const chatId = searchParams.get("chatId");
+  const linkToken = searchParams.get("linkToken") || localStorage.getItem('sharedLinkToken') || undefined;
 
   // Handle click outside to close sidebar
   useEffect(() => {
@@ -78,7 +79,7 @@ export default function ChatSummaryLayout() {
       }
       try {
         setIsInitialDocumentProcessing(true);
-        const doc = await documentService.getById(namespace);
+        const doc = await documentService.getById(namespace, linkToken || undefined);
         if (isMounted) {
           setCurrentDocument(doc);
           setSelectedSummaryId(null);

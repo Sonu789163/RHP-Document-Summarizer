@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { documentService, reportService, Report } from "../services/api";
+import { documentService, reportService, Report, shareService } from "../services/api";
 import { reportN8nService } from "../lib/api/reportN8nService";
 import { sessionService } from "../lib/api/sessionService";
 import { toast } from "sonner";
@@ -39,10 +39,12 @@ import {
 import { io as socketIOClient } from "socket.io-client";
 import { SummaryPanel } from "../components/SummaryPanel";
 
-interface ComparePageProps {}
+interface ComparePageProps { }
 
 export const ComparePage: React.FC<ComparePageProps> = () => {
   const { drhpId } = useParams<{ drhpId: string }>();
+  const [searchParams] = useSearchParams();
+  const linkToken = searchParams.get('linkToken') || localStorage.getItem('sharedLinkToken') || undefined;
   const navigate = useNavigate();
   const { user } = useAuth();
   const [sessionData] = useState(() => sessionService.initializeSession());
@@ -56,6 +58,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
   const [deleting, setDeleting] = useState(false);
   const [zoom, setZoom] = useState(1); // 1 = 100%
   const reportRef = useRef<HTMLDivElement>(null);
+  const [linkRole, setLinkRole] = useState<"viewer" | "editor" | "owner" | null>(null);
   const [selectedRhpSummaryId, setSelectedRhpSummaryId] = useState<
     string | null
   >(null);
@@ -76,11 +79,11 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     if (!drhpId) return;
     try {
       setLoading(true);
-      const drhpDoc = await documentService.getById(drhpId);
+      const drhpDoc = await documentService.getById(drhpId!, linkToken);
       setDrhp(drhpDoc);
 
       if (drhpDoc.relatedRhpId) {
-        const rhpDoc = await documentService.getById(drhpDoc.relatedRhpId);
+        const rhpDoc = await documentService.getById(drhpDoc.relatedRhpId, linkToken);
         setRhp(rhpDoc);
       }
 
@@ -106,6 +109,13 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
   useEffect(() => {
     fetchDocumentsAndReports();
   }, [drhpId]);
+
+  useEffect(() => {
+    (async () => {
+      const role = await shareService.resolveTokenRole();
+      setLinkRole(role);
+    })();
+  }, []);
 
   useEffect(() => {
     // On mount, check if report processing is ongoing for this DRHP
@@ -372,42 +382,42 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                   border: 2px solid #d1d5de;
                   margin: 16px 0;
                   font-size: 13px;
-                  background: #f1eada;
+                  background: #ECE9E2;
                 }
                 .summary-content th, .summary-content td {
                   border: 1px solid #d1d5de;
                   padding: 6px 8px;
                   text-align: left;
-                  background: #f1eada;
+                  background: #ECE9E2;
                   color: #222;
                 }
                 .summary-content th {
-                  background: #f1eada;
+                  background: #ECE9E2;
                   font-weight: 600;
                 }
                 .summary-content tr:nth-child(even) td {
-                  background: #f1eada;
+                  background: #ECE9E2;
                 }
                 @media print {
                   .summary-content table {
                     border-collapse: collapse !important;
                     width: 100% !important;
                     border: 2px solid #d1d5de !important;
-                    background: #f1eada !important;
+                    background: #ECE9E2 !important;
                   }
                   .summary-content th, .summary-content td {
                     border: 1px solid #d1d5de !important;
                     padding: 6px 8px !important;
                     text-align: left !important;
-                    background: #f1eada !important;
+                    background: #ECE9E2 !important;
                     color: #222 !important;
                   }
                   .summary-content th {
-                    background: #f1eada !important;
+                    background: #ECE9E2 !important;
                     font-weight: 600 !important;
                   }
                   .summary-content tr:nth-child(even) td {
-                    background: #f1eada !important;
+                    background: #ECE9E2 !important;
                   }
                 }
               </style>
@@ -468,9 +478,8 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       <div className="h-[90vh] flex mt-[10vh]">
         {/* Left Sidebar - ChatGPT Style */}
         <div
-          className={`transition-all duration-300 ease-in-out ${
-            sidebarOpen ? "w-60" : "w-16"
-          } fixed top-[10vh] left-0 bg-white border-r border-gray-200 h-[90vh] flex flex-col overflow-hidden`}
+          className={`transition-all duration-300 ease-in-out ${sidebarOpen ? "w-60" : "w-16"
+            } fixed top-[10vh] left-0 bg-white border-r border-gray-200 h-[90vh] flex flex-col overflow-hidden`}
         >
           {sidebarOpen && (
             <>
@@ -490,7 +499,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
               {/* Document Cards */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {/* DRHP Card */}
-                <Card className="w-full">
+                <Card className="w-full bg-white rounded-md  border border-gray-200">
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center gap-2 text-sm">
                       <FileText className="h-4 w-4" />
@@ -500,7 +509,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                       )}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="pt-0">
+                  <CardContent className="pt-0  ">
                     <div className="space-y-1 text-xs">
                       <p>
                         <strong>Name:</strong> {drhp.name}
@@ -512,7 +521,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                         <strong>Uploaded:</strong>{" "}
                         {new Date(drhp.uploadedAt).toLocaleDateString()}
                       </p>
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className="text-xs bg-[#ECE9E2] text-[#4B2A06] hover:bg-[#ECE9E2] hover:text-[#4B2A06]">
                         DRHP
                       </Badge>
                     </div>
@@ -520,7 +529,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                 </Card>
 
                 {/* RHP Card */}
-                <Card className="w-full relative">
+                <Card className="w-full relative bg-white rounded-md  border border-gray-200">
                   {rhp && (
                     <div className="absolute top-2 right-2 z-10">
                       <AlertDialog>
@@ -528,14 +537,14 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-6 w-6 p-0 hover:bg-gray/50"
+                            className="h-6 w-6 p-0 hover:bg-[#ECE9E2] text-[#4B2A06] bg-[#ECE9E2]"
                             disabled={deleting}
                             title="Delete Document"
                           >
                             {deleting ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
                             ) : (
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-3 w-3 " />
                             )}
                           </Button>
                         </AlertDialogTrigger>
@@ -576,7 +585,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                           <strong>Uploaded:</strong>{" "}
                           {new Date(rhp.uploadedAt).toLocaleDateString()}
                         </p>
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs text-xs bg-[#ECE9E2] text-[#4B2A06] hover:bg-[#ECE9E2] hover:text-[#4B2A06]">
                           RHP
                         </Badge>
                       </div>
@@ -601,7 +610,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                   <Button
                     className="w-full bg-[#4B2A06] hover:bg-[#6b3a0a] text-white font-semibold"
                     onClick={handleCreateReport}
-                    disabled={comparing}
+                    disabled={comparing || linkRole === 'viewer'}
                   >
                     {comparing ? (
                       <>
@@ -633,9 +642,8 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
 
         {/* Main Content Area */}
         <div
-          className={`flex-1 flex h-full flex-col lg:flex-row transition-all duration-300 ease-in-out ${
-            sidebarOpen ? "ml-60" : "ml-16"
-          }`}
+          className={`flex-1 flex h-full flex-col lg:flex-row transition-all duration-300 ease-in-out ${sidebarOpen ? "ml-60" : "ml-16"
+            }`}
         >
           {/* Middle: Comparison Report */}
           <div className="flex-1 lg:w-[50%] flex flex-col bg-gray-50">
@@ -702,30 +710,38 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
               ) : selectedReport ? (
                 <div className="h-full mx-5 my-4 ">
                   <style>{`
-                  .summary-content table {
-                    border-collapse: collapse;
-                    width: 100%;
-                    border: 2px solid #d1d5de;
-                    margin: 16px 0;
-                    font-size: 13px;
-                    background: #f1eada;
-                  }
-                  .summary-content th, .summary-content td {
-                    border: 1px solid #d1d5de;
-                    padding: 6px 8px;
-                    text-align: left;
-                  }
-                  .summary-content th {
-                    background: #f1eada;
-                    font-weight: 600;
-                  }
-                  .summary-content tr:nth-child(even) td {
-                    background: #f1eada;
-                  }
-                `}</style>
+              .summary-content table {
+                border-collapse: collapse;
+                width: 100%;
+                border: 2px solid #d1d5de;
+                margin: 16px 0;
+                font-size: 13px;
+                background: #ECE9E2;
+              }
+              .summary-content th, .summary-content td {
+                border: 1px solid #d1d5de;
+                padding: 6px 8px;
+                text-align: left;
+              }
+              .summary-content th {
+                background: #ECE9E2;
+                font-weight: 600;
+              }
+              .summary-content tr:nth-child(even) td {
+                background: #ECE9E2;
+              }
+              .summary-content h1 { font-size: 24px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h2 { font-size: 18px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h3 { font-size: 16px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h4 { font-size: 14px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h5 { font-size: 12px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h6 { font-size: 10px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content b, .summary-content strong { font-weight: 700; }
+              .summary-content hr { border: none; border-top: 1px solid #E5E7EB; margin: 12px 0; }
+            `}</style>
                   {/* HTML Content Display */}
                   <div
-                    className="h-[95%] hide-scrollbar bg-[#f1eada] rounded-md overflow-y-auto"
+                    className="h-[95%] hide-scrollbar bg-[#ECE9E2] rounded-md overflow-y-auto"
                     style={{ zoom: zoom }}
                   >
                     <div

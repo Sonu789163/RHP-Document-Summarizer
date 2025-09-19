@@ -203,3 +203,32 @@
     }
   }
 }
+
+/* Global focus resets - Remove all focus outlines and rings */
+*:focus,
+*:focus-visible,
+input:focus,
+textarea:focus,
+select:focus,
+button:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove focus rings from all inputs */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none !important;
+  ring: none !important;
+  --tw-ring-shadow: none !important;
+  box-shadow: none !important;
+}
+
+/* Chat input specific styling - no focus ring */
+.chat-input-focus:focus {
+  outline: none !important;
+  ring: none !important;
+  --tw-ring-shadow: none !important;
+  box-shadow: 0 2px 4px 2px rgba(101, 101, 101, 0.1) !important;
+}

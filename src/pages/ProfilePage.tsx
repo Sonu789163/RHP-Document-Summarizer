@@ -28,6 +28,8 @@ import {
   LogOut,
   Trash2,
   FileText,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -43,7 +45,6 @@ import { Navbar } from "@/components/Navbar";
 // Form schemas
 const profileSchema = z.object({
   name: z.string().min(1, "Name is required").optional(),
-  phoneNumber: z.string().optional(),
   gender: z.enum(["male", "female", "other", "prefer-not-to-say"]).optional(),
 });
 
@@ -119,7 +120,6 @@ export default function ProfilePage() {
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: "",
-      phoneNumber: "",
       gender: "prefer-not-to-say" as const,
     },
   });
@@ -147,7 +147,6 @@ export default function ProfilePage() {
       setProfile(profileData);
       profileForm.reset({
         name: profileData.name || "",
-        phoneNumber: profileData.phoneNumber || "",
         gender: profileData.gender || "prefer-not-to-say",
       });
     } catch (error: any) {
@@ -161,17 +160,47 @@ export default function ProfilePage() {
     }
   };
 
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [otpValue, setOtpValue] = useState("");
+  const [pendingUpdate, setPendingUpdate] = useState<any>(null);
+
   const handleUpdateProfile = async (data: z.infer<typeof profileSchema>) => {
     try {
       setActionLoading("profile");
-      await userService.updateMyProfile(data);
-      toast.success("Profile updated successfully");
-      loadProfile();
+      setPendingUpdate(data);
+      await userService.initiateProfileUpdateOtp(data);
+      setOtpOpen(true);
+      toast.success("OTP sent to your email");
     } catch (error: any) {
       const message =
         error.response?.data?.message ||
         error.message ||
-        "Failed to update profile";
+        "Failed to initiate verification";
+      toast.error(message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    try {
+      setActionLoading("otp");
+      if (pendingUpdate) {
+        // Profile update flow
+        await userService.verifyProfileUpdateOtp(otpValue);
+        toast.success("Profile updated successfully");
+      } else {
+        // Password change flow
+        await userService.verifyPasswordChangeOtp(otpValue);
+        toast.success("Password changed successfully");
+        passwordForm.reset();
+      }
+      setOtpOpen(false);
+      setOtpValue("");
+      setPendingUpdate(null);
+      loadProfile();
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || "Failed to verify OTP";
       toast.error(message);
     } finally {
       setActionLoading(null);
@@ -185,8 +214,9 @@ export default function ProfilePage() {
         oldPassword: data.oldPassword,
         newPassword: data.newPassword,
       });
-      toast.success("Password changed successfully");
-      passwordForm.reset();
+      // OTP will be sent by backend
+      setOtpOpen(true);
+      toast.success("OTP sent to your email");
     } catch (error: any) {
       const message =
         error.response?.data?.message || "Failed to change password";
@@ -270,7 +300,7 @@ export default function ProfilePage() {
                 Account summary
               </div>
               <div className="text-xs leading-snug">
-                View and manage your orders
+                View account summary
               </div>
             </button>
             <button
@@ -285,18 +315,20 @@ export default function ProfilePage() {
                 <Shield className="h-4 w-4" /> Security
               </div>
               <div className="text-xs leading-snug">
-                All settings related to notifications
+                All settings related to security and password
               </div>
             </button>
           </aside>
 
           {/* Content */}
           <section className=" w-[70vw] lg:col-span-3 space-y-6 max-h-[calc(100vh-100px)]  overflow-y-auto p-6 scrollbar-hide">
-            <h1 className="text-3xl font-bold mb-4 mt-2">Profile Settings</h1>
+            
             {activeTab === "profile" && (
               <>
                 {/* Profile Details */}
+                <h1 className="text-3xl font-bold mb-4 mt-2">Profile Settings</h1>
                 <div className=" shadow-md border-t  border-gray-200 rounded-xl">
+                
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-gray-500">
                       <UserIcon className="h-5 w-5 text-gray-500" />
@@ -371,7 +403,7 @@ export default function ProfilePage() {
                   <CardContent>
                     <div className="flex items-center gap-6">
                       <Avatar className="  h-24 w-24 ">
-                        <AvatarFallback className="text-2xl font-bold bg-gray-200">
+                        <AvatarFallback className="text-2xl font-bold bg-[#ECE9E2] text-[#4B2A06]">
                           {getUserInitials(profile)}
                         </AvatarFallback>
                       </Avatar>
@@ -427,26 +459,7 @@ export default function ProfilePage() {
                             </FormItem>
                           )}
                         />
-                        <FormField
-                          control={profileForm.control}
-                          name="phoneNumber"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="flex items-center gap-2 text-gray-500">
-                                <Phone className="h-4 w-4" />
-                                Phone Number
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  className="border border-gray-200 rounded-xl bg-white/60"
-                                  placeholder="Enter your phone number"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        {/* Phone number removed per requirements */}
                         <FormField
                           control={profileForm.control}
                           name="gender"
@@ -480,7 +493,7 @@ export default function ProfilePage() {
                         />
                         <Button
                           type="submit"
-                          className="bg-[#4B2A06] text-white rounded-xl hover:bg-[#3a2004] transition ml-[57vw] "
+                          className="bg-[#4B2A06] w-full text-white rounded-xl hover:bg-[#3a2004] transition  "
                           disabled={actionLoading === "profile"}
                         >
                           {actionLoading === "profile" && (
@@ -493,26 +506,49 @@ export default function ProfilePage() {
                   </CardContent>
                 </div>
 
+                {/* OTP Modal */}
+                {otpOpen && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+                    <div className="bg-white w-full max-w-sm rounded-xl shadow-lg p-6">
+                      <h3 className="text-lg font-semibold mb-2">Verify Profile Update</h3>
+                      <p className="text-sm text-gray-500 mb-4">
+                        Enter the 6-digit OTP sent to your email address.
+                      </p>
+                      <Input
+                        value={otpValue}
+                        onChange={(e) => setOtpValue(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                        placeholder="Enter OTP"
+                        className="border border-gray-200 rounded-xl bg-white/60 text-center tracking-widest text-lg"
+                      />
+                      <div className="flex justify-end gap-2 mt-4">
+                        <Button variant="ghost" onClick={() => { setOtpOpen(false); setOtpValue(""); }}>
+                          Cancel
+                        </Button>
+                        <Button className="bg-[#4B2A06] text-white" onClick={handleVerifyOtp} disabled={actionLoading === "otp" || otpValue.length !== 6}>
+                          {actionLoading === "otp" && (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )}
+                          Verify
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Account actions */}
                 <div className="shadow-md border-t  border-gray-200 rounded-xl">
                   <CardHeader>
                     <CardTitle className="text-base">Account actions</CardTitle>
                   </CardHeader>
-                  <CardContent className="flex items-center justify-end gap-6">
+                  <CardContent className="flex items-center justify-end gap-6 ">
                     <Button
                       variant="ghost"
                       onClick={() => logout()}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2  bg-[#ECE9E2] text-[#4B2A06] hover:bg-[#ECE9E2] transition"
                     >
                       <LogOut className="h-4 w-4" /> Log out
                     </Button>
-                    <Button
-                      variant="ghost"
-                      className="flex items-center gap-2 text-red-600"
-                      onClick={handleDeleteAccount}
-                    >
-                      <Trash2 className="h-4 w-4" /> Delete account
-                    </Button>
+                    
                   </CardContent>
                 </div>
               </>
@@ -520,7 +556,8 @@ export default function ProfilePage() {
 
             {activeTab === "security" && (
               <>
-                <div className="shadow-md border-t  border-gray-200 rounded-xl">
+              <h1 className="text-3xl font-bold mb-4 mt-2">Security Settings</h1>
+                <div className="shadow-md border-t w-full border-gray-200 rounded-xl">
                   <CardHeader>
                     <CardTitle className="text-gray-500">
                       Change Password
@@ -532,7 +569,7 @@ export default function ProfilePage() {
                         onSubmit={passwordForm.handleSubmit(
                           handleChangePassword
                         )}
-                        className="space-y-4"
+                        className="space-y-4 w-full"
                       >
                         <FormField
                           control={passwordForm.control}
@@ -541,12 +578,25 @@ export default function ProfilePage() {
                             <FormItem>
                               <FormLabel>Current Password</FormLabel>
                               <FormControl>
-                                <Input
-                                  className="border border-gray-200 rounded-xl bg-white/60"
-                                  type={showOldPassword ? "text" : "password"}
-                                  placeholder="Enter current password"
-                                  {...field}
-                                />
+                                <div className="relative">
+                                  <Input
+                                    className="border border-gray-200 rounded-xl bg-white/60 pr-10"
+                                    type={showOldPassword ? "text" : "password"}
+                                    placeholder="Enter current password"
+                                    {...field}
+                                  />
+                                  <button
+                                    type="button"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                    onClick={() => setShowOldPassword(!showOldPassword)}
+                                  >
+                                    {showOldPassword ? (
+                                      <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                      <Eye className="h-4 w-4" />
+                                    )}
+                                  </button>
+                                </div>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -559,12 +609,25 @@ export default function ProfilePage() {
                             <FormItem>
                               <FormLabel>New Password</FormLabel>
                               <FormControl>
-                                <Input
-                                  className="border border-gray-200 rounded-xl bg-white/60"
-                                  type={showNewPassword ? "text" : "password"}
-                                  placeholder="Enter new password"
-                                  {...field}
-                                />
+                                <div className="relative">
+                                  <Input
+                                    className="border border-gray-200 rounded-xl bg-white/60 pr-10"
+                                    type={showNewPassword ? "text" : "password"}
+                                    placeholder="Enter new password"
+                                    {...field}
+                                  />
+                                  <button
+                                    type="button"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                  >
+                                    {showNewPassword ? (
+                                      <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                      <Eye className="h-4 w-4" />
+                                    )}
+                                  </button>
+                                </div>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -577,14 +640,27 @@ export default function ProfilePage() {
                             <FormItem>
                               <FormLabel>Confirm New Password</FormLabel>
                               <FormControl>
-                                <Input
-                                  className="border border-gray-200 rounded-xl bg-white/60"
-                                  type={
-                                    showConfirmPassword ? "text" : "password"
-                                  }
-                                  placeholder="Confirm new password"
-                                  {...field}
-                                />
+                                <div className="relative">
+                                  <Input
+                                    className="border border-gray-200 rounded-xl bg-white/60 pr-10"
+                                    type={
+                                      showConfirmPassword ? "text" : "password"
+                                    }
+                                    placeholder="Confirm new password"
+                                    {...field}
+                                  />
+                                  <button
+                                    type="button"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                  >
+                                    {showConfirmPassword ? (
+                                      <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                      <Eye className="h-4 w-4" />
+                                    )}
+                                  </button>
+                                </div>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -592,7 +668,7 @@ export default function ProfilePage() {
                         />
                         <Button
                           type="submit"
-                          className="bg-[#4B2A06] text-white rounded-xl hover:bg-[#3a2004] transition ml-[55vw] "
+                          className="bg-[#4B2A06] w-full text-white rounded-xl hover:bg-[#3a2004]  "
                           disabled={actionLoading === "password"}
                         >
                           {actionLoading === "password" && (
@@ -632,11 +708,10 @@ export default function ProfilePage() {
 
             {activeTab === "summary" && (
               <>
+              <h1 className="text-3xl font-bold mb-4 mt-2">Account Summary</h1>
                 <div className="shadow-md border-t  border-gray-200 rounded-xl">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Account Summary</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                  
+                  <CardContent className=" mt-4 space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-500">
                         Account Type

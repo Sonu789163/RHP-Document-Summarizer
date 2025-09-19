@@ -11,8 +11,6 @@ export interface User {
   domain: string;
   role: "admin" | "user";
   status: "active" | "suspended";
-  // New profile fields
-  phoneNumber?: string;
   gender?: "male" | "female" | "other" | "prefer-not-to-say";
   createdAt: string;
   lastLogin: string;
@@ -33,7 +31,6 @@ export interface UpdateUserRequest {
 
 export interface UpdateProfileRequest {
   name?: string;
-  phoneNumber?: string;
   gender?: "male" | "female" | "other" | "prefer-not-to-say";
 }
 
@@ -140,6 +137,32 @@ export const userService = {
     const response = await axios.put(
       `${API_URL}/users/me/password`,
       passwordData
+    );
+    return response.data;
+  },
+
+  async verifyPasswordChangeOtp(otp: string): Promise<{ message: string }> {
+    const response = await axios.post(
+      `${API_URL}/users/me/password/otp-verify`,
+      { otp }
+    );
+    return response.data;
+  },
+
+  // User: Initiate OTP for profile update
+  async initiateProfileUpdateOtp(pendingUpdate: UpdateProfileRequest): Promise<{ message: string }> {
+    const response = await axios.post(
+      `${API_URL}/users/me/profile/otp-initiate`,
+      { pendingUpdate }
+    );
+    return response.data;
+  },
+
+  // User: Verify OTP and apply update
+  async verifyProfileUpdateOtp(otp: string): Promise<{ message: string; user: User }> {
+    const response = await axios.post(
+      `${API_URL}/users/me/profile/otp-verify`,
+      { otp }
     );
     return response.data;
   },

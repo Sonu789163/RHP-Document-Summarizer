@@ -14,7 +14,7 @@ import {
 import { toast } from "sonner";
 import { n8nService } from "@/lib/api/n8nService";
 import { sessionService } from "@/lib/api/sessionService";
-import { summaryService, Summary } from "@/services/api";
+import { summaryService, Summary, shareService } from "@/services/api";
 import {
   Tooltip,
   TooltipTrigger,
@@ -83,6 +83,7 @@ export function SummaryPanel({
   const [allSummaries, setAllSummaries] = useState<Summary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
+  const [linkRole, setLinkRole] = useState<"viewer"|"editor"|"owner"|null>(null);
   const [lastSummaryId, setLastSummaryId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedSummaryId, setCopiedSummaryId] = useState<string | null>(null);
@@ -103,6 +104,14 @@ export function SummaryPanel({
     return () => {
       // No abortControllerRef to clear
     };
+  }, []);
+
+  useEffect(() => {
+    // Resolve link role if a shared token is active
+    (async () => {
+      const role = await shareService.resolveTokenRole();
+      setLinkRole(role);
+    })();
   }, []);
 
   // console.log(currentDocument);
@@ -358,7 +367,10 @@ export function SummaryPanel({
   };
 
   const handleCopySummary = () => {
-    navigator.clipboard.writeText(summary);
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = stripStyleTags(summary || "");
+    const plainText = tempDiv.textContent || (tempDiv as any).innerText || "";
+    navigator.clipboard.writeText(plainText);
     setIsCopied(true);
     toast.success("Summary copied to clipboard");
     setTimeout(() => {
@@ -540,7 +552,7 @@ export function SummaryPanel({
           <div className="flex gap-2 mb-4 items-center justify-between">
             <Button
               onClick={handleNewSummary}
-              disabled={isSummarizing}
+              disabled={isSummarizing || (linkRole === 'viewer')}
               className="bg-[#4B2A06] text-white font-semibold  p-6 rounded-md shadow-lg text-xl hover:bg-[#3A2004] focus:outline-none transition-colors"
             >
               {isSummarizing ? (
@@ -583,7 +595,7 @@ export function SummaryPanel({
           </div>
 
           <div
-            className="flex-1 bg-muted rounded-lg p-4 overflow-y-auto min-h-0 animate-fade-in relative"
+            className="flex-1 bg-[#ECE9E2] rounded-lg p-4 overflow-y-auto min-h-0 animate-fade-in relative"
             style={{ height: "100%" }}
           >
             {/* Copy and download icons at top-right */}
@@ -620,7 +632,7 @@ export function SummaryPanel({
                 <TooltipContent>Download DOCX file</TooltipContent>
               </Tooltip>
             </div>
-            {/* Add local table styles for summary content */}
+            {/* Add local table styles for summary contentbg-[#ECE9E2] text-[#4B2A06] */}
             <style>{`
               .summary-content table {
                 border-collapse: collapse;
@@ -628,7 +640,7 @@ export function SummaryPanel({
                 border: 2px solid #d1d5de;
                 margin: 16px 0;
                 font-size: 13px;
-                background: #f1eada;
+                background: #ECE9E2;
               }
               .summary-content th, .summary-content td {
                 border: 1px solid #d1d5de;
@@ -636,15 +648,23 @@ export function SummaryPanel({
                 text-align: left;
               }
               .summary-content th {
-                background: #f1eada;
+                background: #ECE9E2;
                 font-weight: 600;
               }
               .summary-content tr:nth-child(even) td {
-                background: #f1eada;
+                background: #ECE9E2;
               }
+              .summary-content h1 { font-size: 24px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h2 { font-size: 18px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h3 { font-size: 16px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h4 { font-size: 14px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h5 { font-size: 12px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h6 { font-size: 10px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content b, .summary-content strong { font-weight: 700; }
+              .summary-content hr { border: none; border-top: 1px solid #E5E7EB; margin: 12px 0; }
             `}</style>
             {/* HTML Content Display */}
-            <div className="overflow-x-auto hide-scrollbar">
+            <div className="overflow-x-auto hide-scrollbar ">
               {/* Document Type Badge */}
               {currentDocument?.type && (
                 <div className="mb-2 absolute top-5 left-5 right-0 z-100">
@@ -655,7 +675,7 @@ export function SummaryPanel({
               )}
               <div
                 ref={summaryRef}
-                className="summary-content text-foreground/90 leading-relaxed"
+                className="summary-content  text-foreground/90 leading-relaxed"
                 style={{
                   width: "100%",
                   wordBreak: "break-word",
@@ -681,7 +701,7 @@ export function SummaryPanel({
           </p>
           <Button
             onClick={handleNewSummary}
-            disabled={isSummarizing}
+            disabled={isSummarizing || (linkRole === 'viewer')}
             className=" text-[#FF7A1A]  px-6 py-2 font-semibold shadow-none border-none bg-none text-lg flex items-center gap-2"
           >
             {isSummarizing ? (

@@ -17,18 +17,26 @@ import {
   Home,
   Upload,
   BarChart3,
-  User,
   Users,
-  Shield,
-  ChartBar,
-  ChartNoAxesCombinedIcon,
-  LayoutDashboard,
-  BookDashedIcon,
   LayoutDashboardIcon,
+  RefreshCcw,
+  UserPlus,
+  SettingsIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import SettingsModal from "./SettingsModal";
+import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
+import { WorkspaceInvitationPopover } from "./WorkspaceInvitationPopover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "./ui/switch";
+import { Bell } from "lucide-react";
+import { notificationsService } from "@/services/api";
 
 interface NavbarProps {
   title?: string;
@@ -62,6 +70,25 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [workspaceOpen, setWorkspaceOpen] = React.useState(false);
+  const [invitationOpen, setInvitationOpen] = React.useState(false);
+  const [unreadCount, setUnreadCount] = React.useState<number>(0);
+
+  React.useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const res = await notificationsService.list({ unread: true, page: 1, pageSize: 1 });
+        if (active) setUnreadCount(res.total || 0);
+      } catch { }
+    };
+    load();
+    const id = setInterval(load, 60000);
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, []);
 
   // Helper for initials
   const getUserInitials = (user: any) => {
@@ -109,12 +136,14 @@ export const Navbar: React.FC<NavbarProps> = ({
     else displayTitle = "PDF Summariser";
   }
 
-  // Show back arrow for admin pages, chat history, and settings/profile pages
+  // Show back arrow for admin pages, chat history, settings/profile pages, compare page, and notifications
   if (
     location.pathname.startsWith("/admin") ||
     location.pathname.startsWith("/chat-history") ||
     location.pathname.startsWith("/settings") ||
-    location.pathname.startsWith("/profile")
+    location.pathname.startsWith("/profile") ||
+    location.pathname.startsWith("/compare/") ||
+    location.pathname.startsWith("/notifications")
   ) {
     showBackArrow = true;
   }
@@ -172,9 +201,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
           <button
             onClick={() => navigate("/dashboard")}
-            className={`text-2xl font-extrabold text-[#232323] tracking-tight transition-all duration-300 hover:text-[#FF7A1A] cursor-pointer ${
-              isChatSummaryPage && sidebarOpen ? "ml-[-3vw]" : "ml-[0.5vw]"
-            }`}
+            className={`text-2xl font-extrabold text-[#232323] tracking-tight transition-all duration-300 hover:text-[#FF7A1A] cursor-pointer ${isChatSummaryPage && sidebarOpen ? "ml-[-3vw]" : "ml-[0.5vw]"
+              }`}
             style={{
               fontFamily: "Inter, Arial, sans-serif",
             }}
@@ -185,7 +213,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Show menu only on chat summary page */}
 
         <div className="flex-1" />
-        {showSearch && (
+        {showSearch && location.pathname === "/dashboard" && (
           <input
             type="text"
             placeholder="Search for Files by their names, time, and day"
@@ -205,7 +233,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={onUploadRhp}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-[#ECE9E2] text-[#4B2A06] hover:bg-[#ECE9E2] hover:shadow-sm"
               >
                 <Upload className="h-4 w-4" />
                 Upload RHP
@@ -215,7 +243,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={onCompare}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-[#ECE9E2] text-[#4B2A06] hover:bg-[#ECE9E2] hover:shadow-sm"
               >
                 <BarChart3 className="h-4 w-4" />
                 Compare With RHP
@@ -225,15 +253,51 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
 
         <div className="flex items-center ml-[2vw] gap-[2vw] text-[#232323] text-2xl">
+          {/* Workspace Switcher (icon + hover popover, only on dashboard) */}
+          {location.pathname === "/dashboard" && (
+            <div
+              onMouseEnter={() => setWorkspaceOpen(true)}
+              onMouseLeave={() => setWorkspaceOpen(false)}
+            >
+              <Popover open={workspaceOpen}  onOpenChange={setWorkspaceOpen}>
+                <PopoverTrigger asChild >
+                  <RefreshCcw className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px]" />
+                </PopoverTrigger>
+                <PopoverContent className="w-[25vw] p-3 bg-white border border-gray-200" align="end" sideOffset={8}>
+                  <WorkspaceSwitcher mode="list" />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+
+          {/* Workspace Invitations (icon + click dialog, only for admin on admin routes) */}
+          {(location.pathname.startsWith("/admin") ||
+            location.pathname === "/admin") &&
+            user?.role === "admin" && (
+              <Dialog open={invitationOpen} onOpenChange={setInvitationOpen}>
+                <DialogTrigger asChild>
+                  <button
+                    className={`flex items-center gap-2 text-2xl font-bold transition-colors ${invitationOpen ? "text-[#FF7A1A]" : "text-[#232323]"
+                      }`}
+                    title="Workspace Invitations"
+                  >
+                    <UserPlus className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px]" />
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="w-[90vw] max-w-[800px]  p-0" hideClose>
+                  <WorkspaceInvitationPopover />
+                </DialogContent>
+              </Dialog>
+            )}
+
           {isChatSummaryPage && (
             <nav className="flex gap-[2vw] ">
               <Link
                 to={location.pathname}
-                className={`flex items-center gap-2 text-2xl font-bold ${
-                  location.pathname.startsWith("/doc/")
-                    ? "text-[#FF7A1A]"
-                    : "text-[#232323]"
-                }`}
+                className={`flex items-center gap-2 text-2xl font-bold ${location.pathname.startsWith("/doc/")
+                  ? "text-[#FF7A1A]"
+                  : "text-[#232323]"
+                  }`}
               >
                 <MessageSquare className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px]" />
               </Link>
@@ -244,24 +308,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             <nav className="flex gap-[2vw]">
               <Link
                 to={location.pathname}
-                className={`flex items-center gap-2 text-2xl font-bold ${
-                  location.pathname.startsWith("/compare")
-                    ? "text-[#FF7A1A]"
-                    : "text-[#232323]"
-                }`}
+                className={`flex items-center gap-2 text-2xl font-bold ${location.pathname.startsWith("/compare")
+                  ? "text-[#FF7A1A]"
+                  : "text-[#232323]"
+                  }`}
                 title="Compare"
               >
                 <BarChart3 className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px]" />
               </Link>
             </nav>
           )}
+
           <Link
             to="/dashboard"
-            className={`flex items-center gap-2 text-2xl font-bold ${
-              location.pathname === "/dashboard"
-                ? "text-[#FF7A1A]"
-                : "text-[#232323]"
-            }`}
+            className={`flex items-center gap-2 text-2xl font-bold ${location.pathname === "/dashboard"
+              ? "text-[#FF7A1A]"
+              : "text-[#232323]"
+              }`}
           >
             <Home className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px]" />
           </Link>
@@ -271,67 +334,47 @@ export const Navbar: React.FC<NavbarProps> = ({
             <>
               <Link
                 to="/admin"
-                className={`flex items-center gap-2 text-2xl font-bold ${
-                  location.pathname === "/admin"
-                    ? "text-[#FF7A1A]"
-                    : "text-[#232323]"
-                }`}
+                className={`flex items-center gap-2 text-2xl font-bold ${location.pathname === "/admin"
+                  ? "text-[#FF7A1A]"
+                  : "text-[#232323]"
+                  }`}
                 title="Admin Dashboard"
               >
                 <LayoutDashboardIcon className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px]" />
-               
               </Link>
-              <Link
-                to="/admin/users"
-                className={`flex items-center gap-2 text-2xl font-bold ${
-                  location.pathname === "/admin/users"
-                    ? "text-[#FF7A1A]"
-                    : "text-[#232323]"
-                }`}
-                title="User Management"
-              >
-                <Users className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px]" />
-              </Link>
+
               {/* Domain Configuration link removed */}
             </>
           )}
-          {/* Settings icon */}
-          <span
-            className={`cursor-pointer ${
-              location.pathname === "/profile" ? "text-[#FF7A1A]" : ""
-            }`}
-            onClick={() => navigate("/profile")}
-            title="Settings"
+          {/* Notifications */}
+          <Link
+            to="/notifications"
+            className={`relative flex items-center gap-2 text-2xl font-bold ${location.pathname === "/notifications" ? "text-[#FF7A1A]" : "text-[#232323]"
+              }`}
+            title="Notifications"
           >
-            <svg
-              width="1vw"
-              height="1vw"
-              style={{ minWidth: 24, minHeight: 24 }}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="lucide lucide-settings"
-              viewBox="0 0 24 24"
-            >
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09c0 .66.39 1.25 1 1.51a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 8c.66 0 1.25.39 1.51 1H21a2 2 0 0 1 0 4h-.09c-.66 0-1.25.39-1.51 1Z"></path>
-            </svg>
-          </span>
+            <Bell className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px]" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] leading-none px-1.5 py-0.5 rounded-full">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </Link>
+          {/* Settings icon */}
+
           {/* User Avatar Dropdown */}
           {isAuthenticated && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <span className="cursor-pointer">
-                  <Avatar className="h-[5vh] w-[2.5vw] min-w-[32px] min-h-[32px]">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
+                  <Avatar className="h-10 w-10 min-w-[35px] min-h-[35px] hover:shadow-lg transition-all duration-300">
+                    <AvatarFallback className="bg-[#ECE9E2] text-[#4B2A06]">
                       {getUserInitials(user)}
                     </AvatarFallback>
                   </Avatar>
                 </span>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuContent className="w-56 bg-white border border-gray-200 text-[#4B2A06]" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">
@@ -342,38 +385,36 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </p>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onSelect={() => navigate("/profile")}
-                  className="cursor-pointer hover:bg-[rgba(62,36,7,0.13)] focus:bg-[rgba(62,36,7,0.13)] "
+                  className="cursor-pointer hover:bg-gray-100 focus:bg-gray-100 "
                 >
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
+
+                  <SettingsIcon className="mr-2 h-4 w-4" /> Settings
                 </DropdownMenuItem>
                 {user?.role === "admin" && (
                   <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onSelect={() => navigate("/admin")}
-                      className="cursor-pointer hover:bg-[rgba(62,36,7,0.13)] focus:bg-[rgba(62,36,7,0.13)] "
-                    >
-                      <Shield className="mr-2 h-4 w-4" />
-                      <span>Admin Dashboard</span>
-                    </DropdownMenuItem>
+
                     <DropdownMenuItem
                       onSelect={() => navigate("/admin/users")}
-                      className="cursor-pointer hover:bg-[rgba(62,36,7,0.13)] focus:bg-[rgba(62,36,7,0.13)] "
+                      className="cursor-pointer hover:bg-gray-100 focus:bg-gray-100 "
                     >
                       <Users className="mr-2 h-4 w-4" />
                       <span>User Management</span>
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => navigate("/admin/workspaces")}
+                      className="cursor-pointer hover:bg-gray-100 focus:bg-gray-100 "
+                    >
+                      <LayoutDashboardIcon className="mr-2 h-4 w-4" />
+                      <span>Workspace Management</span>
+                    </DropdownMenuItem>
                     {/* Domain Configuration menu removed */}
                   </>
                 )}
-                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onSelect={() => logout()}
-                  className="cursor-pointer hover:bg-[rgba(62,36,7,0.13)] focus:bg-[rgba(62,36,7,0.13)]"
+                  className="cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
