@@ -94,3 +94,4 @@ export const getAccessibleWorkspaceIds = (userWorkspaces: any[]): string[] => {
     return [];
   }
 };
+

@@ -32,7 +32,7 @@ export interface ExistingDocumentResponse {
 export const uploadService = {
   normalizeNamespace(fileName: string): string {
     let s = fileName.trim();
-    s = s.replace(/\.pdf$/i, "");
+    // Keep .pdf extension - don't remove it
     s = s.replace(/[\-_]+/g, " ");
     s = s.replace(/\s+/g, " ");
     return s.trim();
@@ -155,7 +155,8 @@ export const uploadService = {
     fileName: string
   ): Promise<ExistingDocumentResponse> {
     try {
-      const namespace = this.normalizeNamespace(fileName);
+      // Use full filename with .pdf extension
+      const namespace = fileName;
       const response = await documentService.checkExistingByNamespace(
         namespace
       );
@@ -170,8 +171,8 @@ export const uploadService = {
   },
 
   async uploadFileToBackend(file: File): Promise<any> {
-    // Always use filename without .pdf as namespace
-    const namespace = this.normalizeNamespace(file.name);
+    // Use full filename with .pdf extension as namespace
+    const namespace = file.name;
     // First check if document already exists
     const existingCheck = await this.checkExistingDocument(file.name);
 

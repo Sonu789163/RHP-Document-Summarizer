@@ -242,7 +242,7 @@ export const documentService = {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("drhpId", drhpId);
-    formData.append("namespace", file.name.replace(/\.pdf$/i, ""));
+    formData.append("namespace", file.name); // Preserve .pdf extension
 
     const response = await axios.post(
       `${API_URL}/documents/upload-rhp`,
