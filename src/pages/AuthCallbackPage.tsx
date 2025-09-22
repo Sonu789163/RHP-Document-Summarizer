@@ -1,3 +1,5 @@
+// Handles OAuth callback by extracting tokens from query and logging in, then redirects.
+// Shows a loading state while processing.
 import React, { useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";

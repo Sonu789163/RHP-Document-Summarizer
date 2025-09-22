@@ -1,3 +1,5 @@
+// Route guard for protected pages. Redirects unauthenticated users to /login
+// once auth loading completes, while allowing public routes.
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';

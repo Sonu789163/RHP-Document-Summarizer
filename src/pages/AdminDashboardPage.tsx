@@ -1,3 +1,5 @@
+// Admin dashboard: aggregates stats and management UIs for documents, summaries,
+// reports, chats, and workspaces. Admin-only access enforced via role check.
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -408,7 +410,7 @@ export default function AdminDashboardPage() {
       toast.success("Document download initiated");
     } catch (error) {
       toast.dismiss(loadingToast);
-      toast.error("Error downloading document: " + error.message);
+      toast.error("Error downloading document: " + (error as any).message);
       console.error("Error downloading document:", error);
     }
   };
@@ -447,7 +449,7 @@ export default function AdminDashboardPage() {
       toast.success("Summary PDF downloaded successfully");
     } catch (error) {
       toast.dismiss(loadingToast);
-      toast.error("Error downloading summary PDF: " + error.message);
+      toast.error("Error downloading summary PDF: " + (error as any).message);
       console.error("Error downloading summary PDF:", error);
     }
   };
@@ -469,7 +471,7 @@ export default function AdminDashboardPage() {
       toast.success("Summary DOCX downloaded successfully");
     } catch (error) {
       toast.dismiss(loadingToast);
-      toast.error("Error downloading summary DOCX: " + error.message);
+      toast.error("Error downloading summary DOCX: " + (error as any).message);
       console.error("Error downloading summary DOCX:", error);
     }
   };
@@ -508,7 +510,7 @@ export default function AdminDashboardPage() {
       toast.success("Report PDF downloaded successfully");
     } catch (error) {
       toast.dismiss(loadingToast);
-      toast.error("Error downloading report PDF: " + error.message);
+      toast.error("Error downloading report PDF: " + (error as any).message);
       console.error("Error downloading report PDF:", error);
     }
   };
@@ -530,7 +532,7 @@ export default function AdminDashboardPage() {
       toast.success("Report DOCX downloaded successfully");
     } catch (error) {
       toast.dismiss(loadingToast);
-      toast.error("Error downloading report DOCX: " + error.message);
+      toast.error("Error downloading report DOCX: " + (error as any).message);
       console.error("Error downloading report DOCX:", error);
     }
   };
@@ -1091,7 +1093,7 @@ export default function AdminDashboardPage() {
             >
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-2">User Management</h3>
-                <p className="text-sm text-white/80">
+                <p className="text-sm text.white/80">
                   Manage User Roles and Permissions
                 </p>
               </CardContent>
@@ -1138,7 +1140,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Chat Management Section */}
-        <div className=" w-full mx-auto mt-8 border-t border-gray-200 pt-4">
+        <div className=" w.full mx-auto mt-8 border-t border-gray-200 pt-4">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Left Column - Chat Statistics */}
             <div className=" border-r border-gray-200  w-[35%]" >
@@ -1192,7 +1194,7 @@ export default function AdminDashboardPage() {
                   <CardContent>
                     <div className="text-2xl ml-2 font-bold text-[rgba(38,40,43,1)]">
                       {dashboardLoading ? (
-                        <div className="animate-pulse bg-white/20 h-8 w-16 rounded"></div>
+                        <div className="animate-pulse bg.white/20 h-8 w-16 rounded"></div>
                       ) : (
                         chatsLast30Days
                       )}
@@ -1278,10 +1280,10 @@ export default function AdminDashboardPage() {
         {/* Report Management Section - Full Width */}
         <div className="mt-8 border-t border-gray-200 pt-4">
           <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-[#4B2A06] mb-6">
+          <h2 className="text-2xl font.bold text-[#4B2A06] mb-6">
             Report Management
           </h2>
-          <div className="text-md font-bold text-[#4B2A06] px-4 mb-3">
+          <div className="text-md font.bold text-[#4B2A06] px-4 mb-3">
             Total Reports : {reports.length}
           </div>
           </div>
@@ -1338,7 +1340,7 @@ export default function AdminDashboardPage() {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDownloadReportDocx(report)}
-                          className="flex items-center gap-2 cursor-pointer hover:bg-white data-[highlighted]:bg-gray-50"
+                          className="flex items-center gap-2 cursor-pointer hover.bg-white data-[highlighted]:bg-gray-50"
                         >
                           <FileText className="h-4 w-4" />
                           <span>Download DOCX</span>

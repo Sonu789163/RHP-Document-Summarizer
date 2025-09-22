@@ -1,3 +1,5 @@
+// Global auth context: stores decoded user, manages access/refresh tokens,
+// auto-refreshes tokens, attaches Authorization header, and provides login/logout.
 import React, {
   createContext,
   useContext,

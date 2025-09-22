@@ -44,6 +44,9 @@ const formSchema = z
     path: ["confirmPassword"],
   });
 
+// Email/password registration form with OTP verification step.
+// Step 1: submit email+password -> backend sends OTP
+// Step 2: enter OTP -> verify -> auto-login and proceed
 export function RegisterForm({
   onSwitchToLogin,
 }: {
@@ -53,6 +56,9 @@ export function RegisterForm({
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string>("");
+  const [otp, setOtp] = useState<string>("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -68,12 +74,15 @@ export function RegisterForm({
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const { accessToken, refreshToken } = await authService.register({
+      // Step 1: initiate registration (sends OTP)
+      await authService.register({
         email: values.email,
         password: values.password,
       });
-      login(accessToken, refreshToken);
-      toast.success("Account created successfully!");
+      setPendingEmail(values.email);
+      setIsVerifying(true);
+      toast.success("OTP sent to your email. Please verify to complete registration.");
+      return;
 
       // If user came with an invitation, auto-accept now
       const params = new URLSearchParams(location.search);
@@ -123,9 +132,57 @@ export function RegisterForm({
     }
   }
 
+  async function onVerifyOtp() {
+    if (!pendingEmail || !otp) {
+      toast.error("Enter the OTP sent to your email");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { accessToken, refreshToken } = await authService.verifyRegistrationOtp(
+        pendingEmail,
+        otp
+      );
+      login(accessToken, refreshToken);
+      toast.success("Email verified. Account created successfully!");
+
+      // Invitation handling remains the same after successful login
+      const params = new URLSearchParams(location.search);
+      const invitationId = params.get("invitation");
+      if (invitationId) {
+        try {
+          const result = await workspaceInvitationService.acceptInvitation(
+            invitationId
+          );
+          if (result.workspace?.domain) {
+            await workspaceInvitationService.switchWorkspace(
+              result.workspace.domain
+            );
+            window.location.href = "/dashboard";
+            return;
+          }
+          toast.success("Invitation accepted. Welcome to the workspace!");
+          navigate("/dashboard");
+          return;
+        } catch (e: any) {
+          toast.error(
+            e?.response?.data?.message || "Failed to accept invitation"
+          );
+        }
+      }
+      navigate("/dashboard");
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "OTP verification failed";
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
     <Form {...form}>
       <div className="w-full max-w-lg mx-auto min-h-[520px] flex flex-col justify-center">
+        {!isVerifying ? (
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
             control={form.control}
@@ -289,6 +346,38 @@ export function RegisterForm({
             </button>
           </div>
         </form>
+        ) : (
+          <div className="space-y-6">
+            <div>
+              <div className="text-xl font-extrabold text-[#444] mb-2" style={{ fontFamily: "Inter, Arial, sans-serif" }}>
+                Enter OTP sent to {pendingEmail}
+              </div>
+              <Input
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                placeholder="6-digit OTP"
+                className="rounded-xl border border-[#E5E5E5] px-6 py-6 text-lg focus:ring-0 focus:border-[#E5E5E5] shadow-none bg-white h-16 outline-none"
+                maxLength={6}
+              />
+            </div>
+            <Button
+              type="button"
+              onClick={onVerifyOtp}
+              className="w-full bg-[#4B2A06] text-white text-base font-semibold py-3 rounded-lg shadow-none hover:bg-[#3a2004] transition"
+              disabled={isLoading}
+            >
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Verify & Complete Registration
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => { setIsVerifying(false); setOtp(""); }}
+            >
+              Back
+            </Button>
+          </div>
+        )}
       </div>
     </Form>
   );

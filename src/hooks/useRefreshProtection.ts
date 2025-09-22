@@ -1,3 +1,5 @@
+// Blocks accidental page refresh/navigation during long-running operations.
+// Shows a full-screen overlay and intercepts F5/Ctrl+R while `isProcessing` is true.
 import { useEffect } from "react";
 
 export const useRefreshProtection = (

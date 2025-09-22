@@ -13,6 +13,8 @@ type NotificationItem = {
   createdAt: string;
 };
 
+// Lists notifications for the current user and workspace.
+// Admins will also receive admin-scoped notifications (e.g., new user registered).
 const NotificationsPage: React.FC = () => {
   const navigate = useNavigate();
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -58,6 +60,7 @@ const NotificationsPage: React.FC = () => {
   const markAllRead = async () => {
     await notificationsService.markAllRead();
     await load();
+    window.location.reload();
   };
 
   const markRead = async (id: string) => {

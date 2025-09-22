@@ -11,6 +11,7 @@ const getSharedLinkToken = (): string | null => {
   }
 };
 
+// Attach shared link token header automatically if present.
 axios.interceptors.request.use((config) => {
   const linkToken = getSharedLinkToken();
   if (linkToken) {
@@ -28,6 +29,7 @@ axios.interceptors.request.use((config) => {
 });
 
 // If a revoked/invalid link is used, clear it and let app fall back gracefully
+// Clear any invalid/expired shared-link token automatically.
 axios.interceptors.response.use(
   (res) => res,
   (error) => {
@@ -498,6 +500,7 @@ export const notificationsService = {
   async list(opts?: { unread?: boolean; page?: number; pageSize?: number }) {
     const token = localStorage.getItem("accessToken");
     const domain = getUserDomain();
+    const currentWorkspace = getCurrentWorkspace();
     const params = new URLSearchParams();
     if (domain) params.set("domain", domain);
     if (opts?.unread) params.set("unread", "true");
@@ -509,7 +512,7 @@ export const notificationsService = {
     );
     const res = await axios.get(
       `${API_URL}/notifications?${params.toString()}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) } }
     );
     console.log("Notifications API response:", res.data);
     return res.data;

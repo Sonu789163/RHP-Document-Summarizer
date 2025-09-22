@@ -1,3 +1,5 @@
+// Compares a DRHP with its RHP: loads docs, manages report creation via sockets,
+// shows latest comparison report and the RHP Summary panel, with download/print tools.
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";

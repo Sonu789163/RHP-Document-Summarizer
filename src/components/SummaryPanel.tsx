@@ -62,8 +62,27 @@ interface N8nResponse {
 }
 
 // Utility to strip <style> tags from HTML
+// Incoming summaries may include embedded styles; we remove them to enforce our own UI styles.
 function stripStyleTags(html: string): string {
   return html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+}
+
+// Convert plain URLs and emails in HTML to clickable links
+// Ensures text like example.com and user@example.com become actionable anchors.
+function linkifyHtml(html: string): string {
+  if (!html) return html;
+  // Make emails clickable
+  const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+  // Make http/https and www URLs clickable
+  const urlRegex = /(?:(https?:\/\/)|\bwww\.)[\w.-]+(?:\.[\w.-]+)+(?:[\w\-._~:/?#\[\]@!$&'()*+,;=%]*)/g;
+
+  let out = html.replace(emailRegex, (m) => `<a href="mailto:${m}">${m}</a>`);
+  out = out.replace(urlRegex, (m) => {
+    const hasProtocol = m.startsWith("http://") || m.startsWith("https://");
+    const href = hasProtocol ? m : `http://${m}`;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer">${m}</a>`;
+  });
+  return out;
 }
 
 export function SummaryPanel({
@@ -654,14 +673,15 @@ export function SummaryPanel({
               .summary-content tr:nth-child(even) td {
                 background: #ECE9E2;
               }
-              .summary-content h1 { font-size: 24px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-              .summary-content h2 { font-size: 18px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-              .summary-content h3 { font-size: 16px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-              .summary-content h4 { font-size: 14px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-              .summary-content h5 { font-size: 12px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-              .summary-content h6 { font-size: 10px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h1 { font-size: 22px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h2 { font-size: 20px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h3 { font-size: 18px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h4 { font-size: 16px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h5 { font-size: 14px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h6 { font-size: 12px; font-weight: 700; color: #1F2937; margin: 10px 0; }
               .summary-content b, .summary-content strong { font-weight: 700; }
               .summary-content hr { border: none; border-top: 1px solid #E5E7EB; margin: 12px 0; }
+              .summary-content a { color: #1d4ed8; text-decoration: underline; word-break: break-word; }
             `}</style>
             {/* HTML Content Display */}
             <div className="overflow-x-auto hide-scrollbar ">
@@ -681,7 +701,7 @@ export function SummaryPanel({
                   wordBreak: "break-word",
                   overflowWrap: "break-word",
                 }}
-                dangerouslySetInnerHTML={{ __html: stripStyleTags(summary) }}
+                dangerouslySetInnerHTML={{ __html: linkifyHtml(stripStyleTags(summary)) }}
               />
             </div>
           </div>
