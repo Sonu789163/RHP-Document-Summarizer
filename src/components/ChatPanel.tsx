@@ -721,23 +721,25 @@ export function ChatPanel({
         </div>
       </ScrollArea>
       <div className="p-4 flex-shrink-0  mb-8 bg-white">
-        {/* Quick prompts (chips) */}
-        <div className="flex flex-wrap gap-2 mb-3">
-          {quickPrompts.map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => handleQuickAsk(p)}
-              disabled={!isDocumentProcessed}
-              className={cn(
-                "px-3 py-1.5 text-sm rounded-full border border-[#E5E5E5] bg-[#F9F6F2] text-[#4B2A06] hover:bg-[#F1EDE6]",
-                !isDocumentProcessed && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
+        {/* Quick prompts (chips) - only show for brand-new chat (no user messages yet) */}
+        {messages.filter((m) => m.isUser).length === 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {quickPrompts.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => handleQuickAsk(p)}
+                disabled={!isDocumentProcessed}
+                className={cn(
+                  "px-3 py-1.5 text-sm rounded-full border border-[#E5E5E5] bg-[#F9F6F2] text-[#4B2A06] hover:bg-[#F1EDE6]",
+                  !isDocumentProcessed && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault();

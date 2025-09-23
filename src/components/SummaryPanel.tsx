@@ -85,6 +85,71 @@ function linkifyHtml(html: string): string {
   return out;
 }
 
+// Investors list to highlight inside summaries (case-insensitive)
+const INVESTOR_NAMES: string[] = [
+  "Adheesh Kabra",
+  "Shilpa Kabra",
+  "Rishi Agarwal",
+  "Aarth AIF / Aarth AIF Growth Fund",
+  "Chintan Shah",
+  "Sanjay Popatlal Jain",
+  "Manoj Agrawal",
+  "Rajasthan Global Securities Private Limited",
+  "Finavenue Capital Trust",
+  "SB Opportunities Fund",
+  "Smart Horizon Opportunity Fund",
+  "Nav Capital Vcc - Nav Capital Emerging",
+  "Invicta Continuum Fund",
+  "HOLANI VENTURE CAPITAL FUND - HOLANI 1. VENTURE CAPITAL FUND 1",
+  "MERU INVESTMENT FUND PCC- CELL 1",
+  "Finavenue Growth Fund",
+  "Anant Aggarwal",
+  "PACE COMMODITY BROKERS PRIVATE LIMITED",
+  "Bharatbhai Prahaladbhai Patel",
+  "ACCOR OPPORTUNITIES TRUST",
+  "V2K Hospitality Private Limited",
+  "Mihir Jain",
+  "Rajesh Kumar Jain",
+  "Vineet Saboo",
+  "Prabhat Investment Services LLP",
+  "Nikhil Shah",
+  "Nevil Savjani",
+  "Yogesh Jain",
+  "Shivin Jain",
+  "Pushpa Kabra",
+  "KIFS Dealer",
+  "Jitendra Agrawal",
+  "Komalay Investrade Private Limited",
+  "Viney Equity Market LLP",
+  "Nitin Patel",
+  "Pooja Kushal Patel",
+  "Gitaben Patel",
+  "Rishi Agarwal HUF",
+  "Sunil Singhania",
+  "Mukul mahavir Agrawal",
+  "Ashish Kacholia",
+  "Lalit Dua",
+  "Utsav shrivastav"
+];
+
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Wrap matched investor names with a highlight span
+function highlightInvestors(html: string): string {
+  if (!html) return html;
+  let out = html;
+  for (const name of INVESTOR_NAMES) {
+    const safe = escapeRegExp(name.trim());
+    if (!safe) continue;
+    // Allow matches across word boundaries; keep original casing using $&
+    const re = new RegExp(`(\\b|^)${safe}(?=\\b|$)`, "gi");
+    out = out.replace(re, '<span class="investor-highlight">$&</span>');
+  }
+  return out;
+}
+
 export function SummaryPanel({
   isDocumentProcessed,
   currentDocument,
@@ -682,6 +747,7 @@ export function SummaryPanel({
               .summary-content b, .summary-content strong { font-weight: 700; }
               .summary-content hr { border: none; border-top: 1px solid #E5E7EB; margin: 12px 0; }
               .summary-content a { color: #1d4ed8; text-decoration: underline; word-break: break-word; }
+              .investor-highlight { background:rgb(255, 220, 23); color: #1f2937; padding: 0 2px; border-radius: 3px; font-weight: 600; }
             `}</style>
             {/* HTML Content Display */}
             <div className="overflow-x-auto hide-scrollbar ">
@@ -701,7 +767,7 @@ export function SummaryPanel({
                   wordBreak: "break-word",
                   overflowWrap: "break-word",
                 }}
-                dangerouslySetInnerHTML={{ __html: linkifyHtml(stripStyleTags(summary)) }}
+                dangerouslySetInnerHTML={{ __html: highlightInvestors(linkifyHtml(stripStyleTags(summary))) }}
               />
             </div>
           </div>
