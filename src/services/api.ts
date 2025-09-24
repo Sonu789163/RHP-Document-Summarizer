@@ -885,7 +885,8 @@ export const summaryService = {
     const domain = getUserDomain();
     const currentWorkspace = getCurrentWorkspace();
     const payload = { ...summary, domain }; // Include domain in payload
-    const response = await axios.post(`${API_URL}/summaries`, payload, {
+    // Backend expects POST /api/summaries/create
+    const response = await axios.post(`${API_URL}/summaries/create`, payload, {
       headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
     });
     return response.data;
