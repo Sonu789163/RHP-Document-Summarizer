@@ -411,7 +411,15 @@ export function SummaryPanel({
     const previousSummary = allSummaries[0]; // assuming sorted by updatedAt desc
     try {
       if (previousSummary) {
-        await summaryService.delete(previousSummary.id);
+        try {
+          await summaryService.delete(previousSummary.id);
+        } catch (err: any) {
+          // If user lacks owner permission or summary missing, ignore and proceed
+          const status = err?.response?.status;
+          if (status !== 403 && status !== 404) {
+            throw err;
+          }
+        }
       }
       // Clear current summary and selection
       setSummary("");
