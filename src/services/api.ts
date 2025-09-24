@@ -89,6 +89,24 @@ export const documentService = {
     return response.data;
   },
 
+  // Admin: Get all documents across all workspaces
+  async getAllAdmin() {
+    const token = localStorage.getItem("accessToken");
+    console.log("Calling admin documents API with token:", token ? "present" : "missing");
+    try {
+      const response = await axios.get(`${API_URL}/documents/admin`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log("Admin documents API response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Admin documents API error:", error);
+      throw error;
+    }
+  },
+
   async getById(id: string, linkToken?: string) {
     try {
       // First try to get by id
@@ -696,6 +714,15 @@ export const reportService = {
     return response.data;
   },
 
+  // Admin: Get all reports across all workspaces
+  async getAllAdmin(): Promise<Report[]> {
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.get(`${API_URL}/reports/admin`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+
   async getById(id: string): Promise<Report> {
     const token = localStorage.getItem("accessToken");
     const domain = getUserDomain();
@@ -825,6 +852,15 @@ export const summaryService = {
       : `${API_URL}/summaries`;
     const response = await axios.get(url, {
       headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+    });
+    return response.data;
+  },
+
+  // Admin: Get all summaries across all workspaces
+  async getAllAdmin(): Promise<Summary[]> {
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.get(`${API_URL}/summaries/admin`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   },

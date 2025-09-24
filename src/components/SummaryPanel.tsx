@@ -93,6 +93,7 @@ const INVESTOR_NAMES: string[] = [
   "Aarth AIF / Aarth AIF Growth Fund",
   "Chintan Shah",
   "Sanjay Popatlal Jain",
+  "Manoj Kumar Agrawal",
   "Manoj Agrawal",
   "Rajasthan Global Securities Private Limited",
   "Finavenue Capital Trust",
@@ -747,7 +748,7 @@ export function SummaryPanel({
               .summary-content b, .summary-content strong { font-weight: 700; }
               .summary-content hr { border: none; border-top: 1px solid #E5E7EB; margin: 12px 0; }
               .summary-content a { color: #1d4ed8; text-decoration: underline; word-break: break-word; }
-              .investor-highlight { background:rgb(255, 220, 23); color: #1f2937; padding: 0 2px; border-radius: 3px; font-weight: 600; }
+              .investor-highlight { background:rgb(225, 248, 135); color: #1f2937; padding: 0 2px; border-radius: 3px; font-weight: 600; }
             `}</style>
             {/* HTML Content Display */}
             <div className="overflow-x-auto hide-scrollbar ">

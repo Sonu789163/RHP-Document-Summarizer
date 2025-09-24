@@ -58,6 +58,11 @@ interface Document {
   namespace?: string;
   userId?: string;
   microsoftId?: string;
+  workspaceId?: {
+    workspaceId: string;
+    name: string;
+    slug: string;
+  };
 }
 
 interface Summary {
@@ -68,6 +73,11 @@ interface Summary {
   title?: string;
   userId?: string;
   microsoftId?: string;
+  workspaceId?: {
+    workspaceId: string;
+    name: string;
+    slug: string;
+  };
 }
 
 interface Report {
@@ -76,6 +86,11 @@ interface Report {
   updatedAt: string;
   userId?: string;
   microsoftId?: string;
+  workspaceId?: {
+    workspaceId: string;
+    name: string;
+    slug: string;
+  };
 }
 
 interface Chat {
@@ -283,6 +298,7 @@ export default function AdminDashboardPage() {
   const loadDashboardData = async () => {
     try {
       setDashboardLoading(true);
+      console.log("Loading dashboard data for user:", user);
 
       // Load user statistics and all users
       const userData = await userService.getUserStats();
@@ -292,18 +308,20 @@ export default function AdminDashboardPage() {
       const allUsers = await userService.getAllUsers({ limit: 1000 });
       setUsers(allUsers.users);
 
-      // Load documents
-      const docs = await documentService.getAll();
+      // Load documents (admin view - all workspaces)
+      console.log("Loading admin documents...");
+      const docs = await documentService.getAllAdmin();
+      console.log("Admin documents loaded:", docs);
       setDocuments(docs);
       setDocumentsLoading(false);
 
-      // Load summaries
-      const sums = await summaryService.getAll();
+      // Load summaries (admin view - all workspaces)
+      const sums = await summaryService.getAllAdmin();
       setSummaries(sums);
       setSummariesLoading(false);
 
-      // Load reports
-      const reps = await reportService.getAll();
+      // Load reports (admin view - all workspaces)
+      const reps = await reportService.getAllAdmin();
       setReports(reps);
       setReportsLoading(false);
 
@@ -725,7 +743,6 @@ export default function AdminDashboardPage() {
           {/* Right Columns - Management Lists */}
           <div className="flex border-l border-gray-200 w-[50vw]">
             {/* Document Management */}
-
             <div className="flex-shrink-0 w-[25vw]  p-4">
               <h2 className="text-xl font-bold text-[#4B2A06] mb-3">
                 Document Management
@@ -763,6 +780,9 @@ export default function AdminDashboardPage() {
                           </div>
                           <div className="text-xs text-gray-500">
                             Created: {formatDate(doc.createdAt)}
+                          </div>
+                          <div className="text-xs text-[#4B2A06] font-bold">
+                            Workspace: {doc.workspaceId?.name || "excollo"}
                           </div>
                         </div>
                       </div>
@@ -853,6 +873,9 @@ export default function AdminDashboardPage() {
                             <div className="text-xs text-gray-500">
                               Created:{" "}
                               {formatDate(summary.updatedAt)}
+                            </div>
+                            <div className="text-xs text-[#4B2A06] font-bold">
+                              Workspace: {summary.workspaceId?.name || 'Unknown'}
                             </div>
                             {index === 0 && (
                               <div className="text-xs text-gray-500 font-medium">
@@ -1310,6 +1333,9 @@ export default function AdminDashboardPage() {
                       </div>
                       <div className="text-xs text-gray-500">
                         Document: {report.drhpNamespace}
+                      </div>
+                      <div className="text-xs text-[#4B2A06] font-bold">
+                        Workspace: {report.workspaceId?.name || 'Unknown'}
                       </div>
                     </div>
                   </div>
