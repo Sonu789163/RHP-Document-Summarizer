@@ -23,6 +23,20 @@ const NotificationsPage: React.FC = () => {
   const [timeFilter, setTimeFilter] = useState<"all" | "today" | "last7" | "last15" | "last30">("all");
   const [showTimeFilter, setShowTimeFilter] = useState(false);
 
+  const formatDateTime = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return iso;
+    }
+  };
+
   const load = async () => {
     setLoading(true);
     try {
@@ -293,7 +307,10 @@ const NotificationsPage: React.FC = () => {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <div className="font-semibold text-[#232323]">{n.title}</div>
+                    <div className="flex flex-col">
+                      <div className="font-semibold text-[#232323]">{n.title}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{formatDateTime(n.createdAt)}</div>
+                    </div>
                     <div className="flex items-center gap-2">
                       {!n.isRead && (
                         <button
