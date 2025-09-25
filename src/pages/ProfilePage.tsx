@@ -276,7 +276,7 @@ export default function ProfilePage() {
               onClick={() => setActiveTab("profile")}
               className={`w-full text-left px-4 py-8 flex flex-col gap-1 ${
                 activeTab === "profile"
-                  ? "bg-[rgba(62,36,7,0.13)] text-[rgba(62,36,7,1)] border-r-[4px] border-r-[rgba(62,36,7,1)]"
+                  ? "bg-[#ECE9E2] text-[#4B2A06] border-r-[4px] border-r-[#4B2A06]"
                   : "bg-white hover:bg-gray-50"
               }`}
             >
@@ -291,7 +291,7 @@ export default function ProfilePage() {
               onClick={() => setActiveTab("summary")}
               className={`w-full text-left px-4 py-8  flex flex-col gap-1 ${
                 activeTab === "summary"
-                  ? "bg-[rgba(62,36,7,0.13)] text-[rgba(62,36,7,1)] border-r-[4px] border-r-[rgba(62,36,7,1)]"
+                  ? "bg-[#ECE9E2] text-[#4B2A06] border-r-[4px] border-r-[#4B2A06]"
                   : "bg-white hover:bg-gray-50"
               }`}
             >
@@ -307,7 +307,7 @@ export default function ProfilePage() {
               onClick={() => setActiveTab("security")}
               className={`w-full text-left px-4 py-8 flex flex-col gap-1 ${
                 activeTab === "security"
-                  ? "bg-[rgba(62,36,7,0.13)] text-[rgba(62,36,7,1)] border-r-[4px] border-r-[rgba(62,36,7,1)]"
+                  ? "bg-[#ECE9E2] text-[#4B2A06] border-r-[4px] border-r-[#4B2A06]"
                   : "bg-white hover:bg-gray-50"
               }`}
             >
