@@ -622,17 +622,17 @@ export default function AdminDashboardPage() {
         onSearchChange={() => {}}
       />
 
-      <div className="w-[90vw] mx-auto py-8">
-        {/* Top Section - 3 Columns: Key Metrics + Reports Chart + Management Lists */}
-        <div className="flex  gap-4">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Top Section - Responsive Grid: Key Metrics + Reports Chart + Management Lists */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start ">
           {/* Left Column- Total Chats Chart */}
-          <div className="flex-shrink-0 min-w-[200px] my-4 border-t border-gray-100 bg-white  flex flex-col shadow-sm  rounded-lg items-center ">
-            <div className="text-lg font-bold text-[#4B2A06]  my-5">
+          <div className="lg:col-span-2 my-4  border-t border-gray-100 bg-white flex flex-col shadow-sm rounded-lg items-center p-6 self-start">
+            <div className="text-lg  font-bold text-[#4B2A06] my-5">
               Total Chats
             </div>
-            <div className="relative mt-2 w-40 h-40">
+            <div className="relative mt-2 w-32 h-32 lg:w-40 lg:h-40">
               <svg
-                className="w-40 h-40 transform -rotate-90"
+                className="w-full h-full transform -rotate-90"
                 viewBox="0 0 36 36"
               >
                 <path
@@ -655,15 +655,15 @@ export default function AdminDashboardPage() {
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-3xl font-bold text-[#4B2A06]">
+                <span className="text-2xl lg:text-3xl font-bold text-[#4B2A06]">
                   {stats.totalChats}
                 </span>
               </div>
             </div>
           </div>
           {/*  Middle Column - Key Metrics */}
-          <div className="flex-shrink-0 mt-4 w-[24vw] gap-2">
-            <div className="grid grid-cols-2 gap-2">
+          <div className="lg:col-span-3 mt-4 ">
+            <div className="grid grid-cols-2 gap-3">
               <div className="shadow-sm  bg-white rounded-lg">
                 <CardHeader className="flex flex-row items-center space-y-0 pb-2">
                   <CardTitle className="text-md font-bold text-[rgba(114, 120, 127, 1)]">
@@ -718,7 +718,7 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </div>
 
-              <div className="shadow-sm bg-white rounded-lg">
+              <div className="shadow-sm  bg-white rounded-lg">
                 <CardHeader className="flex flex-row items-center space-y-0  pb-2">
                   <CardTitle className="text-md font-bold text-[rgba(114, 120, 127, 1)]">
                     Total Reports
@@ -741,9 +741,9 @@ export default function AdminDashboardPage() {
           
 
           {/* Right Columns - Management Lists */}
-          <div className="flex border-l border-gray-200 w-[50vw]">
+          <div className="lg:col-span-7 grid grid-cols-1 xl:grid-cols-2  border-l border-gray-200 pl-2">
             {/* Document Management */}
-            <div className="flex-shrink-0 w-[25vw]  p-4">
+            <div className="p-4">
               <h2 className="text-xl font-bold text-[#4B2A06] mb-3">
                 Document Management
               </h2>
@@ -830,7 +830,7 @@ export default function AdminDashboardPage() {
               </div>
             </div>
             {/* Summary Management */}
-            <div className="flex-shrink-0 w-[25vw]  p-4">
+            <div className="p-4">
               <div>
                 <h2 className="text-xl font-bold text-[#4B2A06] mb-3">
                   Summary Management
@@ -943,10 +943,10 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Directories Management Section */}
-        <div className="mt-4 border-t border-gray-200 pt-6">
-         <div className="flex items-center justify-between">
-         <h2 className="text-2xl font-bold text-[#4B2A06] mb-4">Directory Management</h2>
-          <div className="text-md font-bold text-[#4B2A06] mb-3 px-4">
+        <div className="mt-8 border-t border-gray-200 pt-6">
+         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
+         <h2 className="text-2xl font-bold text-[#4B2A06] mb-2 sm:mb-0">Directory Management</h2>
+          <div className="text-md font-bold text-[#4B2A06]">
             Total Directories : {directories.length}
           </div>
          </div>
@@ -1107,9 +1107,9 @@ export default function AdminDashboardPage() {
         </Dialog>
 
         {/* Bottom Section - Quick View */}
-        <div className="mt-4 border-t border-gray-200 pt-6">
+        <div className="mt-8 border-t border-gray-200 pt-6">
           <h2 className="text-2xl font-bold text-[#4B2A06] mb-6">Quick View</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card
               className="bg-[#637587] text-white cursor-pointer  transition-colors"
               onClick={() => navigate("/admin/users")}
@@ -1163,10 +1163,10 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Chat Management Section */}
-        <div className=" w.full mx-auto mt-8 border-t border-gray-200 pt-4">
-          <div className="flex flex-col lg:flex-row gap-4">
+        <div className="w-full mx-auto mt-8 border-t border-gray-200 pt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left Column - Chat Statistics */}
-            <div className=" border-r border-gray-200  w-[35%]" >
+            <div className="lg:col-span-4 border-r border-gray-200 pr-6">
               <h2 className="text-2xl font-bold text-[#4B2A06] ">
                 Chat Management
               </h2>
@@ -1246,7 +1246,7 @@ export default function AdminDashboardPage() {
             </div>
             
             {/* Right Column - Recent Chat Sessions */}
-            <div className="w-[65%]">
+            <div className="lg:col-span-8">
               <h3 className="text-2xl font-bold text-[#4B2A06] mb-5">
                 Recent Chat Sessions
               </h3>
@@ -1301,12 +1301,12 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Report Management Section - Full Width */}
-        <div className="mt-8 border-t border-gray-200 pt-4">
-          <div className="flex items-center justify-between">
-          <h2 className="text-2xl font.bold text-[#4B2A06] mb-6">
+        <div className="mt-8 border-t border-gray-200 pt-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-[#4B2A06] mb-2 sm:mb-0">
             Report Management
           </h2>
-          <div className="text-md font.bold text-[#4B2A06] px-4 mb-3">
+          <div className="text-md font-bold text-[#4B2A06]">
             Total Reports : {reports.length}
           </div>
           </div>
@@ -1388,9 +1388,9 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Workspace Management Section */}
-        <div className="mt-8 border-t border-gray-200 pt-4">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-[#4B2A06]">
+        <div className="mt-8 border-t border-gray-200 pt-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-[#4B2A06] mb-4 sm:mb-0">
               Workspace Management
             </h2>
             <button
