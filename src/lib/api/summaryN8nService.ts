@@ -2,7 +2,7 @@ import axios from "axios";
 import { SessionData, ConversationMemory } from "./sessionService";
 
 const SUMMARY_N8N_WEBHOOK_URL =
-  "https://n8n-excollo.azurewebsites.net/webhook/1/summary";
+  "https://n8n-excollo.azurewebsites.net/webhook/3/summary";
 const RHP_SUMMARY_N8N_WEBHOOK_URL =
   "https://n8n-excollo.azurewebsites.net/webhook/1/rhp/summary";
 

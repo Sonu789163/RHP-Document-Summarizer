@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { notificationsService } from "@/services/api";
-import { Check, Bell, MoreVertical, Trash2, Filter, ChevronDown } from "lucide-react";
+import { Check, Bell, MoreVertical, Trash2, Filter, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 type NotificationItem = {
   id: string;
@@ -22,6 +22,8 @@ const NotificationsPage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [timeFilter, setTimeFilter] = useState<"all" | "today" | "last7" | "last15" | "last30">("all");
   const [showTimeFilter, setShowTimeFilter] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState<number | null>(null);
 
   const formatDateTime = (iso: string) => {
     try {
@@ -37,19 +39,21 @@ const NotificationsPage: React.FC = () => {
     }
   };
 
-  const load = async () => {
+  const load = async (p: number = page) => {
     setLoading(true);
     try {
-      const data = await notificationsService.list({ page: 1, pageSize: 50 });
+      const data = await notificationsService.list({ page: p, pageSize: 50 });
       setItems(data.items || []);
+      const inferred = (p - 1) * 50 + ((data.items || []).length || 0);
+      setTotal(typeof (data as any).total === "number" ? (data as any).total : inferred);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    load();
-  }, []);
+    load(page);
+  }, [page]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -73,13 +77,13 @@ const NotificationsPage: React.FC = () => {
 
   const markAllRead = async () => {
     await notificationsService.markAllRead();
-    await load();
+    await load(page);
     window.location.reload();
   };
 
   const markRead = async (id: string) => {
     await notificationsService.markRead(id);
-    await load();
+    await load(page);
   };
 
   const deleteNotification = async (id: string, e: React.MouseEvent) => {
@@ -87,7 +91,7 @@ const NotificationsPage: React.FC = () => {
     if (window.confirm("Are you sure you want to delete this notification?")) {
       try {
         await notificationsService.delete(id);
-        await load();
+        await load(page);
       } catch (error) {
         console.error("Failed to delete notification:", error);
         alert("Failed to delete notification. Please try again.");
@@ -172,6 +176,15 @@ const NotificationsPage: React.FC = () => {
     (n.body || "").toLowerCase().includes(search.toLowerCase())
   );
 
+  // Pagination display helpers (50 per page)
+  const pageSize = 50;
+  const totalCount = typeof total === "number" ? total : ((page - 1) * pageSize + items.length);
+  const hasAny = totalCount > 0;
+  const rangeStart = hasAny ? (page - 1) * pageSize + 1 : 0;
+  const rangeEnd = hasAny ? (page - 1) * pageSize + items.length : 0;
+  const hasPrev = page > 1;
+  const hasNext = typeof total === "number" ? page * pageSize < totalCount : items.length === pageSize;
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Navbar
@@ -185,6 +198,31 @@ const NotificationsPage: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-extrabold text-[#232323]">Notifications center</h1>
           <div className="flex items-center gap-4">
+            {/* Pagination (header, left of Time Filter Dropdown) */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-600">
+                {rangeStart}
+                {"–"}
+                {rangeEnd} of {totalCount}
+              </span>
+              <button
+                className="p-1 rounded disabled:opacity-40 hover:bg-gray-100"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={!hasPrev || loading}
+                title="Previous page"
+              >
+                <ChevronLeft className="h-4 w-4 text-gray-600" />
+              </button>
+              <button
+                className="p-1 rounded disabled:opacity-40 hover:bg-gray-100"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={!hasNext || loading}
+                title="Next page"
+              >
+                <ChevronRight className="h-4 w-4 text-gray-600" />
+              </button>
+            </div>
+
             {/* Time Filter Dropdown */}
             <div className="relative" data-time-filter-dropdown>
               <button
