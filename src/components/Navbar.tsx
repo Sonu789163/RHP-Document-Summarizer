@@ -402,14 +402,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <Users className="mr-2 h-4 w-4" />
                       <span>User Management</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => navigate("/admin/workspaces")}
-                      className="cursor-pointer hover:bg-gray-100 focus:bg-gray-100 "
-                    >
-                      <LayoutDashboardIcon className="mr-2 h-4 w-4" />
-                      <span>Workspace Management</span>
-                    </DropdownMenuItem>
-                    {/* Domain Configuration menu removed */}
+                    {/* Workspace Management link removed (exists on Admin Dashboard) */}
                   </>
                 )}
                 <DropdownMenuItem
