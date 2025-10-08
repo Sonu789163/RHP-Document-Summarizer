@@ -610,7 +610,7 @@ export function ChatPanel({
               )}
               <div
                 className={cn(
-                  "rounded-2xl p-4 max-w-[75%]",
+                  "rounded-2xl p-4 max-w-[75%] ",
                   message.isUser
                     ? "rounded-br-none whitespace-pre-wrap"
                     : "rounded-bl-none"
@@ -625,7 +625,7 @@ export function ChatPanel({
                 {message.isUser ? (
                   <p className="text-sm break-words">{message.content}</p>
                 ) : (
-                  <div className="markdown-chat-message text-sm break-words">
+                  <div className="markdown-chat-message  text-sm break-words">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
@@ -658,7 +658,7 @@ export function ChatPanel({
                         ),
                         li: ({ children }) => <li className="leading-relaxed">{children}</li>,
                         table: ({ children }) => (
-                          <table className="min-w-full border border-gray-300 my-2">
+                          <table className="min-w-full  border border-gray-300 my-2">
                             {children}
                           </table>
                         ),

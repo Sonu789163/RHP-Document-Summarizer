@@ -146,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [selectedDocumentId, documents]);
 
   const filteredDocs = documents.filter((doc) =>
-    doc.name.toLowerCase().includes(docSearch.toLowerCase())
+    doc.name.toLowerCase().includes(docSearch.toLowerCase()) && doc.type === "DRHP"
   );
 
   const filteredChats = chats.filter(
