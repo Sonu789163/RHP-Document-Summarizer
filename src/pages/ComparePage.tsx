@@ -3,7 +3,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { documentService, reportService, Report, shareService } from "../services/api";
+import {
+  documentService,
+  reportService,
+  Report,
+  shareService,
+} from "../services/api";
 import { reportN8nService } from "../lib/api/reportN8nService";
 import { sessionService } from "../lib/api/sessionService";
 import { toast } from "sonner";
@@ -41,12 +46,15 @@ import {
 import { io as socketIOClient } from "socket.io-client";
 import { SummaryPanel } from "../components/SummaryPanel";
 
-interface ComparePageProps { }
+interface ComparePageProps {}
 
 export const ComparePage: React.FC<ComparePageProps> = () => {
   const { drhpId } = useParams<{ drhpId: string }>();
   const [searchParams] = useSearchParams();
-  const linkToken = searchParams.get('linkToken') || localStorage.getItem('sharedLinkToken') || undefined;
+  const linkToken =
+    searchParams.get("linkToken") ||
+    localStorage.getItem("sharedLinkToken") ||
+    undefined;
   const navigate = useNavigate();
   const { user } = useAuth();
   const [sessionData] = useState(() => sessionService.initializeSession());
@@ -60,7 +68,9 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
   const [deleting, setDeleting] = useState(false);
   const [zoom, setZoom] = useState(1); // 1 = 100%
   const reportRef = useRef<HTMLDivElement>(null);
-  const [linkRole, setLinkRole] = useState<"viewer" | "editor" | "owner" | null>(null);
+  const [linkRole, setLinkRole] = useState<
+    "viewer" | "editor" | "owner" | null
+  >(null);
   const [selectedRhpSummaryId, setSelectedRhpSummaryId] = useState<
     string | null
   >(null);
@@ -84,8 +94,9 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       const drhpDoc = await documentService.getById(drhpId!, linkToken);
       setDrhp(drhpDoc);
 
+      let rhpDoc = null;
       if (drhpDoc.relatedRhpId) {
-        const rhpDoc = await documentService.getById(drhpDoc.relatedRhpId, linkToken);
+        rhpDoc = await documentService.getById(drhpDoc.relatedRhpId, linkToken);
         setRhp(rhpDoc);
       }
 
@@ -94,17 +105,60 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       const filteredReports = allReports.filter(
         (r) =>
           r.drhpNamespace === drhpDoc.namespace ||
-          (rhp && r.rhpNamespace === rhp.rhpNamespace)
+          (rhpDoc && r.rhpNamespace === rhpDoc.rhpNamespace)
       );
-      setReports(filteredReports);
-      if (filteredReports.length > 0) {
-        setSelectedReport(filteredReports[0]);
+
+      // Sort reports by updatedAt to get the latest first
+      const sortedReports = filteredReports.sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+
+      setReports(sortedReports);
+
+      // Always select the latest report if available
+      if (sortedReports.length > 0) {
+        setSelectedReport(sortedReports[0]);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Failed to load document and reports");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Separate function to refresh only reports (used after job completion)
+  const refreshReports = async (delay = 0) => {
+    if (!drhp || !rhp) return;
+
+    // Add a small delay to ensure backend has processed the report
+    if (delay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+
+    try {
+      const allReports = await reportService.getAll();
+      const filteredReports = allReports.filter(
+        (r) =>
+          r.drhpNamespace === drhp.namespace &&
+          r.rhpNamespace === rhp.rhpNamespace
+      );
+
+      // Sort reports by updatedAt to get the latest first
+      const sortedReports = filteredReports.sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+
+      setReports(sortedReports);
+
+      // Always select the latest report if available
+      if (sortedReports.length > 0) {
+        setSelectedReport(sortedReports[0]);
+      }
+    } catch (error) {
+      console.error("Error refreshing reports:", error);
     }
   };
 
@@ -159,13 +213,13 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
 
     socket.on(
       "compare_status",
-      (data: {
+      async (data: {
         jobId: string;
         status: string;
         error?: string;
         reportId?: string;
       }) => {
-        const { jobId, status, error } = data;
+        const { jobId, status, error, reportId } = data;
         const cleanStatus = status?.trim().toLowerCase();
 
         if (
@@ -180,8 +234,21 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
           toast.success("Comparison completed successfully!");
           setComparing(false);
           if (drhpId) localStorage.removeItem(`report_processing_${drhpId}`);
-          // Refetch reports to get the new one
-          fetchDocumentsAndReports();
+
+          // Force refresh reports with a small delay to ensure backend processing is complete
+          try {
+            await refreshReports(1000); // 1 second delay
+            // If we have a specific reportId, try to select it
+            if (reportId) {
+              const allReports = await reportService.getAll();
+              const newReport = allReports.find((r) => r.id === reportId);
+              if (newReport) {
+                setSelectedReport(newReport);
+              }
+            }
+          } catch (error) {
+            console.error("Error refreshing reports after completion:", error);
+          }
         } else if (cleanStatus === "failed") {
           toast.error(`Comparison failed: ${error || "Unknown error"}`);
           setComparing(false);
@@ -212,15 +279,9 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       if (!drhpId) return;
       const key = `report_processing_${drhpId}`;
       if (localStorage.getItem(key)) {
-        // Fetch reports
-        const allReports = await reportService.getAll();
-        const filteredReports = allReports.filter(
-          (r) =>
-            r.drhpNamespace === drhp?.namespace ||
-            r.rhpNamespace === rhp?.rhpNamespace
-        );
-        if (filteredReports && filteredReports.length > 0) {
-          setReports(filteredReports);
+        // Use refreshReports to get latest reports
+        await refreshReports();
+        if (reports && reports.length > 0) {
           setComparing(false);
           localStorage.removeItem(key);
           // Set ready flag for global notification
@@ -243,7 +304,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     if (!drhpId) return;
     const onFocus = async () => {
       if (comparing) {
-        await fetchDocumentsAndReports();
+        await refreshReports();
       }
     };
     window.addEventListener("focus", onFocus);
@@ -256,16 +317,8 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       return;
     }
     const prompt = "Compare these documents and provide a detailed analysis";
-    // Find the previous report for this DRHP/RHP pair
-    const previousReport = reports.find(
-      (r) =>
-        r.drhpNamespace === drhp.namespace &&
-        r.rhpNamespace === rhp.rhpNamespace
-    );
+
     try {
-      if (previousReport) {
-        await reportService.delete(previousReport.id);
-      }
       setComparing(true);
       // Persist processing state with timestamp
       if (drhpId) {
@@ -480,8 +533,9 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       <div className="h-[90vh] flex mt-[10vh]">
         {/* Left Sidebar - ChatGPT Style */}
         <div
-          className={`transition-all duration-300 ease-in-out ${sidebarOpen ? "w-60" : "w-16"
-            } fixed top-[10vh] left-0 bg-white border-r border-gray-200 h-[90vh] flex flex-col overflow-hidden`}
+          className={`transition-all duration-300 ease-in-out ${
+            sidebarOpen ? "w-60" : "w-16"
+          } fixed top-[10vh] left-0 bg-white border-r border-gray-200 h-[90vh] flex flex-col overflow-hidden`}
         >
           {sidebarOpen && (
             <>
@@ -523,7 +577,10 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                         <strong>Uploaded:</strong>{" "}
                         {new Date(drhp.uploadedAt).toLocaleDateString()}
                       </p>
-                      <Badge variant="secondary" className="text-xs bg-[#ECE9E2] text-[#4B2A06] hover:bg-[#ECE9E2] hover:text-[#4B2A06]">
+                      <Badge
+                        variant="secondary"
+                        className="text-xs bg-[#ECE9E2] text-[#4B2A06] hover:bg-[#ECE9E2] hover:text-[#4B2A06]"
+                      >
                         DRHP
                       </Badge>
                     </div>
@@ -587,7 +644,10 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                           <strong>Uploaded:</strong>{" "}
                           {new Date(rhp.uploadedAt).toLocaleDateString()}
                         </p>
-                        <Badge variant="secondary" className="text-xs text-xs bg-[#ECE9E2] text-[#4B2A06] hover:bg-[#ECE9E2] hover:text-[#4B2A06]">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs text-xs bg-[#ECE9E2] text-[#4B2A06] hover:bg-[#ECE9E2] hover:text-[#4B2A06]"
+                        >
                           RHP
                         </Badge>
                       </div>
@@ -612,7 +672,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                   <Button
                     className="w-full bg-[#4B2A06] hover:bg-[#6b3a0a] text-white font-semibold"
                     onClick={handleCreateReport}
-                    disabled={comparing || linkRole === 'viewer'}
+                    disabled={comparing || linkRole === "viewer"}
                   >
                     {comparing ? (
                       <>
@@ -644,8 +704,9 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
 
         {/* Main Content Area */}
         <div
-          className={`flex-1 flex h-full flex-col lg:flex-row transition-all duration-300 ease-in-out ${sidebarOpen ? "ml-60" : "ml-16"
-            }`}
+          className={`flex-1 flex h-full flex-col lg:flex-row transition-all duration-300 ease-in-out ${
+            sidebarOpen ? "ml-60" : "ml-16"
+          }`}
         >
           {/* Middle: Comparison Report */}
           <div className="flex-1 lg:w-[50%] flex flex-col bg-gray-50">

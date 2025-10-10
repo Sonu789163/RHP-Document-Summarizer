@@ -92,7 +92,10 @@ export const documentService = {
   // Admin: Get all documents across all workspaces
   async getAllAdmin() {
     const token = localStorage.getItem("accessToken");
-    console.log("Calling admin documents API with token:", token ? "present" : "missing");
+    console.log(
+      "Calling admin documents API with token:",
+      token ? "present" : "missing"
+    );
     try {
       const response = await axios.get(`${API_URL}/documents/admin`, {
         headers: {
@@ -532,7 +535,12 @@ export const notificationsService = {
     );
     const res = await axios.get(
       `${API_URL}/notifications?${params.toString()}`,
-      { headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) } }
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+        },
+      }
     );
     console.log("Notifications API response:", res.data);
     return res.data;
@@ -571,7 +579,10 @@ export const chatService = {
       ? `${API_URL}/chats?domain=${encodeURIComponent(domain)}`
       : `${API_URL}/chats`;
     const response = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
@@ -619,7 +630,10 @@ export const chatService = {
         )}`
       : `${API_URL}/chats/document/${documentId}`;
     const response = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
@@ -630,7 +644,10 @@ export const chatService = {
     const currentWorkspace = getCurrentWorkspace();
     const payload = { ...chat, domain }; // Include domain in chat data
     const response = await axios.post(`${API_URL}/chats`, payload, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
@@ -645,7 +662,10 @@ export const chatService = {
         )}`
       : `${API_URL}/chats/${chatId}/messages`;
     const response = await axios.post(url, message, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
@@ -658,7 +678,10 @@ export const chatService = {
       ? `${API_URL}/chats/${id}?domain=${encodeURIComponent(domain)}`
       : `${API_URL}/chats/${id}`;
     const response = await axios.put(url, chat, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
@@ -671,7 +694,10 @@ export const chatService = {
       ? `${API_URL}/chats/${id}?domain=${encodeURIComponent(domain)}`
       : `${API_URL}/chats/${id}`;
     const response = await axios.delete(url, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
@@ -709,7 +735,10 @@ export const reportService = {
       ? `${API_URL}/reports?domain=${encodeURIComponent(domain)}`
       : `${API_URL}/reports`;
     const response = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
@@ -731,7 +760,10 @@ export const reportService = {
       ? `${API_URL}/reports/${id}?domain=${encodeURIComponent(domain)}`
       : `${API_URL}/reports/${id}`;
     const response = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
@@ -755,7 +787,10 @@ export const reportService = {
       `${API_URL}/reports/create-report`,
       payload,
       {
-        headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+        },
       }
     );
     return response.data;
@@ -767,7 +802,10 @@ export const reportService = {
     const currentWorkspace = getCurrentWorkspace();
     const payload = { ...report, domain }; // Include domain in payload
     const response = await axios.post(`${API_URL}/reports`, payload, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
@@ -780,7 +818,10 @@ export const reportService = {
       ? `${API_URL}/reports/${id}?domain=${encodeURIComponent(domain)}`
       : `${API_URL}/reports/${id}`;
     const response = await axios.put(url, report, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
@@ -788,12 +829,16 @@ export const reportService = {
   async delete(id: string): Promise<void> {
     const token = localStorage.getItem("accessToken");
     const domain = getUserDomain();
+    const currentWorkspace = getCurrentWorkspace();
     const url = domain
       ? `${API_URL}/reports/${id}?domain=${encodeURIComponent(domain)}`
       : `${API_URL}/reports/${id}`;
     try {
       await axios.delete(url, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+        },
       });
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
@@ -810,7 +855,10 @@ export const reportService = {
     const response = await axios.get(
       `${API_URL}/reports/${id}/download-html-pdf`,
       {
-        headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+        },
         responseType: "blob",
       }
     );
@@ -821,7 +869,10 @@ export const reportService = {
     const token = localStorage.getItem("accessToken");
     const currentWorkspace = getCurrentWorkspace();
     const response = await axios.get(`${API_URL}/reports/${id}/download-docx`, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
       responseType: "blob",
     });
     return response.data;
@@ -834,7 +885,10 @@ export const reportService = {
     const response = await axios.get(
       `${API_URL}/reports/${id}/download-html-pdf`,
       {
-        headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+        },
         responseType: "blob",
       }
     );
@@ -851,7 +905,10 @@ export const summaryService = {
       ? `${API_URL}/summaries?domain=${encodeURIComponent(domain)}`
       : `${API_URL}/summaries`;
     const response = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
@@ -875,7 +932,10 @@ export const summaryService = {
         )}`
       : `${API_URL}/summaries/document/${documentId}`;
     const response = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
@@ -887,7 +947,10 @@ export const summaryService = {
     const payload = { ...summary, domain }; // Include domain in payload
     // Backend expects POST /api/summaries/create
     const response = await axios.post(`${API_URL}/summaries/create`, payload, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
@@ -900,7 +963,10 @@ export const summaryService = {
       ? `${API_URL}/summaries/${id}?domain=${encodeURIComponent(domain)}`
       : `${API_URL}/summaries/${id}`;
     const response = await axios.put(url, summary, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
     return response.data;
   },
@@ -913,7 +979,10 @@ export const summaryService = {
       ? `${API_URL}/summaries/${id}?domain=${encodeURIComponent(domain)}`
       : `${API_URL}/summaries/${id}`;
     await axios.delete(url, {
-      headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
     });
   },
 
@@ -923,7 +992,10 @@ export const summaryService = {
     const response = await axios.get(
       `${API_URL}/summaries/${id}/download-docx`,
       {
-        headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+        },
         responseType: "blob",
       }
     );
@@ -936,7 +1008,10 @@ export const summaryService = {
     const response = await axios.get(
       `${API_URL}/summaries/${id}/download-html-pdf`,
       {
-        headers: { Authorization: `Bearer ${token}`, ...(currentWorkspace && { "x-workspace": currentWorkspace }) },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+        },
         responseType: "blob",
       }
     );
