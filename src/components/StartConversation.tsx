@@ -1086,19 +1086,12 @@ export const StartConversation: React.FC = () => {
                                     <Share2 className="h-3 w-3" />
                                   </button>
                                   <button
-                                    className=" text-muted-foreground hover:text-destructive p-[0.3vw] disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="text-muted-foreground hover:text-destructive p-[0.3vw]"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (user?.role === "admin") {
-                                        handleDeleteDoc(doc);
-                                      }
+                                      handleDeleteDoc(doc);
                                     }}
-                                    disabled={user?.role !== "admin"}
-                                    title={
-                                      user?.role !== "admin"
-                                        ? "Only admins can delete documents"
-                                        : "Delete document"
-                                    }
+                                    title="Delete document"
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </button>
@@ -1367,19 +1360,12 @@ export const StartConversation: React.FC = () => {
                                   </button>
 
                                   <button
-                                    className="text-[#4B2A06] hover:text-red-600 p-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="text-[#4B2A06] hover:text-red-600 p-1"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (user?.role === "admin") {
-                                        handleDeleteDoc(doc);
-                                      }
+                                      handleDeleteDoc(doc);
                                     }}
-                                    disabled={user?.role !== "admin"}
-                                    title={
-                                      user?.role !== "admin"
-                                        ? "Only admins can delete documents"
-                                        : "Delete document"
-                                    }
+                                    title="Delete document"
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </button>
