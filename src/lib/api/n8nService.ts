@@ -1,8 +1,10 @@
 import axios from "axios";
 import { SessionData, ConversationMemory } from "./sessionService";
 
-const N8N_WEBHOOK_URL =
-  "https://n8n-excollo.azurewebsites.net/webhook/1/chat";
+const N8N_WEBHOOK_URLS = {
+  DRHP: "https://n8n-excollo.azurewebsites.net/webhook/1/chat/docs",
+  RHP: "https://n8n-excollo.azurewebsites.net/webhook/1/chat/docs"
+};
 
 interface N8nResponse {
   response: any[];
@@ -20,10 +22,15 @@ export const n8nService = {
     sessionData: SessionData,
     conversationHistory: ConversationMemory[] = [],
     namespace?: string,
+    documentType?: "DRHP" | "RHP",
     signal?: AbortSignal
   ): Promise<N8nResponse> {
     try {
-      console.log("Sending message to N8n with namespace:", namespace);
+      console.log("Sending message to N8n with namespace:", namespace, "documentType:", documentType);
+
+      // Select the appropriate webhook URL based on document type
+      const webhookUrl = documentType === "RHP" ? N8N_WEBHOOK_URLS.RHP : N8N_WEBHOOK_URLS.DRHP;
+      console.log("Using webhook URL:", webhookUrl);
 
       // Convert the request data to query parameters
       const params = new URLSearchParams({
@@ -45,8 +52,13 @@ export const n8nService = {
         params.append("namespace", namespace);
       }
 
+      // Include document type in the request
+      if (documentType) {
+        params.append("document_type", documentType);
+      }
+
       const response = await axios.get(
-        `${N8N_WEBHOOK_URL}?${params.toString()}`,
+        `${webhookUrl}?${params.toString()}`,
         {
           headers: {
             "Content-Type": "application/json",

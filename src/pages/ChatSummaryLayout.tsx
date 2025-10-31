@@ -117,6 +117,8 @@ export default function ChatSummaryLayout() {
       toast.error("Please select a document to start a new chat.");
       return;
     }
+    // Clear chatId from URL when starting new chat
+    setSearchParams({});
     setNewChatTrigger(Date.now());
     setSidebarOpen(false);
   };
@@ -204,6 +206,7 @@ export default function ChatSummaryLayout() {
           sidebarOpen={sidebarOpen}
           showRhpActions={!!currentDocument}
           hasRhp={!!currentDocument?.relatedRhpId}
+          currentDocument={currentDocument}
           onUploadRhp={() => setShowRhpModal(true)}
           onCompare={() =>
             currentDocument && navigate(`/compare/${currentDocument.id}`)
@@ -334,6 +337,7 @@ export default function ChatSummaryLayout() {
                 </button>
               </div>
               <ChatPanel
+                key={`${currentDocument?.id}-${chatId || 'new'}`}
                 isDocumentProcessed={true}
                 currentDocument={currentDocument}
                 onProcessingChange={setIsSummaryProcessing}

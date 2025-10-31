@@ -60,6 +60,7 @@ interface ChatPanelProps {
     name: string;
     uploadedAt: string;
     namespace?: string;
+    type?: "DRHP" | "RHP";
   } | null;
   chatId?: string | null;
   onChatCreated?: (chatId: string) => void;
@@ -229,6 +230,24 @@ export function ChatPanel({
       }
 
       try {
+        if (chatId) {
+          // Load specific chat if chatId is provided
+          const chats = await chatStorageService.getChatsForDoc(
+            currentDocument.id
+          );
+          const chat = chats.find((c) => c.id === chatId);
+          if (chat && Array.isArray(chat.messages)) {
+            setMessages(
+              chat.messages.map((m) => ({
+                ...m,
+                timestamp: new Date(m.timestamp),
+              }))
+            );
+            setCurrentChatId(chat.id);
+            return;
+          }
+        }
+        
         // If session expired (based on last user activity) OR we just reset session on init, show a fresh greeting
         if (sessionService.isSessionExpired(sessionData) || sessionData.resetOnInit) {
           setMessages([
@@ -243,33 +262,18 @@ export function ChatPanel({
           setCurrentChatId(null);
           return;
         }
-        if (chatId) {
-          const chats = await chatStorageService.getChatsForDoc(
-            currentDocument.id
-          );
-          const chat = chats.find((c) => c.id === chatId);
-          if (chat && Array.isArray(chat.messages)) {
-            setMessages(
-              chat.messages.map((m) => ({
-                ...m,
-                timestamp: new Date(m.timestamp),
-              }))
-            );
-            setCurrentChatId(chat.id);
-          }
-        } else {
-          // Always show a transient greeting in UI without loading previous chats
-          setMessages([
-            {
-              id: "greet",
-              content:
-                "Hello! I'm your DRHP document assistant. Ask a question to start a chat.",
-              isUser: false,
-              timestamp: new Date(),
-            },
-          ]);
-          setCurrentChatId(null);
-        }
+        
+        // Default: show a transient greeting in UI without loading previous chats
+        setMessages([
+          {
+            id: "greet",
+            content:
+              "Hello! I'm your DRHP document assistant. Ask a question to start a chat.",
+            isUser: false,
+            timestamp: new Date(),
+          },
+        ]);
+        setCurrentChatId(null);
       } catch (error) {
         console.error("Error loading chat:", error);
         setMessages([]);
@@ -404,6 +408,7 @@ export function ChatPanel({
         sessionData,
         conversationMemory,
         currentDocument.namespace,
+        (currentDocument.type || "DRHP") as "DRHP" | "RHP",
         abortControllerRef.current.signal
       );
 

@@ -569,7 +569,7 @@ export const WorkspaceInvitationPopover: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-medium text-sm truncate">
-                          {invitation.inviterEmail}
+                          {invitation.inviteeEmail}
                         </h4>
                         {getStatusIcon(invitation.status)}
                       </div>

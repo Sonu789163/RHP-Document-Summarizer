@@ -23,6 +23,7 @@ import {
   ChevronDown,
   Share,
   Share2,
+  GitCompare,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -38,6 +39,7 @@ import { FolderSidebar } from "./FolderSidebar";
 import { directoryService, shareService } from "@/services/api";
 import { ShareDialog } from "./ShareDialog";
 import MoveDocumentDialog from "./MoveDocumentDialog";
+import { CompareDocumentModal } from "./CompareDocumentModal";
 
 export const StartConversation: React.FC = () => {
   const [documents, setDocuments] = useState<any[]>([]);
@@ -62,7 +64,6 @@ export const StartConversation: React.FC = () => {
   const [uploadedDoc, setUploadedDoc] = useState<any>(null);
   const [highlightedDocId, setHighlightedDocId] = useState<string | null>(null);
   const docRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const [showRhpModal, setShowRhpModal] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "card">("list");
   const [currentFolder, setCurrentFolder] = useState<{
@@ -77,6 +78,15 @@ export const StartConversation: React.FC = () => {
   const [movingDocDirectoryId, setMovingDocDirectoryId] = useState<
     string | null
   >(null);
+  const [documentTypeFilter, setDocumentTypeFilter] = useState<string>("DRHP");
+  const [showUploadDropdown, setShowUploadDropdown] = useState(false);
+  const [selectedUploadType, setSelectedUploadType] = useState<string>("");
+  const [showRhpUploadModal, setShowRhpUploadModal] = useState(false);
+  const [rhpFile, setRhpFile] = useState<File | null>(null);
+  const [showCompareModal, setShowCompareModal] = useState(false);
+  const [selectedDocumentForCompare, setSelectedDocumentForCompare] = useState<any>(null);
+  const [availableDocumentsForCompare, setAvailableDocumentsForCompare] = useState<any[]>([]);
+  const [compareLoading, setCompareLoading] = useState(false);
 
   useRefreshProtection(
     isUploading,
@@ -144,10 +154,18 @@ export const StartConversation: React.FC = () => {
         documentService
           .getAll({ directoryId: currentFolder?.id ?? "root" })
           .then((docs) => {
-            const drhpOnly = (docs || []).filter(
-              (d: any) => d?.type === "DRHP"
-            );
-            setDocuments(drhpOnly);
+            let filteredDocs = docs || [];
+            
+            // Apply document type filter only in root folder
+            if (!currentFolder) {
+              if (documentTypeFilter === "DRHP") {
+                filteredDocs = filteredDocs.filter((d: any) => d?.type === "DRHP");
+              } else if (documentTypeFilter === "RHP") {
+                filteredDocs = filteredDocs.filter((d: any) => d?.type === "RHP");
+              }
+            }
+            
+            setDocuments(filteredDocs);
             setLoading(false);
           })
           .catch(() => {
@@ -161,8 +179,18 @@ export const StartConversation: React.FC = () => {
     documentService
       .getAll({ directoryId: currentFolder?.id ?? "root" })
       .then((docs) => {
-        const drhpOnly = (docs || []).filter((d: any) => d?.type === "DRHP");
-        setDocuments(drhpOnly);
+        let filteredDocs = docs || [];
+        
+        // Apply document type filter only in root folder
+        if (!currentFolder) {
+          if (documentTypeFilter === "DRHP") {
+            filteredDocs = filteredDocs.filter((d: any) => d?.type === "DRHP");
+          } else if (documentTypeFilter === "RHP") {
+            filteredDocs = filteredDocs.filter((d: any) => d?.type === "RHP");
+          }
+        }
+        
+        setDocuments(filteredDocs);
         setLoading(false);
       })
       .catch((err) => {
@@ -173,7 +201,7 @@ export const StartConversation: React.FC = () => {
 
   useEffect(() => {
     fetchDocuments();
-  }, [currentFolder?.id]);
+  }, [currentFolder?.id, documentTypeFilter]);
 
   // Handle link token from URL
   useEffect(() => {
@@ -214,11 +242,51 @@ export const StartConversation: React.FC = () => {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      handleUpload(e.target.files[0]);
+      handleUpload(e.target.files[0], selectedUploadType);
     }
   };
 
-  const handleUpload = async (file: File) => {
+  const handleCompareClick = async (document: any) => {
+    try {
+      setCompareLoading(true);
+      setSelectedDocumentForCompare(document);
+      
+      const response = await documentService.getAvailableForCompare(document.id);
+      setAvailableDocumentsForCompare(response.availableDocuments);
+      setShowCompareModal(true);
+    } catch (error) {
+      console.error("Error fetching available documents:", error);
+      toast.error("Failed to load documents for comparison");
+    } finally {
+      setCompareLoading(false);
+    }
+  };
+
+  const handleDocumentSelection = async (selectedDoc: any, targetDoc: any) => {
+    try {
+      setCompareLoading(true);
+      
+      // Link the documents
+      await documentService.linkForCompare(selectedDoc.id, targetDoc.id);
+      
+      // Close modal
+      setShowCompareModal(false);
+      setSelectedDocumentForCompare(null);
+      setAvailableDocumentsForCompare([]);
+      
+      // Navigate to compare page
+      navigate(`/compare/${selectedDoc.id}`);
+      
+      toast.success("Documents linked successfully! Redirecting to comparison...");
+    } catch (error) {
+      console.error("Error linking documents:", error);
+      toast.error("Failed to link documents for comparison");
+    } finally {
+      setCompareLoading(false);
+    }
+  };
+
+  const handleUpload = async (file: File, uploadType: string = "DRHP") => {
     if (file.type !== "application/pdf") {
       toast.error("Please select a PDF file");
       return;
@@ -285,14 +353,17 @@ export const StartConversation: React.FC = () => {
       formData.append("file", file);
       formData.append("namespace", file.name); // Use exact filename with .pdf extension
       if (currentFolder?.id) formData.append("directoryId", currentFolder.id);
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/documents/upload`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        }
-      );
+      
+      // Choose the correct upload endpoint based on document type
+      const uploadEndpoint = uploadType === "RHP" 
+        ? `${import.meta.env.VITE_API_URL}/documents/upload-rhp`
+        : `${import.meta.env.VITE_API_URL}/documents/upload`;
+      
+      const res = await fetch(uploadEndpoint, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
       let response = await res.json();
       if (!res.ok) {
         if (res.status === 409) {
@@ -583,16 +654,29 @@ export const StartConversation: React.FC = () => {
           setShowTimeFilter(false);
         }
       }
+
+
+      if (showUploadDropdown) {
+        const uploadDropdown = document.querySelector(
+          '[data-upload-dropdown="true"]'
+        );
+        if (
+          uploadDropdown &&
+          !uploadDropdown.contains(event.target as Node)
+        ) {
+          setShowUploadDropdown(false);
+        }
+      }
     };
 
-    if (sidebarOpen || showTimeFilter) {
+    if (sidebarOpen || showTimeFilter || showUploadDropdown) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [sidebarOpen, showTimeFilter]);
+  }, [sidebarOpen, showTimeFilter, showUploadDropdown]);
 
   return (
     <div
@@ -724,8 +808,8 @@ export const StartConversation: React.FC = () => {
                   )}
                 </div>
 
-                {/* Upload Button - Always visible but with different behavior for non-admins */}
-                <div className="flex flex-col items-end">
+                {/* Upload Button with Dropdown */}
+                <div className="flex flex-col items-end relative">
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -734,31 +818,94 @@ export const StartConversation: React.FC = () => {
                     className="hidden outline-none"
                     disabled={isUploading}
                   />
-                  <button
-                    className="flex items-center gap-[0.5vw] bg-[#4B2A06] text-white font-semibold px-4 py-2 rounded-lg shadow-lg text-lg transition hover:bg-[#3A2004] focus:outline-none"
-                    onClick={() => {
-                      fileInputRef.current?.click();
-                    }}
-                    disabled={isUploading}
-                    title={undefined}
-                  >
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px] animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        Upload DRHP <Upload className="h-5 w-5 " />
-                      </>
+                  <div className="relative">
+                    <button
+                      className="flex items-center gap-[0.5vw] bg-[#4B2A06] text-white font-semibold px-4 py-2 rounded-lg shadow-lg text-lg transition hover:bg-[#3A2004] focus:outline-none"
+                      onClick={() => setShowUploadDropdown(!showUploadDropdown)}
+                      disabled={isUploading}
+                      title="Choose document type to upload"
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px] animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          Upload Document
+                          <ChevronDown className="h-4 w-4" />
+                        </>
+                      )}
+                    </button>
+                    
+                    {showUploadDropdown && !isUploading && (
+                      <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[200px]" data-upload-dropdown="true">
+                        <button
+                          className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-2"
+                          onClick={() => {
+                            setSelectedUploadType("DRHP");
+                            setShowUploadDropdown(false);
+                            fileInputRef.current?.click();
+                          }}
+                        >
+                          <FileText className="h-4 w-4 text-[#4B2A06]" />
+                          <div>
+                            <div className="font-medium">Upload DRHP</div>
+                            <div className="text-xs text-gray-500">Draft Red Herring Prospectus</div>
+                          </div>
+                        </button>
+                        <button
+                          className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-2 border-t border-gray-100"
+                          onClick={() => {
+                            setSelectedUploadType("RHP");
+                            setShowUploadDropdown(false);
+                            setShowRhpUploadModal(true);
+                          }}
+                        >
+                          <FileText className="h-4 w-4 text-[#FF7A1A]" />
+                          <div>
+                            <div className="font-medium">Upload RHP</div>
+                            <div className="text-xs text-gray-500">Red Herring Prospectus</div>
+                          </div>
+                        </button>
+                      </div>
                     )}
-                  </button>
+                  </div>
                 </div>
               </div>
             </div>
             {/* Filters and Search */}
             <div className="flex justify-between items-center mb-[2vw]">
-              <div className="flex  items-center">
+              <div className="flex items-center gap-4">
+                {/* Document Type Segmented Control - Only show in root folder */}
+                {!currentFolder && (
+                  <div className="flex bg-gray-100 rounded-lg p-1">
+                    <button
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                        documentTypeFilter === "DRHP"
+                          ? "bg-white text-[#4B2A06] shadow-sm"
+                          : "text-gray-600 hover:text-gray-800"
+                      }`}
+                      onClick={() => setDocumentTypeFilter("DRHP")}
+                      type="button"
+                    >
+                      <FileText className="h-4 w-4" />
+                      DRHP
+                    </button>
+                    <button
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                        documentTypeFilter === "RHP"
+                          ? "bg-white text-[#4B2A06] shadow-sm"
+                          : "text-gray-600 hover:text-gray-800"
+                      }`}
+                      onClick={() => setDocumentTypeFilter("RHP")}
+                      type="button"
+                    >
+                      <FileText className="h-4 w-4" />
+                      RHP
+                    </button>
+                  </div>
+                )}
                 {/* <div className="relative">
               <button 
                 className="flex items-center gap-[0.5vw] bg-[#F3F4F6] text-[#5A6473] font-semibold px-[1.5vw] py-[0.5vw] rounded-lg text-base hover:bg-[#E5E7EB] transition-colors"
@@ -1008,52 +1155,24 @@ export const StartConversation: React.FC = () => {
                               <div className="flex w-full justify-between items-start">
                                 <FileText className="h-3 w-3 text-[#4B2A06] mb-[1vw]" />
                                 <div className="flex ">
-                                  {/* RHP Upload button for DRHP documents */}
-                                  {doc.type === "DRHP" && !doc.relatedRhpId && (
-                                    <>
-                                      <button
-                                        className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setShowRhpModal(doc.id);
-                                        }}
-                                        title="Upload RHP"
-                                      >
-                                        <Upload className="h-3 w-3" />
-                                      </button>
-                                      <RhpUploadModal
-                                        drhpId={doc.id}
-                                        drhpName={doc.name}
-                                        open={showRhpModal === doc.id}
-                                        onOpenChange={(open) => {
-                                          // Stay on the same card; don't navigate
-                                          if (open) {
-                                            setShowRhpModal(doc.id);
-                                          } else {
-                                            setShowRhpModal(null);
-                                          }
-                                        }}
-                                        onUploadSuccess={() => {
-                                          setShowRhpModal(null);
-                                          fetchDocuments();
-                                        }}
-                                      />
-                                    </>
-                                  )}
-
-                                  {/* Compare button for DRHP with RHP */}
-                                  {doc.type === "DRHP" && doc.relatedRhpId && (
-                                    <button
-                                      className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
+                                  {/* Compare button - always show */}
+                                  <button
+                                    className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (doc.relatedRhpId || doc.relatedDrhpId) {
+                                        // Document is already linked, go directly to compare
                                         navigate(`/compare/${doc.id}`);
-                                      }}
-                                      title="Compare DRHP and RHP"
-                                    >
-                                      <BarChart3 className="h-3 w-3" />
-                                    </button>
-                                  )}
+                                      } else {
+                                        // Document is not linked, show modal to select document
+                                        handleCompareClick(doc);
+                                      }
+                                    }}
+                                    title={doc.relatedRhpId || doc.relatedDrhpId ? "Compare documents" : "Compare with other document"}
+                                    disabled={compareLoading}
+                                  >
+                                    <GitCompare className="h-4 w-4" />
+                                  </button>
 
                                   <button
                                     className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
@@ -1086,12 +1205,19 @@ export const StartConversation: React.FC = () => {
                                     <Share2 className="h-3 w-3" />
                                   </button>
                                   <button
-                                    className="text-muted-foreground hover:text-destructive p-[0.3vw]"
+                                    className=" text-muted-foreground hover:text-destructive p-[0.3vw] disabled:opacity-50 disabled:cursor-not-allowed"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleDeleteDoc(doc);
+                                      if (user?.role === "admin") {
+                                        handleDeleteDoc(doc);
+                                      }
                                     }}
-                                    title="Delete document"
+                                    disabled={user?.role !== "admin"}
+                                    title={
+                                      user?.role !== "admin"
+                                        ? "Only admins can delete documents"
+                                        : "Delete document"
+                                    }
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </button>
@@ -1285,49 +1411,24 @@ export const StartConversation: React.FC = () => {
                               {/* Actions Column */}
                               <div className="col-span-1 flex items-center justify-end">
                                 <div className="flex items-center gap-1">
-                                  {/* RHP Upload button for DRHP documents */}
-                                  {doc.type === "DRHP" && !doc.relatedRhpId && (
-                                    <>
-                                      <button
-                                        className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setShowRhpModal(doc.id);
-                                        }}
-                                        title="Upload RHP"
-                                      >
-                                        <Upload className="h-3 w-3" />
-                                      </button>
-                                      <RhpUploadModal
-                                        drhpId={doc.id}
-                                        drhpName={doc.name}
-                                        open={showRhpModal === doc.id}
-                                        onOpenChange={(open) =>
-                                          open
-                                            ? setShowRhpModal(doc.id)
-                                            : setShowRhpModal(null)
-                                        }
-                                        onUploadSuccess={() => {
-                                          setShowRhpModal(null);
-                                          fetchDocuments();
-                                        }}
-                                      />
-                                    </>
-                                  )}
-
-                                  {/* Compare button for DRHP with RHP */}
-                                  {doc.type === "DRHP" && doc.relatedRhpId && (
-                                    <button
-                                      className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
+                                  {/* Compare button - always show */}
+                                  <button
+                                    className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (doc.relatedRhpId || doc.relatedDrhpId) {
+                                        // Document is already linked, go directly to compare
                                         navigate(`/compare/${doc.id}`);
-                                      }}
-                                      title="Compare DRHP and RHP"
-                                    >
-                                      <BarChart3 className="h-3 w-3" />
-                                    </button>
-                                  )}
+                                      } else {
+                                        // Document is not linked, show modal to select document
+                                        handleCompareClick(doc);
+                                      }
+                                    }}
+                                    title={doc.relatedRhpId || doc.relatedDrhpId ? "Compare documents" : "Compare with other document"}
+                                    disabled={compareLoading}
+                                  >
+                                    <GitCompare className="h-4 w-4" />
+                                  </button>
                                   <button
                                     className="text-[#4B2A06] hover:text-[#4B2A06] p-1"
                                     onClick={(e) => {
@@ -1360,12 +1461,19 @@ export const StartConversation: React.FC = () => {
                                   </button>
 
                                   <button
-                                    className="text-[#4B2A06] hover:text-red-600 p-1"
+                                    className="text-[#4B2A06] hover:text-red-600 p-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleDeleteDoc(doc);
+                                      if (user?.role === "admin") {
+                                        handleDeleteDoc(doc);
+                                      }
                                     }}
-                                    title="Delete document"
+                                    disabled={user?.role !== "admin"}
+                                    title={
+                                      user?.role !== "admin"
+                                        ? "Only admins can delete documents"
+                                        : "Delete document"
+                                    }
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </button>
@@ -1447,6 +1555,75 @@ export const StartConversation: React.FC = () => {
             }}
             onSelectDestination={handleMoveSelect}
             currentDirectoryId={movingDocDirectoryId}
+          />
+
+          {/* RHP Upload Modal for Standalone Upload */}
+          {showRhpUploadModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload RHP Document</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Select a Red Herring Prospectus (RHP) document to upload. This will be linked to a DRHP document.
+                </p>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select RHP File
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setRhpFile(e.target.files[0]);
+                      }
+                    }}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                    onClick={() => {
+                      setShowRhpUploadModal(false);
+                      setRhpFile(null);
+                    }}
+                    disabled={isUploading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="px-4 py-2 text-sm font-medium text-white bg-[#4B2A06] hover:bg-[#3A2004] rounded-md disabled:opacity-50"
+                    onClick={() => {
+                      if (rhpFile) {
+                        // For standalone RHP upload, directly upload the file
+                        setShowRhpUploadModal(false);
+                        handleUpload(rhpFile, "RHP");
+                        setRhpFile(null);
+                      }
+                    }}
+                    disabled={!rhpFile || isUploading}
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Compare Document Modal */}
+          <CompareDocumentModal
+            open={showCompareModal}
+            onClose={() => {
+              setShowCompareModal(false);
+              setSelectedDocumentForCompare(null);
+              setAvailableDocumentsForCompare([]);
+            }}
+            selectedDocument={selectedDocumentForCompare}
+            availableDocuments={availableDocumentsForCompare}
+            onDocumentSelect={handleDocumentSelection}
+            loading={compareLoading}
           />
         </div>
       </div>

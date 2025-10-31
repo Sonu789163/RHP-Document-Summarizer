@@ -183,13 +183,19 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({ onFolderOpen, onFo
         </button>
         {showCreate && (
           <div ref={createRef} className="absolute left-4 right-4 mt-2 bg-white border border-gray-200 rounded-lg shadow p-3 z-10">
-            <label className="block text-xs text-gray-600 mb-1">Folder name</label>
+            <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-xs text-blue-800 font-medium mb-1">📁 Folder Naming Instructions</p>
+              <p className="text-xs text-blue-700">
+                Use <strong>company name</strong> as the folder name. In the folders you can manage both DRHP and RHP documents of the same company.
+              </p>
+            </div>
+            <label className="block text-xs text-gray-600 mb-1">Company Folder Name</label>
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleCreateFolder(); }}
               className="w-full border rounded px-2 py-1 text-sm mb-2"
-              placeholder="e.g. Contracts"
+              placeholder="e.g. Acme Corporation"
               autoFocus
             />
             <div className="flex justify-end gap-2">
@@ -295,26 +301,66 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({ onFolderOpen, onFo
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Folder</h3>
-            <p className="text-gray-600 mb-4">
-              Are you sure you want to delete the folder <strong>"{deleteConfirm.name}"</strong>? 
-              All documents in this folder will also be deleted and this action cannot be undone.
-            </p>
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-red-600" />
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Company Folder</h3>
+                <p className="text-sm text-gray-500">This action cannot be undone</p>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-700 mb-3">
+                Are you sure you want to delete the folder <strong>"{deleteConfirm.name}"</strong>?
+              </p>
+              
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                      <span className="text-red-600 text-sm font-bold">!</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-red-800 mb-2">Warning: All documents will be permanently deleted</h4>
+                    <ul className="text-sm text-red-700 space-y-1">
+                      <li>• All <strong>DRHP documents</strong> in this folder</li>
+                      <li>• All <strong>RHP documents</strong> in this folder</li>
+                      <li>• All <strong>summaries</strong> related to these documents</li>
+                      <li>• All <strong>chat conversations</strong> related to these documents</li>
+                      <li>• All <strong>comparison reports</strong> between DRHP and RHP</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <div className="flex justify-end gap-3">
               <button
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
                 onClick={() => setDeleteConfirm(null)}
                 disabled={deleting}
               >
                 Cancel
               </button>
               <button
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-50 transition-colors"
                 onClick={handleDeleteFolder}
                 disabled={deleting}
               >
-                {deleting ? 'Deleting...' : 'Delete'}
+                {deleting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Deleting...
+                  </div>
+                ) : (
+                  'Delete Permanently'
+                )}
               </button>
             </div>
           </div>

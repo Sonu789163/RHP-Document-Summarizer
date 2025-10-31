@@ -36,7 +36,9 @@ import {
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "./ui/switch";
 import { Bell } from "lucide-react";
-import { notificationsService } from "@/services/api";
+import { notificationsService, documentService } from "@/services/api";
+import { CompareDocumentModal } from "./CompareDocumentModal";
+import { toast } from "sonner";
 
 interface NavbarProps {
   title?: string;
@@ -51,6 +53,7 @@ interface NavbarProps {
   onUploadRhp?: () => void;
   onCompare?: () => void;
   hasRhp?: boolean;
+  currentDocument?: any; // Current DRHP document for comparison
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -65,6 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onUploadRhp,
   onCompare,
   hasRhp = false,
+  currentDocument,
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -73,6 +77,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [workspaceOpen, setWorkspaceOpen] = React.useState(false);
   const [invitationOpen, setInvitationOpen] = React.useState(false);
   const [unreadCount, setUnreadCount] = React.useState<number>(0);
+  
+  // CompareDocumentModal state
+  const [showCompareModal, setShowCompareModal] = React.useState(false);
+  const [selectedDocumentForCompare, setSelectedDocumentForCompare] = React.useState<any>(null);
+  const [availableDocumentsForCompare, setAvailableDocumentsForCompare] = React.useState<any[]>([]);
+  const [compareLoading, setCompareLoading] = React.useState(false);
 
   React.useEffect(() => {
     let active = true;
@@ -89,6 +99,53 @@ export const Navbar: React.FC<NavbarProps> = ({
       clearInterval(id);
     };
   }, []);
+
+  // CompareDocumentModal handlers
+  const handleCompareClick = async () => {
+    if (!currentDocument) return;
+    
+    try {
+      setCompareLoading(true);
+      setSelectedDocumentForCompare(currentDocument);
+      
+      const response = await documentService.getAvailableForCompare(currentDocument.id);
+      setAvailableDocumentsForCompare(response.availableDocuments);
+      setShowCompareModal(true);
+    } catch (error) {
+      console.error("Error fetching available documents:", error);
+      toast.error("Failed to load documents for comparison");
+    } finally {
+      setCompareLoading(false);
+    }
+  };
+
+  const handleDocumentSelection = async (selectedDoc: any, targetDoc: any) => {
+    try {
+      setCompareLoading(true);
+      
+      // Determine correct id ordering for API
+      const drhpId = selectedDoc.type === "DRHP" ? selectedDoc.id : targetDoc.id;
+      const rhpId  = selectedDoc.type === "RHP"  ? selectedDoc.id : targetDoc.id;
+
+      // Link the documents
+      await documentService.linkForCompare(drhpId, rhpId);
+      
+      // Close modal
+      setShowCompareModal(false);
+      setSelectedDocumentForCompare(null);
+      setAvailableDocumentsForCompare([]);
+      
+      // Navigate to compare page
+      navigate(`/compare/${drhpId}`);
+      
+      toast.success("Documents linked successfully! Redirecting to comparison...");
+    } catch (error) {
+      console.error("Error linking documents:", error);
+      toast.error("Failed to link documents for comparison");
+    } finally {
+      setCompareLoading(false);
+    }
+  };
 
   // Helper for initials
   const getUserInitials = (user: any) => {
@@ -225,29 +282,26 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
         {children}
 
-        {/* RHP Action Buttons */}
+        {/* RHP Action Icons */}
         {showRhpActions && (
-          <div className="flex items-center gap-2 mr-1">
+          <div className="flex items-center gap-[2vw] mr-1">
             {!hasRhp ? (
-              <Button
-                onClick={onUploadRhp}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2 bg-[#ECE9E2] text-[#4B2A06] hover:bg-[#ECE9E2] hover:shadow-sm"
+              <button
+                onClick={handleCompareClick}
+                className="flex items-center gap-2 text-2xl font-bold text-[#232323] hover:text-[#FF7A1A] transition-colors"
+                title="Compare Documents"
+                disabled={compareLoading}
               >
-                <Upload className="h-4 w-4" />
-                Upload RHP
-              </Button>
+                <img className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px] object-contain" src="https://img.icons8.com/ios/50/compare.png" alt="compare" />
+              </button>
             ) : (
-              <Button
-                onClick={onCompare}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2 bg-[#ECE9E2] text-[#4B2A06] hover:bg-[#ECE9E2] hover:shadow-sm"
+              <button
+                onClick={() => currentDocument && navigate(`/compare/${currentDocument.id}`)}
+                className="flex items-center gap-2 text-2xl font-bold text-[#232323] hover:text-[#FF7A1A] transition-colors"
+                title="View Comparison Report"
               >
-                <BarChart3 className="h-4 w-4" />
-                Compare With RHP
-              </Button>
+                <img className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px] object-contain" src="https://img.icons8.com/pastel-glyph/128/document--v1.png" alt="view" />
+              </button>
             )}
           </div>
         )}
@@ -420,6 +474,20 @@ export const Navbar: React.FC<NavbarProps> = ({
       <SettingsModal
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+      />
+      
+      {/* Compare Document Modal */}
+      <CompareDocumentModal
+        open={showCompareModal}
+        onClose={() => {
+          setShowCompareModal(false);
+          setSelectedDocumentForCompare(null);
+          setAvailableDocumentsForCompare([]);
+        }}
+        selectedDocument={selectedDocumentForCompare}
+        availableDocuments={availableDocumentsForCompare}
+        onDocumentSelect={handleDocumentSelection}
+        loading={compareLoading}
       />
     </>
   );

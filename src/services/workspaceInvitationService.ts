@@ -7,6 +7,7 @@ export interface WorkspaceInvitation {
   invitationId: string;
   inviterName: string;
   inviterEmail: string;
+  inviteeEmail: string;
   workspaceName: string;
   workspaceDomain: string;
   invitedRole: "user" | "viewer" | "editor";

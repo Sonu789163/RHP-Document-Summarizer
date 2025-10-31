@@ -86,6 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<any | null>(null);
   const [shareDocId, setShareDocId] = useState<string | null>(null);
+  const [documentTypeFilter, setDocumentTypeFilter] = useState<string>("DRHP");
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -146,7 +147,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [selectedDocumentId, documents]);
 
   const filteredDocs = documents.filter((doc) =>
-    doc.name.toLowerCase().includes(docSearch.toLowerCase()) && doc.type === "DRHP"
+    doc.name.toLowerCase().includes(docSearch.toLowerCase()) && doc.type === documentTypeFilter
   );
 
   const filteredChats = chats.filter(
@@ -267,6 +268,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className=" outline-none h-6 w-6 text-[#232323] cursor-pointer"
               onClick={() => setDocSearchVisible(!docSearchVisible)}
             />
+          </div>
+          
+          {/* Document Type Filter */}
+          <div className="flex bg-[#F5F3EF] rounded-lg p-1 mb-4">
+            <button
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                documentTypeFilter === "DRHP"
+                  ? "bg-white text-[#4B2A06] shadow-sm"
+                  : "text-[#7C7C7C] hover:text-[#4B2A06]"
+              }`}
+              onClick={() => setDocumentTypeFilter("DRHP")}
+              type="button"
+            >
+              <FileText className="h-4 w-4" />
+              DRHP
+            </button>
+            <button
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                documentTypeFilter === "RHP"
+                  ? "bg-white text-[#4B2A06] shadow-sm"
+                  : "text-[#7C7C7C] hover:text-[#4B2A06]"
+              }`}
+              onClick={() => setDocumentTypeFilter("RHP")}
+              type="button"
+            >
+              <FileText className="h-4 w-4" />
+              RHP
+            </button>
           </div>
           {docSearchVisible && (
             <div className="mb-4">
