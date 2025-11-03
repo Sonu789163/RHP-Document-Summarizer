@@ -23,8 +23,8 @@ export const reportN8nService = {
   ): Promise<N8nReportResponse> {
     try {
       const payload: any = {
-        drhpNamespace,
-        rhpNamespace,
+        drhpNamespace: drhpNamespace, // DRHP namespace - ensure it's explicitly included
+        rhpNamespace: rhpNamespace, // RHP namespace - ensure it's explicitly included
         prompt,
         drhpDocumentId,
         rhpDocumentId,
@@ -62,6 +62,15 @@ export const reportN8nService = {
       } catch (error) {
         console.error("Error extracting domainId from token:", error);
       }
+
+      // Log payload for debugging - shows both namespaces are included
+      console.log("📤 Sending to n8n report webhook payload:", {
+        drhpNamespace: payload.drhpNamespace,
+        rhpNamespace: payload.rhpNamespace,
+        domainId: payload.domainId,
+        workspaceId: payload.workspaceId,
+        domain: payload.domain,
+      });
 
       const response = await axios.post(REPORT_N8N_WEBHOOK_URL, payload, {
         headers: {

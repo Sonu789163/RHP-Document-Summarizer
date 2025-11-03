@@ -44,7 +44,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { io as socketIOClient } from "socket.io-client";
-import { SummaryPanel } from "../components/SummaryPanel";
 
 interface ComparePageProps {}
 
@@ -71,10 +70,6 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
   const [linkRole, setLinkRole] = useState<
     "viewer" | "editor" | "owner" | null
   >(null);
-  const [selectedRhpSummaryId, setSelectedRhpSummaryId] = useState<
-    string | null
-  >(null);
-  const [isRhpSummaryProcessing, setIsRhpSummaryProcessing] = useState(false);
 
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -118,7 +113,12 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
 
       // Always select the latest report if available
       if (sortedReports.length > 0) {
-        setSelectedReport(sortedReports[0]);
+        const latestReport = sortedReports[0];
+        console.log('Initial fetch - Selecting latest report:', latestReport.title, 'Updated:', latestReport.updatedAt);
+        setSelectedReport(latestReport);
+      } else {
+        console.log('Initial fetch - No reports found');
+        setSelectedReport(null);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -141,8 +141,8 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       const allReports = await reportService.getAll();
       const filteredReports = allReports.filter(
         (r) =>
-          r.drhpNamespace === drhp.namespace &&
-          r.rhpNamespace === rhp.rhpNamespace
+          r.drhpNamespace === drhp.namespace ||
+          (rhp && r.rhpNamespace === rhp.rhpNamespace)
       );
 
       // Sort reports by updatedAt to get the latest first
@@ -155,7 +155,12 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
 
       // Always select the latest report if available
       if (sortedReports.length > 0) {
-        setSelectedReport(sortedReports[0]);
+        const latestReport = sortedReports[0];
+        console.log('Selecting latest report:', latestReport.title, 'Updated:', latestReport.updatedAt);
+        setSelectedReport(latestReport);
+      } else {
+        console.log('No reports found for this document pair');
+        setSelectedReport(null);
       }
     } catch (error) {
       console.error("Error refreshing reports:", error);
@@ -165,6 +170,19 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
   useEffect(() => {
     fetchDocumentsAndReports();
   }, [drhpId]);
+
+  // Ensure latest report is always selected when reports change
+  useEffect(() => {
+    if (reports.length > 0) {
+      const latestReport = reports.reduce((a, b) =>
+        new Date(a.updatedAt).getTime() > new Date(b.updatedAt).getTime() ? a : b
+      );
+      if (!selectedReport || selectedReport.id !== latestReport.id) {
+        console.log('Auto-selecting latest report:', latestReport.title, 'Updated:', latestReport.updatedAt);
+        setSelectedReport(latestReport);
+      }
+    }
+  }, [reports, selectedReport]);
 
   useEffect(() => {
     (async () => {
@@ -329,9 +347,15 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
         );
       }
       toast.info("Comparison request sent. Please wait...");
+      // Ensure we use the correct namespace fields
+      // DRHP uses 'namespace' field
+      // RHP uses 'rhpNamespace' field (or 'namespace' if rhpNamespace is not available)
+      const drhpNamespace = drhp.namespace;
+      const rhpNamespace = rhp.rhpNamespace || rhp.namespace; // Fallback to namespace if rhpNamespace not set
+      
       await reportN8nService.createComparison(
-        drhp.namespace,
-        rhp.rhpNamespace,
+        drhpNamespace,
+        rhpNamespace,
         prompt,
         sessionData,
         drhp.id,
@@ -386,11 +410,10 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       document.body.removeChild(a);
       toast.dismiss(loadingToast);
       toast.success("PDF downloaded successfully");
-    } catch (error: any) {
+    } catch (error) {
       toast.dismiss(loadingToast);
       console.error("Error downloading PDF:", error);
-      const errorMessage = error?.message || "Failed to download PDF";
-      toast.error(errorMessage);
+      toast.error("Failed to download PDF");
     }
   };
 
@@ -400,20 +423,6 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     try {
       loadingToast = toast.loading("Download processing...");
       const blob = await reportService.downloadDocx(selectedReport.id);
-      
-      // Check if blob is actually an error response
-      if (blob.type && blob.type !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document" && blob.type !== "application/octet-stream") {
-        // Might be an error response, try to parse it
-        const text = await blob.text();
-        let errorData;
-        try {
-          errorData = JSON.parse(text);
-          throw new Error(errorData.message || errorData.error || "DOCX generation service unavailable");
-        } catch (parseError) {
-          throw new Error("Invalid DOCX response from server");
-        }
-      }
-      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -424,11 +433,10 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       document.body.removeChild(a);
       toast.dismiss(loadingToast);
       toast.success("DOCX downloaded successfully");
-    } catch (error: any) {
+    } catch (error) {
       toast.dismiss(loadingToast);
       console.error("Error downloading DOCX:", error);
-      const errorMessage = error?.message || "Failed to download DOCX";
-      toast.error(errorMessage);
+      toast.error("Failed to download DOCX");
     }
   };
 
@@ -446,28 +454,146 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
             <head>
               <title>Print Report</title>
               <style>
-                body { font-family: sans-serif; margin: 0; padding: 2rem; }
+                body { 
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+                  margin: 0; 
+                  padding: 2rem; 
+                  line-height: 1.6;
+                  color: #1F2937;
+                }
+                .summary-content {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                  line-height: 1.6;
+                  color: #1F2937;
+                }
+                .summary-content h1 { 
+                  font-size: 28px; 
+                  font-weight: 800; 
+                  color: #1F2937; 
+                  margin: 24px 0 16px 0; 
+                  padding-bottom: 8px;
+                  border-bottom: 2px solid #4B2A06;
+                  line-height: 1.3;
+                }
+                .summary-content h2 { 
+                  font-size: 22px; 
+                  font-weight: 700; 
+                  color: #1F2937; 
+                  margin: 20px 0 12px 0; 
+                  padding-left: 8px;
+                  border-left: 4px solid #4B2A06;
+                  line-height: 1.4;
+                }
+                .summary-content h3 { 
+                  font-size: 18px; 
+                  font-weight: 600; 
+                  color: #374151; 
+                  margin: 16px 0 10px 0; 
+                  line-height: 1.4;
+                }
+                .summary-content h4 { 
+                  font-size: 16px; 
+                  font-weight: 600; 
+                  color: #374151; 
+                  margin: 14px 0 8px 0; 
+                  line-height: 1.4;
+                }
+                .summary-content h5 { 
+                  font-size: 14px; 
+                  font-weight: 600; 
+                  color: #4B5563; 
+                  margin: 12px 0 6px 0; 
+                  line-height: 1.4;
+                }
+                .summary-content h6 { 
+                  font-size: 13px; 
+                  font-weight: 600; 
+                  color: #4B5563; 
+                  margin: 10px 0 4px 0; 
+                  line-height: 1.4;
+                }
+                .summary-content p { 
+                  margin: 12px 0; 
+                  line-height: 1.7;
+                  text-align: justify;
+                }
+                .summary-content ul, .summary-content ol { 
+                  margin: 12px 0; 
+                  padding-left: 24px; 
+                  line-height: 1.6;
+                }
+                .summary-content li { 
+                  margin: 6px 0; 
+                  line-height: 1.6;
+                }
+                .summary-content blockquote { 
+                  margin: 16px 0; 
+                  padding: 12px 16px; 
+                  background: #F9FAFB; 
+                  border-left: 4px solid #4B2A06; 
+                  font-style: italic;
+                  color: #4B5563;
+                }
+                .summary-content b, .summary-content strong { 
+                  font-weight: 700; 
+                  color: #1F2937;
+                }
+                .summary-content i, .summary-content em { 
+                  font-style: italic; 
+                  color: #4B5563;
+                }
+                .summary-content hr { 
+                  border: none; 
+                  border-top: 2px solid #E5E7EB; 
+                  margin: 24px 0; 
+                }
                 .summary-content table {
                   border-collapse: collapse;
                   width: 100%;
                   border: 2px solid #d1d5de;
-                  margin: 16px 0;
-                  font-size: 13px;
+                  margin: 20px 0;
+                  font-size: 14px;
                   background: #ECE9E2;
+                  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                 }
                 .summary-content th, .summary-content td {
                   border: 1px solid #d1d5de;
-                  padding: 6px 8px;
+                  padding: 10px 12px;
                   text-align: left;
-                  background: #ECE9E2;
-                  color: #222;
+                  vertical-align: top;
                 }
                 .summary-content th {
-                  background: #ECE9E2;
+                  background: #4B2A06;
+                  color: white;
                   font-weight: 600;
+                  font-size: 13px;
                 }
                 .summary-content tr:nth-child(even) td {
+                  background: #F5F5F5;
+                }
+                .summary-content tr:nth-child(odd) td {
                   background: #ECE9E2;
+                }
+                .summary-content code {
+                  background: #F3F4F6;
+                  padding: 2px 6px;
+                  border-radius: 4px;
+                  font-family: 'Courier New', monospace;
+                  font-size: 13px;
+                  color: #1F2937;
+                }
+                .summary-content pre {
+                  background: #F3F4F6;
+                  padding: 16px;
+                  border-radius: 8px;
+                  overflow-x: auto;
+                  margin: 16px 0;
+                  border: 1px solid #E5E7EB;
+                }
+                .summary-content pre code {
+                  background: none;
+                  padding: 0;
+                  font-size: 13px;
                 }
                 @media print {
                   .summary-content table {
@@ -475,20 +601,34 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                     width: 100% !important;
                     border: 2px solid #d1d5de !important;
                     background: #ECE9E2 !important;
+                    box-shadow: none !important;
                   }
                   .summary-content th, .summary-content td {
                     border: 1px solid #d1d5de !important;
-                    padding: 6px 8px !important;
+                    padding: 10px 12px !important;
                     text-align: left !important;
-                    background: #ECE9E2 !important;
-                    color: #222 !important;
+                    vertical-align: top !important;
                   }
                   .summary-content th {
-                    background: #ECE9E2 !important;
+                    background: #4B2A06 !important;
+                    color: white !important;
                     font-weight: 600 !important;
+                    font-size: 13px !important;
                   }
                   .summary-content tr:nth-child(even) td {
+                    background: #F5F5F5 !important;
+                  }
+                  .summary-content tr:nth-child(odd) td {
                     background: #ECE9E2 !important;
+                  }
+                  .summary-content h1, .summary-content h2, .summary-content h3, 
+                  .summary-content h4, .summary-content h5, .summary-content h6 {
+                    color: #1F2937 !important;
+                    page-break-after: avoid;
+                  }
+                  .summary-content p, .summary-content li {
+                    orphans: 3;
+                    widows: 3;
                   }
                 }
               </style>
@@ -539,7 +679,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
   }
 
   return (
-    <div className="h-screen w-[100vw] flex flex-col overflow-x-hidden">
+    <div className="h-screen w-[100vw] flex flex-col bg-white overflow-x-hidden">
       {/* Top 10vh - Navbar */}
       <div className=" fixed top-0 left-0 right-0 z-50 h-[10vh]">
         <Navbar title="Compare Documents" />
@@ -550,14 +690,14 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
         {/* Left Sidebar - ChatGPT Style */}
         <div
           className={`transition-all duration-300 ease-in-out ${
-            sidebarOpen ? "w-60" : "w-16"
-          } fixed top-[10vh] left-0 bg-white border-r border-gray-200 h-[90vh] flex flex-col overflow-hidden`}
+            sidebarOpen ? "w-80" : "w-16"
+          } fixed top-[10vh] left-0 bg-white border-r border-gray-200 h-[90vh] pl-12 flex flex-col overflow-hidden`}
         >
           {sidebarOpen && (
             <>
               {/* Sidebar Header */}
               <div className="px-4 py-2 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-[#4B2A06]">
+                <h2 className="text-lg font-semibold text-[#4B2A06] ">
                   Documents
                 </h2>
                 <button
@@ -569,7 +709,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
               </div>
 
               {/* Document Cards */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 ">
                 {/* DRHP Card */}
                 <Card className="w-full bg-white rounded-md  border border-gray-200">
                   <CardHeader className="pb-2">
@@ -684,7 +824,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
 
               {/* Compare Button */}
               {rhp && (
-                <div className="px-4 py-2 border-t border-gray-200">
+                <div className="px-4 py-2 ">
                   <Button
                     className="w-full bg-[#4B2A06] hover:bg-[#6b3a0a] text-white font-semibold"
                     onClick={handleCreateReport}
@@ -720,15 +860,15 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
 
         {/* Main Content Area */}
         <div
-          className={`flex-1 flex h-full flex-col lg:flex-row transition-all duration-300 ease-in-out ${
-            sidebarOpen ? "ml-60" : "ml-16"
+          className={`flex-1 flex h-full transition-all duration-300 ease-in-out mx-10 ${
+            sidebarOpen ? "ml-80" : "ml-16"
           }`}
         >
-          {/* Middle: Comparison Report */}
-          <div className="flex-1 lg:w-[50%] flex flex-col bg-gray-50">
+          {/* Comparison Report - Full Width */}
+          <div className="flex-1 flex flex-col bg-gray-50  mx-auto">
             {/* Report Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 md:p-4 bg-white gap-2 sm:gap-0">
-              <div className="font-bold text-md md:text-lg">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-3 bg-white gap-2 sm:gap-0  ">
+              <div className="font-bold text-md md:text-lg ml-12">
                 Comparison Report
               </div>
               <div className="flex items-center gap-1.5 flex-wrap">
@@ -789,38 +929,144 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
               ) : selectedReport ? (
                 <div className="h-full mx-5 my-4 ">
                   <style>{`
+              .summary-content {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                line-height: 1.6;
+                color: #1F2937;
+              }
+              .summary-content h1 { 
+                font-size: 28px; 
+                font-weight: 800; 
+                color: #1F2937; 
+                margin: 24px 0 16px 0; 
+                padding-bottom: 8px;
+                border-bottom: 2px solid #4B2A06;
+                line-height: 1.3;
+              }
+              .summary-content h2 { 
+                font-size: 22px; 
+                font-weight: 700; 
+                color: #1F2937; 
+                margin: 20px 0 12px 0; 
+                padding-left: 8px;
+                border-left: 4px solid #4B2A06;
+                line-height: 1.4;
+              }
+              .summary-content h3 { 
+                font-size: 18px; 
+                font-weight: 600; 
+                color: #374151; 
+                margin: 16px 0 10px 0; 
+                line-height: 1.4;
+              }
+              .summary-content h4 { 
+                font-size: 16px; 
+                font-weight: 600; 
+                color: #374151; 
+                margin: 14px 0 8px 0; 
+                line-height: 1.4;
+              }
+              .summary-content h5 { 
+                font-size: 14px; 
+                font-weight: 600; 
+                color: #4B5563; 
+                margin: 12px 0 6px 0; 
+                line-height: 1.4;
+              }
+              .summary-content h6 { 
+                font-size: 13px; 
+                font-weight: 600; 
+                color: #4B5563; 
+                margin: 10px 0 4px 0; 
+                line-height: 1.4;
+              }
+              .summary-content p { 
+                margin: 12px 0; 
+                line-height: 1.7;
+                text-align: justify;
+              }
+              .summary-content ul, .summary-content ol { 
+                margin: 12px 0; 
+                padding-left: 24px; 
+                line-height: 1.6;
+              }
+              .summary-content li { 
+                margin: 6px 0; 
+                line-height: 1.6;
+              }
+              .summary-content blockquote { 
+                margin: 16px 0; 
+                padding: 12px 16px; 
+                background: #F9FAFB; 
+                border-left: 4px solid #4B2A06; 
+                font-style: italic;
+                color: #4B5563;
+              }
+              .summary-content b, .summary-content strong { 
+                font-weight: 700; 
+                color: #1F2937;
+              }
+              .summary-content i, .summary-content em { 
+                font-style: italic; 
+                color: #4B5563;
+              }
+              .summary-content hr { 
+                border: none; 
+                border-top: 2px solid #E5E7EB; 
+                margin: 24px 0; 
+              }
               .summary-content table {
                 border-collapse: collapse;
                 width: 100%;
                 border: 2px solid #d1d5de;
-                margin: 16px 0;
-                font-size: 13px;
+                margin: 20px 0;
+                font-size: 14px;
                 background: #ECE9E2;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
               }
               .summary-content th, .summary-content td {
                 border: 1px solid #d1d5de;
-                padding: 6px 8px;
+                padding: 10px 12px;
                 text-align: left;
+                vertical-align: top;
               }
               .summary-content th {
-                background: #ECE9E2;
+                background: #4B2A06;
+                color: white;
                 font-weight: 600;
+                font-size: 13px;
               }
               .summary-content tr:nth-child(even) td {
+                background: #F5F5F5;
+              }
+              .summary-content tr:nth-child(odd) td {
                 background: #ECE9E2;
               }
-              .summary-content h1 { font-size: 24px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-              .summary-content h2 { font-size: 18px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-              .summary-content h3 { font-size: 16px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-              .summary-content h4 { font-size: 14px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-              .summary-content h5 { font-size: 12px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-              .summary-content h6 { font-size: 10px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-              .summary-content b, .summary-content strong { font-weight: 700; }
-              .summary-content hr { border: none; border-top: 1px solid #E5E7EB; margin: 12px 0; }
+              .summary-content code {
+                background: #F3F4F6;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-family: 'Courier New', monospace;
+                font-size: 13px;
+                color: #1F2937;
+              }
+              .summary-content pre {
+                background: #F3F4F6;
+                padding: 16px;
+                border-radius: 8px;
+                overflow-x: auto;
+                margin: 16px 0;
+                border: 1px solid #E5E7EB;
+              }
+              .summary-content pre code {
+                background: none;
+                padding: 0;
+                font-size: 13px;
+              }
             `}</style>
                   {/* HTML Content Display */}
                   <div
-                    className="h-[95%] hide-scrollbar bg-[#ECE9E2] rounded-md overflow-y-auto"
+                    className="h-[95%] hide-scrollbar ml-12 bg-[#ECE9E2] rounded-md overflow-y-auto"
                     style={{ zoom: zoom }}
                   >
                     <div
@@ -844,31 +1090,6 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                     <p>No comparison report available</p>
                     <p className="text-sm">
                       Click "Compare Documents" to generate a report
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right: RHP Summary Panel */}
-          <div className="lg:w-[50%] border-l mt-[-40vh] lg:mt-0 border-gray-200 bg-white flex flex-col">
-            <div className="px-2 md:px-4 lg:px-5 pb-2 md:pb-4 lg:pb-4.5 lg:mt-[2vh] flex-1 overflow-hidden">
-              {rhp ? (
-                <SummaryPanel
-                  isDocumentProcessed={true}
-                  currentDocument={rhp}
-                  onProcessingChange={setIsRhpSummaryProcessing}
-                  selectedSummaryId={selectedRhpSummaryId}
-                  onSummarySelect={setSelectedRhpSummaryId}
-                />
-              ) : (
-                <div className="h-full flex items-center justify-center text-gray-400">
-                  <div className="text-center">
-                    <AlertCircle className="h-12 w-12 mx-auto mb-4" />
-                    <p>No RHP document available</p>
-                    <p className="text-sm">
-                      Upload an RHP document to view summary
                     </p>
                   </div>
                 </div>
