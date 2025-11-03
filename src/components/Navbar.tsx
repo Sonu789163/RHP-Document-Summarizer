@@ -19,20 +19,13 @@ import {
   BarChart3,
   Users,
   LayoutDashboardIcon,
-  RefreshCcw,
   UserPlus,
   SettingsIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import SettingsModal from "./SettingsModal";
-import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 import { WorkspaceInvitationPopover } from "./WorkspaceInvitationPopover";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "./ui/switch";
 import { Bell } from "lucide-react";
@@ -74,7 +67,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
   const [settingsOpen, setSettingsOpen] = React.useState(false);
-  const [workspaceOpen, setWorkspaceOpen] = React.useState(false);
   const [invitationOpen, setInvitationOpen] = React.useState(false);
   const [unreadCount, setUnreadCount] = React.useState<number>(0);
   
@@ -104,16 +96,19 @@ export const Navbar: React.FC<NavbarProps> = ({
   const handleCompareClick = async () => {
     if (!currentDocument) return;
     
+    // Show modal immediately for better UX
+    setSelectedDocumentForCompare(currentDocument);
+    setShowCompareModal(true);
+    setCompareLoading(true);
+    
+    // Fetch available documents in the background
     try {
-      setCompareLoading(true);
-      setSelectedDocumentForCompare(currentDocument);
-      
       const response = await documentService.getAvailableForCompare(currentDocument.id);
       setAvailableDocumentsForCompare(response.availableDocuments);
-      setShowCompareModal(true);
     } catch (error) {
       console.error("Error fetching available documents:", error);
       toast.error("Failed to load documents for comparison");
+      // Optionally close modal on error or keep it open - keeping it open for now
     } finally {
       setCompareLoading(false);
     }
@@ -307,23 +302,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
 
         <div className="flex items-center ml-[2vw] gap-[2vw] text-[#232323] text-2xl">
-          {/* Workspace Switcher (icon + hover popover, only on dashboard) */}
-          {location.pathname === "/dashboard" && (
-            <div
-              onMouseEnter={() => setWorkspaceOpen(true)}
-              onMouseLeave={() => setWorkspaceOpen(false)}
-            >
-              <Popover open={workspaceOpen}  onOpenChange={setWorkspaceOpen}>
-                <PopoverTrigger asChild >
-                  <RefreshCcw className="h-[1vw] w-[1vw] min-w-[24px] min-h-[24px]" />
-                </PopoverTrigger>
-                <PopoverContent className="w-[25vw] p-3 bg-white border border-gray-200" align="end" sideOffset={8}>
-                  <WorkspaceSwitcher mode="list" />
-                </PopoverContent>
-              </Popover>
-            </div>
-          )}
-
           {/* Workspace Invitations (icon + click dialog, only for admin on admin routes) */}
           {(location.pathname.startsWith("/admin") ||
             location.pathname === "/admin") &&

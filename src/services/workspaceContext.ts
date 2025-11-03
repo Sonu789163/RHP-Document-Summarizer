@@ -9,16 +9,25 @@ interface WorkspaceInfo {
 // Get current workspace from localStorage
 export const getCurrentWorkspace = (): string | null => {
   try {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) return null;
+    
+    const payload = JSON.parse(atob(accessToken.split(".")[1]));
+    const userDomain = payload.domain || null;
+    
     const currentWorkspace = localStorage.getItem("currentWorkspace");
-    if (currentWorkspace) return currentWorkspace;
+    
+    // If workspace is set, validate it belongs to current user's domain
+    // If not valid, clear it and use domain instead
+    if (currentWorkspace) {
+      // Note: We can't fully validate workspace here since custom slugs are allowed
+      // The backend will handle validation and correct invalid workspaces
+      // We just return what's in localStorage, and the backend will fix it if needed
+      return currentWorkspace;
+    }
 
     // Fallback to domain if no workspace is set
-    const accessToken = localStorage.getItem("accessToken");
-    if (accessToken) {
-      const payload = JSON.parse(atob(accessToken.split(".")[1]));
-      return payload.domain || null;
-    }
-    return null;
+    return userDomain;
   } catch (error) {
     console.error("Error getting current workspace:", error);
     return null;

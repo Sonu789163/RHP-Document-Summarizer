@@ -57,6 +57,31 @@ export const n8nService = {
         params.append("document_type", documentType);
       }
 
+      // Attach domain, domainId, and workspaceId from JWT/localStorage if present
+      try {
+        const token = localStorage.getItem("accessToken");
+        if (token) {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          let domain: string | undefined = payload?.domain;
+          if (!domain && typeof payload?.email === "string") {
+            const parts = payload.email.split("@");
+            if (parts.length === 2) domain = parts[1].toLowerCase();
+          }
+          if (domain) params.append("domain", domain);
+          
+          // Add domainId if available in JWT (may need to add this to JWT in future)
+          if (payload?.domainId) {
+            params.append("domainId", payload.domainId);
+          }
+        }
+        
+        // Add workspaceId from localStorage
+        const currentWorkspace = localStorage.getItem("currentWorkspace");
+        if (currentWorkspace) {
+          params.append("workspaceId", currentWorkspace);
+        }
+      } catch {}
+
       const response = await axios.get(
         `${webhookUrl}?${params.toString()}`,
         {

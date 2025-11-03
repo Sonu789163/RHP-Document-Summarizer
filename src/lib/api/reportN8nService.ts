@@ -22,7 +22,7 @@ export const reportN8nService = {
     signal?: AbortSignal
   ): Promise<N8nReportResponse> {
     try {
-      const payload = {
+      const payload: any = {
         drhpNamespace,
         rhpNamespace,
         prompt,
@@ -41,6 +41,22 @@ export const reportN8nService = {
           }
         })(),
       };
+
+      // Add domainId and workspaceId if available
+      try {
+        const token = localStorage.getItem("accessToken");
+        if (token) {
+          const jwtPayload = JSON.parse(atob(token.split(".")[1]));
+          if (jwtPayload?.domainId) {
+            payload.domainId = jwtPayload.domainId;
+          }
+        }
+        
+        const currentWorkspace = localStorage.getItem("currentWorkspace");
+        if (currentWorkspace) {
+          payload.workspaceId = currentWorkspace;
+        }
+      } catch {}
 
       const response = await axios.post(REPORT_N8N_WEBHOOK_URL, payload, {
         headers: {

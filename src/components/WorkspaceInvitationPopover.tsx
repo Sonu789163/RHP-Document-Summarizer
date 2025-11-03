@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -65,6 +64,7 @@ export const WorkspaceInvitationPopover: React.FC = () => {
   const [directories, setDirectories] = useState<any[]>([]);
   const [dirLoading, setDirLoading] = useState(false);
   const [dirSearch, setDirSearch] = useState("");
+  const [showDirSearch, setShowDirSearch] = useState(false);
 
   // Form state for sending invitation
   const [inviteForm, setInviteForm] = useState({
@@ -72,7 +72,7 @@ export const WorkspaceInvitationPopover: React.FC = () => {
     name: "",
     role: "user" as "user" | "viewer" | "editor",
     message: "",
-    allowedTimeBuckets: ["today"] as TimeBucket[],
+    allowedTimeBuckets: ["all"] as TimeBucket[], // Default to "all" since documents filtered by directory
     selectedDirectories: [] as any[],
     directoryRole: "viewer" as "viewer" | "editor",
   });
@@ -159,31 +159,30 @@ export const WorkspaceInvitationPopover: React.FC = () => {
       return;
     }
 
+    if (inviteForm.selectedDirectories.length === 0) {
+      toast.error("Please select at least one directory");
+      return;
+    }
+
     try {
       setActionLoading("send");
       
-      // Send invitation
+      // Send invitation with directory access
+      // When directories are selected, set allowedTimeBuckets to ["all"] 
+      // since documents will be filtered by directory access
       const invitation = await workspaceInvitationService.sendInvitation({
         inviteeEmail: inviteForm.email,
         inviteeName: inviteForm.name,
         invitedRole: inviteForm.role,
         message: inviteForm.message,
-        allowedTimeBuckets: inviteForm.allowedTimeBuckets,
+        allowedTimeBuckets: ["all"], // All documents in granted directories
+        grantedDirectories: inviteForm.selectedDirectories.map(dir => ({
+          directoryId: dir.id,
+          role: inviteForm.directoryRole,
+        })),
       });
 
-      // Create directory access if directories are selected
-      if (inviteForm.selectedDirectories.length > 0) {
-        for (const dir of inviteForm.selectedDirectories) {
-          await shareService.createOrRotateLink(
-            "directory",
-            dir.id,
-            inviteForm.directoryRole
-          );
-        }
-        toast.success(`Invitation sent with access to ${inviteForm.selectedDirectories.length} director${inviteForm.selectedDirectories.length > 1 ? 'ies' : 'y'}`);
-      } else {
-        toast.success("Invitation sent successfully");
-      }
+      toast.success(`Invitation sent with access to ${inviteForm.selectedDirectories.length} director${inviteForm.selectedDirectories.length > 1 ? 'ies' : 'y'}`);
       
       setIsSendDialogOpen(false);
       setInviteForm({
@@ -191,7 +190,7 @@ export const WorkspaceInvitationPopover: React.FC = () => {
         name: "",
         role: "user",
         message: "",
-        allowedTimeBuckets: ["today"],
+        allowedTimeBuckets: ["all"],
         selectedDirectories: [],
         directoryRole: "viewer",
       });
@@ -277,15 +276,6 @@ export const WorkspaceInvitationPopover: React.FC = () => {
     });
   };
 
-  const timeBucketLabels = {
-    today: "Today",
-    last7: "Last 7 days",
-    last15: "Last 15 days",
-    last30: "Last 30 days",
-    last90: "Last 3 months",
-    all: "All",
-  };
-
   // Pagination logic
   const totalPages = Math.ceil(filteredInvitations.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -364,70 +354,57 @@ export const WorkspaceInvitationPopover: React.FC = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label>Document Access</Label>
-                  <div className="space-y-2 mt-2">
-                    {Object.entries(timeBucketLabels).map(([key, label]) => (
-                      <div key={key} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={key}
-                          checked={inviteForm.allowedTimeBuckets.includes(
-                            key as TimeBucket
-                          )}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setInviteForm({
-                                ...inviteForm,
-                                allowedTimeBuckets: [
-                                  ...inviteForm.allowedTimeBuckets,
-                                  key as TimeBucket,
-                                ],
-                              });
-                            } else {
-                              setInviteForm({
-                                ...inviteForm,
-                                allowedTimeBuckets:
-                                  inviteForm.allowedTimeBuckets.filter(
-                                    (bucket) => bucket !== key
-                                  ),
-                              });
-                            }
-                          }}
-                        />
-                        <Label htmlFor={key} className="text-sm">
-                          {label}
-                        </Label>
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <Label>Directory Access *</Label>
+                      <p className="text-xs text-gray-500 mt-1">Select directories to grant access. Documents within these directories will be accessible to the invited user.</p>
+                    </div>
+                    <Select 
+                      value={inviteForm.directoryRole} 
+                      onValueChange={(value: "viewer" | "editor") =>
+                        setInviteForm({ ...inviteForm, directoryRole: value })
+                      }
+                    >
+                      <SelectTrigger className="w-28 h-8 bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border border-gray-200">
+                        <SelectItem value="viewer">Viewer</SelectItem>
+                        <SelectItem value="editor">Editor</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
-                <div>
-                  <Label>Directory Access (Optional)</Label>
-                  <div className="space-y-2 mt-2">
-                    <div className="flex gap-2">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">
+                        Available Directories ({directories.length})
+                      </span>
+                      {directories.length > 5 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowDirSearch(!showDirSearch);
+                            if (showDirSearch) setDirSearch("");
+                          }}
+                          className="text-xs text-blue-600 hover:text-blue-800 underline"
+                        >
+                          {showDirSearch ? "Hide Search" : "Show Search"}
+                        </button>
+                      )}
+                    </div>
+                    {showDirSearch && (
                       <Input
                         placeholder="Search directories..."
                         value={dirSearch}
                         onChange={(e) => setDirSearch(e.target.value)}
                         className="h-8 bg-white"
                       />
-                      <Select 
-                        value={inviteForm.directoryRole} 
-                        onValueChange={(value: "viewer" | "editor") =>
-                          setInviteForm({ ...inviteForm, directoryRole: value })
-                        }
-                      >
-                        <SelectTrigger className="w-28 h-8 bg-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border border-gray-200">
-                          <SelectItem value="viewer">Viewer</SelectItem>
-                          <SelectItem value="editor">Editor</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="max-h-32 overflow-y-auto border rounded bg-white">
+                    )}
+                    <div className="border rounded bg-white max-h-64 overflow-y-auto">
                       {dirLoading ? (
-                        <div className="text-xs text-gray-500 p-2">Loading directories...</div>
+                        <div className="text-xs text-gray-500 p-4 text-center">Loading directories...</div>
+                      ) : directories.length === 0 ? (
+                        <div className="text-xs text-gray-500 p-4 text-center">No directories available</div>
                       ) : (
                         (directories || [])
                           .filter((d: any) =>
@@ -436,7 +413,10 @@ export const WorkspaceInvitationPopover: React.FC = () => {
                           .map((d: any) => {
                             const checked = inviteForm.selectedDirectories.some((s) => s.id === d.id);
                             return (
-                              <label key={d.id} className="flex items-center gap-2 text-sm px-2 py-1 border-b last:border-b-0 hover:bg-gray-50">
+                              <label 
+                                key={d.id} 
+                                className="flex items-center gap-3 text-sm px-4 py-3 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer transition-colors"
+                              >
                                 <input
                                   type="checkbox"
                                   checked={checked}
@@ -453,16 +433,20 @@ export const WorkspaceInvitationPopover: React.FC = () => {
                                       });
                                     }
                                   }}
+                                  className="w-4 h-4 cursor-pointer"
                                 />
-                                <span className="truncate">{d.name}</span>
+                                <span className="truncate flex-1 font-medium">{d.name}</span>
+                                {checked && (
+                                  <span className="text-xs text-green-600 font-medium">Selected</span>
+                                )}
                               </label>
                             );
                           })
                       )}
                     </div>
                     {inviteForm.selectedDirectories.length > 0 && (
-                      <div className="text-xs text-gray-600">
-                        Selected: {inviteForm.selectedDirectories.map(d => d.name).join(", ")}
+                      <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded">
+                        <strong>{inviteForm.selectedDirectories.length}</strong> director{inviteForm.selectedDirectories.length > 1 ? 'ies' : 'y'} selected: {inviteForm.selectedDirectories.map(d => d.name).join(", ")}
                       </div>
                     )}
                   </div>
@@ -735,22 +719,19 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
 
   const loadGrantedDirectories = async () => {
     try {
-      // Get all directory shares for this user
-      const allShares = await shareService.list("directory", "");
-      const userShares = allShares.filter((share: any) => 
-        share.inviteeEmail === invite.inviterEmail || 
-        share.inviterEmail === invite.inviterEmail
-      );
-      setGrantedDirectories(userShares);
+      // Get all directories this user has access to using the new service
+      const data = await workspaceInvitationService.getUserDirectories(invite.inviteeEmail);
+      setGrantedDirectories(data.directories);
     } catch (error) {
       console.error("Error loading granted directories:", error);
+      setGrantedDirectories([]);
     }
   };
 
   const update = async () => {
     try {
       setSaving(true);
-      await workspaceInvitationService.updateUserBuckets(invite.inviterEmail, [
+      await workspaceInvitationService.updateUserBuckets(invite.inviteeEmail, [
         bucket,
       ]);
       toast.success("Access window updated");
@@ -768,17 +749,18 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
     }
     try {
       setGranting(true);
-      let last: string | null = null;
-      for (const d of selectedDirs) {
-        const { token } = await shareService.createOrRotateLink(
-          "directory",
-          d.id,
-          dirRole
-        );
-        last = token;
+      const directoryIds = selectedDirs.map(d => d.id);
+      const result = await workspaceInvitationService.grantDirectoryAccess(
+        invite.inviteeEmail,
+        directoryIds,
+        dirRole
+      );
+      toast.success(`Access granted to ${result.granted.length} director${result.granted.length > 1 ? "ies" : "y"}`);
+      if (result.errors && result.errors.length > 0) {
+        toast.error(`Some errors: ${result.errors.join(", ")}`);
       }
-      setCreatedToken(last);
-      toast.success(`Access granted to ${selectedDirs.length} director${selectedDirs.length > 1 ? "ies" : "y"}`);
+      setSelectedDirs([]);
+      loadGrantedDirectories();
     } catch (e: any) {
       toast.error(e.response?.data?.message || "Failed to grant access");
     } finally {
@@ -786,44 +768,13 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
     }
   };
 
-  const copyLink = async () => {
-    if (!createdToken) return;
-    const url = `${window.location.origin}/dashboard?linkToken=${encodeURIComponent(createdToken)}`;
-    await navigator.clipboard.writeText(url);
-    toast.success("Link copied");
-  };
-
-  const loadShares = async () => {
-    if (selectedDirs.length === 0) {
-      toast.error("Select a directory first");
-      return;
-    }
+  const revoke = async (directoryId: string) => {
     try {
-      setSharesLoading(true);
-      const res = await shareService.list("directory", selectedDirs[0].id);
-      setShares(res || []);
-    } finally {
-      setSharesLoading(false);
-    }
-  };
-
-  const revoke = async (id: string) => {
-    try {
-      await shareService.revoke(id);
+      await workspaceInvitationService.revokeDirectoryAccess(invite.inviteeEmail, directoryId);
       toast.success("Access revoked");
       loadGrantedDirectories();
     } catch (e: any) {
       toast.error(e.response?.data?.message || "Failed to revoke");
-    }
-  };
-
-  const keepAccess = async (shareId: string) => {
-    try {
-      // Keep access by updating the share (no action needed, just confirm)
-      toast.success("Access maintained");
-      loadGrantedDirectories();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message || "Failed to update access");
     }
   };
 
@@ -835,7 +786,7 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
         </DialogTrigger>
         <DialogContent className="sm:max-w-lg bg-gray-50 text-[#4B2A06]" hideClose>
           <DialogHeader>
-            <DialogTitle>Update Access for {invite.inviterEmail}</DialogTitle>
+            <DialogTitle>Update Access for {invite.inviteeEmail}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -857,28 +808,86 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
               </Button>
             </div>
 
-            <div className="text-sm font-medium text-gray-700">Shared Directories</div>
-            {sharesLoading ? (
-              <div className="text-xs text-gray-500">Loading...</div>
-            ) : (
+            <div className="text-sm font-medium text-gray-700">Directory Access Management</div>
+            
+            {/* Grant new directory access */}
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-gray-600">Grant Directory Access</div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Search directories..."
+                  value={dirSearch}
+                  onChange={(e) => setDirSearch(e.target.value)}
+                  className="h-8 bg-white"
+                />
+                <Select 
+                  value={dirRole} 
+                  onValueChange={(v: any) => setDirRole(v)}
+                >
+                  <SelectTrigger className="w-28 h-8 bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200">
+                    <SelectItem value="viewer">Viewer</SelectItem>
+                    <SelectItem value="editor">Editor</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button size="sm" onClick={grantDirAccess} disabled={granting || selectedDirs.length === 0} className="h-8 px-3 bg-[#4B2A06] text-white hover:bg-[#3A2004]">
+                  {granting ? "Granting..." : "Grant Access"}
+                </Button>
+              </div>
+              <div className="max-h-32 overflow-y-auto border rounded bg-white">
+                {dirLoading ? (
+                  <div className="text-xs text-gray-500 p-2">Loading directories...</div>
+                ) : (
+                  (directories || [])
+                    .filter((d: any) =>
+                      dirSearch ? (d.name || "").toLowerCase().includes(dirSearch.toLowerCase()) : true
+                    )
+                    .map((d: any) => {
+                      const checked = selectedDirs.some((s) => s.id === d.id);
+                      return (
+                        <label key={d.id} className="flex items-center gap-2 text-sm px-2 py-1 border-b last:border-b-0 hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedDirs((prev) => [...prev, { id: d.id, name: d.name }]);
+                              } else {
+                                setSelectedDirs((prev) => prev.filter((x) => x.id !== d.id));
+                              }
+                            }}
+                          />
+                          <span className="truncate">{d.name}</span>
+                        </label>
+                      );
+                    })
+                )}
+              </div>
+            </div>
+
+            {/* Currently granted directories */}
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-gray-600">Current Directory Access</div>
               <div className="max-h-48 overflow-y-auto space-y-2">
                 {grantedDirectories.length === 0 ? (
                   <div className="text-xs text-gray-500">No directories shared to this user.</div>
                 ) : (
-                  grantedDirectories.map((s) => (
-                    <div key={s.id} className="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded">
+                  grantedDirectories.map((dir) => (
+                    <div key={dir.directoryId} className="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded">
                       <div className="truncate pr-3">
-                        <div className="text-sm font-medium text-gray-800 truncate">{s.resourceName || 'Directory'}</div>
-                        <div className="text-xs text-gray-500">Role: {s.role}</div>
+                        <div className="text-sm font-medium text-gray-800 truncate">{dir.directoryName}</div>
+                        <div className="text-xs text-gray-500">Role: {dir.role}</div>
                       </div>
-                      <Button size="sm" variant="destructive" className="h-7 px-3" onClick={async () => { await revoke(s.id); }}>
+                      <Button size="sm" variant="destructive" className="h-7 px-3" onClick={async () => { await revoke(dir.directoryId); }}>
                         Remove Access
                       </Button>
                     </div>
                   ))
                 )}
               </div>
-            )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -888,7 +897,7 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
         className="h-8 px-3"
         onClick={async () => {
           try {
-            await workspaceInvitationService.revokeUserAccess(invite.inviterEmail);
+            await workspaceInvitationService.revokeUserAccess(invite.inviteeEmail);
             toast.success("Invitee removed and all access revoked");
           } catch (e: any) {
             toast.error(e.response?.data?.message || "Failed to remove invitee");

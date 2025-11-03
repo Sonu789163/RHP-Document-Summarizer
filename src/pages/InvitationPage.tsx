@@ -72,9 +72,9 @@ export default function InvitationPage() {
       );
 
       // Automatically switch to the invited workspace
-      if (result.workspace?.domain) {
+      if (result.workspace?.workspaceId) {
         await workspaceInvitationService.switchWorkspace(
-          result.workspace.domain
+          result.workspace.workspaceId
         );
         // Refresh the page to ensure documents are loaded with correct permissions
         window.location.href = "/dashboard";

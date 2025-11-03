@@ -56,7 +56,7 @@ export const summaryN8nService = {
         params.append("documentId", documentId);
       }
 
-      // Attach domain from JWT if present
+      // Attach domain, domainId, and workspaceId from JWT/localStorage if present
       try {
         const token = localStorage.getItem("accessToken");
         if (token) {
@@ -67,6 +67,17 @@ export const summaryN8nService = {
             if (parts.length === 2) domain = parts[1].toLowerCase();
           }
           if (domain) params.append("domain", domain);
+          
+          // Add domainId if available in JWT (may need to add this to JWT in future)
+          if (payload?.domainId) {
+            params.append("domainId", payload.domainId);
+          }
+        }
+        
+        // Add workspaceId from localStorage
+        const currentWorkspace = localStorage.getItem("currentWorkspace");
+        if (currentWorkspace) {
+          params.append("workspaceId", currentWorkspace);
         }
       } catch {}
 

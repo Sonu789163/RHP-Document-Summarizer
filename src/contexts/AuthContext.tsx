@@ -48,9 +48,10 @@ const isTokenExpired = (token: string): boolean => {
     const decoded = jwtDecode(token) as User;
     if (!decoded.exp) return true;
 
-    // Check if token is expired (with 5 minute buffer)
+    // Check if token is expired (with 5 minute buffer before actual expiration)
     const currentTime = Math.floor(Date.now() / 1000);
-    return decoded.exp < currentTime + 3600; // 5 minute buffer
+    const bufferSeconds = 5 * 60; // 5 minutes = 300 seconds
+    return decoded.exp < currentTime + bufferSeconds;
   } catch {
     return true;
   }
@@ -235,13 +236,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
       setUser(decoded);
 
-      // Set up periodic token validation after login
+      // Set up periodic token validation after login (every 5 minutes)
       if (tokenCheckInterval.current) {
         clearInterval(tokenCheckInterval.current);
       }
       tokenCheckInterval.current = setInterval(
         validateToken,
-        24 * 60 * 60 * 1000
+        5 * 60 * 1000 // Check every 5 minutes
       );
 
       navigate("/dashboard");

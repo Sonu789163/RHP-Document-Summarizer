@@ -102,7 +102,7 @@ export const documentService = {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log("Admin documents API response:", response.data);
+      // console.log("Admin documents API response:", response.data);
       return response.data;
     } catch (error) {
       console.error("Admin documents API error:", error);
@@ -176,7 +176,7 @@ export const documentService = {
         ...(currentWorkspace && { "x-workspace": currentWorkspace }),
       },
     });
-    console.log("for namespace:", response);
+    // console.log("for namespace:", response);
     return response.data;
   },
 
@@ -206,7 +206,7 @@ export const documentService = {
         ...(currentWorkspace && { "x-workspace": currentWorkspace }),
       },
     });
-    console.log("check namespace:", response);
+    // console.log("check namespace:", response);
     return response.data;
   },
 
@@ -279,6 +279,58 @@ export const documentService = {
         },
       }
     );
+    return response.data;
+  },
+
+  async getAvailableForCompare(documentId: string) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const currentWorkspace = getCurrentWorkspace();
+    const url = domain
+      ? `${API_URL}/documents/available-for-compare/${documentId}?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/documents/available-for-compare/${documentId}`;
+    const response = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
+    });
+    return response.data;
+  },
+
+  async linkForCompare(drhpId: string, rhpId: string) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const currentWorkspace = getCurrentWorkspace();
+    const url = domain
+      ? `${API_URL}/documents/link-for-compare?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/documents/link-for-compare`;
+    const response = await axios.post(
+      url,
+      { drhpId, rhpId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+        },
+      }
+    );
+    return response.data;
+  },
+
+  async unlinkForCompare(documentId: string) {
+    const token = localStorage.getItem("accessToken");
+    const domain = getUserDomain();
+    const currentWorkspace = getCurrentWorkspace();
+    const url = domain
+      ? `${API_URL}/documents/unlink-for-compare/${documentId}?domain=${encodeURIComponent(domain)}`
+      : `${API_URL}/documents/unlink-for-compare/${documentId}`;
+    const response = await axios.delete(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
+    });
     return response.data;
   },
 };
@@ -529,10 +581,10 @@ export const notificationsService = {
     if (opts?.unread) params.set("unread", "true");
     if (opts?.page) params.set("page", String(opts.page));
     if (opts?.pageSize) params.set("pageSize", String(opts.pageSize));
-    console.log(
-      "Notifications API call:",
-      `${API_URL}/notifications?${params.toString()}`
-    );
+    // console.log(
+    //   "Notifications API call:",
+    //   `${API_URL}/notifications?${params.toString()}`
+    // );
     const res = await axios.get(
       `${API_URL}/notifications?${params.toString()}`,
       {
@@ -542,7 +594,7 @@ export const notificationsService = {
         },
       }
     );
-    console.log("Notifications API response:", res.data);
+    // console.log("Notifications API response:", res.data);
     return res.data;
   },
   async markRead(id: string) {
@@ -868,31 +920,119 @@ export const reportService = {
   async downloadDocx(id: string): Promise<Blob> {
     const token = localStorage.getItem("accessToken");
     const currentWorkspace = getCurrentWorkspace();
-    const response = await axios.get(`${API_URL}/reports/${id}/download-docx`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
-      },
-      responseType: "blob",
-    });
-    return response.data;
-  },
-
-  async downloadHtmlPdf(id: string): Promise<Blob> {
-    console.log("downloading html pdf", id);
-    const token = localStorage.getItem("accessToken");
-    const currentWorkspace = getCurrentWorkspace();
-    const response = await axios.get(
-      `${API_URL}/reports/${id}/download-html-pdf`,
-      {
+    try {
+      const response = await axios.get(`${API_URL}/reports/${id}/download-docx`, {
         headers: {
           Authorization: `Bearer ${token}`,
           ...(currentWorkspace && { "x-workspace": currentWorkspace }),
         },
         responseType: "blob",
+        validateStatus: (status) => status === 200 || status === 503 || status === 500,
+      });
+      
+      // Check if response is actually an error (JSON) disguised as blob
+      if (response.status !== 200) {
+        // Try to parse as JSON to get error message
+        const text = await response.data.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+        } catch {
+          errorData = { error: "Unknown error", message: text };
+        }
+        throw new Error(errorData.message || errorData.error || "Failed to generate DOCX");
       }
-    );
-    return response.data;
+      
+      // Check if the blob is actually a DOCX
+      const expectedType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      if (response.data.type && response.data.type !== expectedType && response.data.type !== "application/octet-stream") {
+        // Might be an error response, try to parse it
+        const text = await response.data.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+          throw new Error(errorData.message || errorData.error || "DOCX generation service unavailable");
+        } catch (parseError) {
+          throw new Error("Invalid DOCX response from server");
+        }
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      if (error.response && error.response.data) {
+        // If it's an error response with data, try to extract the message
+        if (error.response.data instanceof Blob) {
+          const text = await error.response.data.text();
+          try {
+            const errorData = JSON.parse(text);
+            throw new Error(errorData.message || errorData.error || "DOCX generation failed");
+          } catch {
+            throw new Error("DOCX generation service unavailable");
+          }
+        }
+      }
+      throw error;
+    }
+  },
+
+  async downloadHtmlPdf(id: string): Promise<Blob> {
+    const token = localStorage.getItem("accessToken");
+    const currentWorkspace = getCurrentWorkspace();
+    try {
+      const response = await axios.get(
+        `${API_URL}/reports/${id}/download-html-pdf`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+          },
+          responseType: "blob",
+          validateStatus: (status) => status === 200 || status === 503 || status === 500,
+        }
+      );
+      
+      // Check if response is actually an error (JSON) disguised as blob
+      if (response.status !== 200) {
+        // Try to parse as JSON to get error message
+        const text = await response.data.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+        } catch {
+          errorData = { error: "Unknown error", message: text };
+        }
+        throw new Error(errorData.message || errorData.error || "Failed to generate PDF");
+      }
+      
+      // Check if the blob is actually a PDF
+      if (response.data.type && response.data.type !== "application/pdf") {
+        // Might be an error response, try to parse it
+        const text = await response.data.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+          throw new Error(errorData.message || errorData.error || "PDF generation service unavailable");
+        } catch (parseError) {
+          throw new Error("Invalid PDF response from server");
+        }
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      if (error.response && error.response.data) {
+        // If it's an error response with data, try to extract the message
+        if (error.response.data instanceof Blob) {
+          const text = await error.response.data.text();
+          try {
+            const errorData = JSON.parse(text);
+            throw new Error(errorData.message || errorData.error || "PDF generation failed");
+          } catch {
+            throw new Error("PDF generation service unavailable");
+          }
+        }
+      }
+      throw error;
+    }
   },
 };
 
@@ -989,34 +1129,122 @@ export const summaryService = {
   async downloadDocx(id: string): Promise<Blob> {
     const token = localStorage.getItem("accessToken");
     const currentWorkspace = getCurrentWorkspace();
-    const response = await axios.get(
-      `${API_URL}/summaries/${id}/download-docx`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
-        },
-        responseType: "blob",
+    try {
+      const response = await axios.get(
+        `${API_URL}/summaries/${id}/download-docx`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+          },
+          responseType: "blob",
+          validateStatus: (status) => status === 200 || status === 503 || status === 500,
+        }
+      );
+      
+      // Check if response is actually an error (JSON) disguised as blob
+      if (response.status !== 200) {
+        // Try to parse as JSON to get error message
+        const text = await response.data.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+        } catch {
+          errorData = { error: "Unknown error", message: text };
+        }
+        throw new Error(errorData.message || errorData.error || "Failed to generate DOCX");
       }
-    );
-    return response.data;
+      
+      // Check if the blob is actually a DOCX
+      const expectedType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      if (response.data.type && response.data.type !== expectedType && response.data.type !== "application/octet-stream") {
+        // Might be an error response, try to parse it
+        const text = await response.data.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+          throw new Error(errorData.message || errorData.error || "DOCX generation service unavailable");
+        } catch (parseError) {
+          throw new Error("Invalid DOCX response from server");
+        }
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      if (error.response && error.response.data) {
+        // If it's an error response with data, try to extract the message
+        if (error.response.data instanceof Blob) {
+          const text = await error.response.data.text();
+          try {
+            const errorData = JSON.parse(text);
+            throw new Error(errorData.message || errorData.error || "DOCX generation failed");
+          } catch {
+            throw new Error("DOCX generation service unavailable");
+          }
+        }
+      }
+      throw error;
+    }
   },
 
   async downloadHtmlPdf(id: string): Promise<Blob> {
     const token = localStorage.getItem("accessToken");
     const currentWorkspace = getCurrentWorkspace();
-    const response = await axios.get(
-      `${API_URL}/summaries/${id}/download-html-pdf`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
-        },
-        responseType: "blob",
+    try {
+      const response = await axios.get(
+        `${API_URL}/summaries/${id}/download-html-pdf`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+          },
+          responseType: "blob",
+          validateStatus: (status) => status === 200 || status === 503 || status === 500,
+        }
+      );
+      
+      // Check if response is actually an error (JSON) disguised as blob
+      if (response.status !== 200) {
+        // Try to parse as JSON to get error message
+        const text = await response.data.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+        } catch {
+          errorData = { error: "Unknown error", message: text };
+        }
+        throw new Error(errorData.message || errorData.error || "Failed to generate PDF");
       }
-    );
-    console.log("downloading html pdf", response);
-    return response.data;
+      
+      // Check if the blob is actually a PDF
+      if (response.data.type && response.data.type !== "application/pdf") {
+        // Might be an error response, try to parse it
+        const text = await response.data.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+          throw new Error(errorData.message || errorData.error || "PDF generation service unavailable");
+        } catch (parseError) {
+          throw new Error("Invalid PDF response from server");
+        }
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      if (error.response && error.response.data) {
+        // If it's an error response with data, try to extract the message
+        if (error.response.data instanceof Blob) {
+          const text = await error.response.data.text();
+          try {
+            const errorData = JSON.parse(text);
+            throw new Error(errorData.message || errorData.error || "PDF generation failed");
+          } catch {
+            throw new Error("PDF generation service unavailable");
+          }
+        }
+      }
+      throw error;
+    }
   },
 };
 

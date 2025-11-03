@@ -386,10 +386,11 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       document.body.removeChild(a);
       toast.dismiss(loadingToast);
       toast.success("PDF downloaded successfully");
-    } catch (error) {
+    } catch (error: any) {
       toast.dismiss(loadingToast);
       console.error("Error downloading PDF:", error);
-      toast.error("Failed to download PDF");
+      const errorMessage = error?.message || "Failed to download PDF";
+      toast.error(errorMessage);
     }
   };
 
@@ -399,6 +400,20 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     try {
       loadingToast = toast.loading("Download processing...");
       const blob = await reportService.downloadDocx(selectedReport.id);
+      
+      // Check if blob is actually an error response
+      if (blob.type && blob.type !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document" && blob.type !== "application/octet-stream") {
+        // Might be an error response, try to parse it
+        const text = await blob.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+          throw new Error(errorData.message || errorData.error || "DOCX generation service unavailable");
+        } catch (parseError) {
+          throw new Error("Invalid DOCX response from server");
+        }
+      }
+      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -409,10 +424,11 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       document.body.removeChild(a);
       toast.dismiss(loadingToast);
       toast.success("DOCX downloaded successfully");
-    } catch (error) {
+    } catch (error: any) {
       toast.dismiss(loadingToast);
       console.error("Error downloading DOCX:", error);
-      toast.error("Failed to download DOCX");
+      const errorMessage = error?.message || "Failed to download DOCX";
+      toast.error(errorMessage);
     }
   };
 

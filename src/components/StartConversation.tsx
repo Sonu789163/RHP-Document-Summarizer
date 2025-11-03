@@ -23,7 +23,7 @@ import {
   ChevronDown,
   Share,
   Share2,
-  GitCompare,
+  Building2,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -34,11 +34,13 @@ import { toast } from "sonner";
 import { useRefreshProtection } from "../hooks/useRefreshProtection";
 import { Navbar } from "./Navbar";
 import { RhpUploadModal } from "./RhpUploadModal";
+import { DrhpUploadModal } from "./DrhpUploadModal";
 import { Sidebar } from "./Sidebar";
 import { FolderSidebar } from "./FolderSidebar";
 import { directoryService, shareService } from "@/services/api";
 import { ShareDialog } from "./ShareDialog";
 import MoveDocumentDialog from "./MoveDocumentDialog";
+import MoveDocumentToWorkspaceDialog from "./MoveDocumentToWorkspaceDialog";
 import { CompareDocumentModal } from "./CompareDocumentModal";
 
 export const StartConversation: React.FC = () => {
@@ -78,10 +80,13 @@ export const StartConversation: React.FC = () => {
   const [movingDocDirectoryId, setMovingDocDirectoryId] = useState<
     string | null
   >(null);
+  const [movingDocToWorkspaceId, setMovingDocToWorkspaceId] = useState<string | null>(null);
+  const [movingDocToWorkspaceName, setMovingDocToWorkspaceName] = useState<string>("");
   const [documentTypeFilter, setDocumentTypeFilter] = useState<string>("DRHP");
   const [showUploadDropdown, setShowUploadDropdown] = useState(false);
   const [selectedUploadType, setSelectedUploadType] = useState<string>("");
   const [showRhpUploadModal, setShowRhpUploadModal] = useState(false);
+  const [showDrhpUploadModal, setShowDrhpUploadModal] = useState(false);
   const [rhpFile, setRhpFile] = useState<File | null>(null);
   const [showCompareModal, setShowCompareModal] = useState(false);
   const [selectedDocumentForCompare, setSelectedDocumentForCompare] = useState<any>(null);
@@ -247,16 +252,19 @@ export const StartConversation: React.FC = () => {
   };
 
   const handleCompareClick = async (document: any) => {
+    // Show modal immediately for better UX
+    setSelectedDocumentForCompare(document);
+    setShowCompareModal(true);
+    setCompareLoading(true);
+    
+    // Fetch available documents in the background
     try {
-      setCompareLoading(true);
-      setSelectedDocumentForCompare(document);
-      
       const response = await documentService.getAvailableForCompare(document.id);
       setAvailableDocumentsForCompare(response.availableDocuments);
-      setShowCompareModal(true);
     } catch (error) {
       console.error("Error fetching available documents:", error);
       toast.error("Failed to load documents for comparison");
+      // Optionally close modal on error or keep it open - keeping it open for now
     } finally {
       setCompareLoading(false);
     }
@@ -266,8 +274,12 @@ export const StartConversation: React.FC = () => {
     try {
       setCompareLoading(true);
       
+      // Determine correct id ordering for API
+      const drhpId = selectedDoc.type === "DRHP" ? selectedDoc.id : targetDoc.id;
+      const rhpId  = selectedDoc.type === "RHP"  ? selectedDoc.id : targetDoc.id;
+
       // Link the documents
-      await documentService.linkForCompare(selectedDoc.id, targetDoc.id);
+      await documentService.linkForCompare(drhpId, rhpId);
       
       // Close modal
       setShowCompareModal(false);
@@ -275,7 +287,7 @@ export const StartConversation: React.FC = () => {
       setAvailableDocumentsForCompare([]);
       
       // Navigate to compare page
-      navigate(`/compare/${selectedDoc.id}`);
+      navigate(`/compare/${drhpId}`);
       
       toast.success("Documents linked successfully! Redirecting to comparison...");
     } catch (error) {
@@ -845,7 +857,7 @@ export const StartConversation: React.FC = () => {
                           onClick={() => {
                             setSelectedUploadType("DRHP");
                             setShowUploadDropdown(false);
-                            fileInputRef.current?.click();
+                            setShowDrhpUploadModal(true);
                           }}
                         >
                           <FileText className="h-4 w-4 text-[#4B2A06]" />
@@ -1155,23 +1167,32 @@ export const StartConversation: React.FC = () => {
                               <div className="flex w-full justify-between items-start">
                                 <FileText className="h-3 w-3 text-[#4B2A06] mb-[1vw]" />
                                 <div className="flex ">
-                                  {/* Compare button - always show */}
+                                  {/* Compare button - show different icons for linked vs unlinked */}
                                   <button
-                                    className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
+                                    className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw] flex items-center justify-center"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (doc.relatedRhpId || doc.relatedDrhpId) {
-                                        // Document is already linked, go directly to compare
+                                      if (doc.type === "RHP") {
+                                        // Always open chooser for RHP to select a DRHP
+                                        handleCompareClick(doc);
+                                      } else if (doc.relatedRhpId) {
+                                        // DRHP already linked → go to compare
                                         navigate(`/compare/${doc.id}`);
                                       } else {
-                                        // Document is not linked, show modal to select document
+                                        // DRHP not linked → open chooser to select RHP
                                         handleCompareClick(doc);
                                       }
                                     }}
-                                    title={doc.relatedRhpId || doc.relatedDrhpId ? "Compare documents" : "Compare with other document"}
+                                    title={doc.relatedRhpId || doc.relatedDrhpId ? "View comparison report" : "Compare with other document"}
                                     disabled={compareLoading}
                                   >
-                                    <GitCompare className="h-4 w-4" />
+                                    {doc.relatedRhpId || doc.relatedDrhpId ? (
+                                      // Linked document icon - view icon for linked documents
+                                      <img className="h-4 w-4 object-contain" src="https://img.icons8.com/pastel-glyph/128/document--v1.png" alt="view" />
+                                    ) : (
+                                      // Unlinked document icon - original compare icon
+                                      <img className="h-3 w-3 object-contain" src="https://img.icons8.com/ios/50/compare.png" alt="compare" />
+                                    )}
                                   </button>
 
                                   <button
@@ -1194,6 +1215,19 @@ export const StartConversation: React.FC = () => {
                                   >
                                     <FolderIcon className="h-3 w-3" />
                                   </button>
+                                  {user?.role === "admin" && (
+                                    <button
+                                      className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setMovingDocToWorkspaceId(doc.id);
+                                        setMovingDocToWorkspaceName(doc.name || doc.namespace || "Document");
+                                      }}
+                                      title="Move to workspace (Admin only)"
+                                    >
+                                      <Building2 className="h-3 w-3" />
+                                    </button>
+                                  )}
                                   <button
                                     className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
                                     onClick={(e) => {
@@ -1205,19 +1239,12 @@ export const StartConversation: React.FC = () => {
                                     <Share2 className="h-3 w-3" />
                                   </button>
                                   <button
-                                    className=" text-muted-foreground hover:text-destructive p-[0.3vw] disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className=" text-muted-foreground hover:text-destructive p-[0.3vw]"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (user?.role === "admin") {
-                                        handleDeleteDoc(doc);
-                                      }
+                                      handleDeleteDoc(doc);
                                     }}
-                                    disabled={user?.role !== "admin"}
-                                    title={
-                                      user?.role !== "admin"
-                                        ? "Only admins can delete documents"
-                                        : "Delete document"
-                                    }
+                                    title="Delete document"
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </button>
@@ -1411,23 +1438,51 @@ export const StartConversation: React.FC = () => {
                               {/* Actions Column */}
                               <div className="col-span-1 flex items-center justify-end">
                                 <div className="flex items-center gap-1">
-                                  {/* Compare button - always show */}
+                                  {/* Compare button - show different icons for linked vs unlinked */}
                                   <button
-                                    className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
+                                    className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw] flex items-center justify-center min-w-[24px] min-h-[24px]"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (doc.relatedRhpId || doc.relatedDrhpId) {
-                                        // Document is already linked, go directly to compare
+                                      if (doc.type === "RHP") {
+                                        // Always open chooser for RHP to select a DRHP
+                                        handleCompareClick(doc);
+                                      } else if (doc.relatedRhpId) {
+                                        // DRHP already linked → go to compare
                                         navigate(`/compare/${doc.id}`);
                                       } else {
-                                        // Document is not linked, show modal to select document
+                                        // DRHP not linked → open chooser to select RHP
                                         handleCompareClick(doc);
                                       }
                                     }}
-                                    title={doc.relatedRhpId || doc.relatedDrhpId ? "Compare documents" : "Compare with other document"}
+                                    title={doc.relatedRhpId || doc.relatedDrhpId ? "View comparison report" : "Compare with other document"}
                                     disabled={compareLoading}
+                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                   >
-                                    <GitCompare className="h-4 w-4" />
+                                    {doc.relatedRhpId || doc.relatedDrhpId ? (
+                                      // Linked document icon - view icon for linked documents
+                                      <img 
+                                        className="h-4 w-4 object-contain" 
+                                        src="https://img.icons8.com/pastel-glyph/128/document--v1.png" 
+                                        alt="view"
+                                        style={{ display: 'block', maxWidth: '100%', height: 'auto', minWidth: '12px', minHeight: '12px'}}
+                                        onError={(e) => {
+                                          console.log('Image failed to load:', e);
+                                          e.currentTarget.style.display = 'none';
+                                        }}
+                                      />
+                                    ) : (
+                                      // Unlinked document icon - original compare icon
+                                      <img 
+                                        className="h-4 w-4 object-contain" 
+                                        src="https://img.icons8.com/ios/50/compare.png" 
+                                        alt="compare"
+                                        style={{ display: 'block', maxWidth: '100%', height: 'auto', minWidth: '12px', minHeight: '12px'}}
+                                        onError={(e) => {
+                                          console.log('Image failed to load:', e);
+                                          e.currentTarget.style.display = 'none';
+                                        }}
+                                      />
+                                    )}
                                   </button>
                                   <button
                                     className="text-[#4B2A06] hover:text-[#4B2A06] p-1"
@@ -1461,19 +1516,12 @@ export const StartConversation: React.FC = () => {
                                   </button>
 
                                   <button
-                                    className="text-[#4B2A06] hover:text-red-600 p-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="text-[#4B2A06] hover:text-red-600 p-1"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (user?.role === "admin") {
-                                        handleDeleteDoc(doc);
-                                      }
+                                      handleDeleteDoc(doc);
                                     }}
-                                    disabled={user?.role !== "admin"}
-                                    title={
-                                      user?.role !== "admin"
-                                        ? "Only admins can delete documents"
-                                        : "Delete document"
-                                    }
+                                    title="Delete document"
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </button>
@@ -1530,7 +1578,7 @@ export const StartConversation: React.FC = () => {
                   </p>
                   <button
                     className="px-6 py-2 rounded bg-[#4B2A06] text-white font-semibold hover:bg-[#3A2004]"
-                    onClick={handleNavigateToExisting}
+                    onClick={handleCloseExistingModal}
                   >
                     OK
                   </button>
@@ -1555,6 +1603,32 @@ export const StartConversation: React.FC = () => {
             }}
             onSelectDestination={handleMoveSelect}
             currentDirectoryId={movingDocDirectoryId}
+          />
+          <MoveDocumentToWorkspaceDialog
+            open={!!movingDocToWorkspaceId}
+            onOpenChange={(o) => {
+              if (!o) {
+                setMovingDocToWorkspaceId(null);
+                setMovingDocToWorkspaceName("");
+              }
+            }}
+            documentId={movingDocToWorkspaceId || ""}
+            documentName={movingDocToWorkspaceName}
+            onMoveComplete={() => {
+              setMovingDocToWorkspaceId(null);
+              setMovingDocToWorkspaceName("");
+              fetchDocuments();
+            }}
+          />
+
+          {/* DRHP Upload Modal */}
+          <DrhpUploadModal
+            open={showDrhpUploadModal}
+            onOpenChange={setShowDrhpUploadModal}
+            setIsUploading={setIsUploading}
+            onUploadSuccess={(file) => {
+              handleUpload(file, "DRHP");
+            }}
           />
 
           {/* RHP Upload Modal for Standalone Upload */}

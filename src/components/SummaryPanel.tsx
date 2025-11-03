@@ -480,6 +480,20 @@ export function SummaryPanel({
     try {
       loadingToast = toast.loading("Download processing...");
       const blob = await summaryService.downloadDocx(selectedSummaryId);
+      
+      // Check if blob is actually an error response
+      if (blob.type && blob.type !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+        // Might be an error response, try to parse it
+        const text = await blob.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+          throw new Error(errorData.message || errorData.error || "DOCX generation service unavailable");
+        } catch (parseError) {
+          throw new Error("Invalid DOCX response from server");
+        }
+      }
+      
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -490,9 +504,11 @@ export function SummaryPanel({
       window.URL.revokeObjectURL(url);
       toast.dismiss(loadingToast);
       toast.success("DOCX downloaded successfully");
-    } catch (error) {
+    } catch (error: any) {
       toast.dismiss(loadingToast);
-      toast.error("Failed to download DOCX");
+      const errorMessage = error?.message || "Failed to download DOCX";
+      toast.error(errorMessage);
+      console.error("DOCX download error:", error);
     }
   };
 

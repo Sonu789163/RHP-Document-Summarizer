@@ -1,7 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Plus, Folder, Bell, ChevronDown, ChevronRight, Trash2, Edit2, Check, X } from "lucide-react";
+import { Plus, Folder, Bell, ChevronDown, ChevronRight, Trash2, Edit2, Check, X, Building2, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { directoryService, notificationsService } from "@/services/api";
+import { workspaceInvitationService, UserWorkspace } from "@/services/workspaceInvitationService";
+import { useAuth } from "@/contexts/AuthContext";
+import { CreateWorkspaceModal } from "./CreateWorkspaceModal";
+import { AvailableWorkspacesList } from "./AvailableWorkspacesList";
+import { InviteWorkspaceDialog } from "./InviteWorkspaceDialog";
 import { toast } from "sonner";
 
 type FolderItem = { id: string; name: string };
@@ -14,6 +19,7 @@ interface FolderSidebarProps {
 
 export const FolderSidebar: React.FC<FolderSidebarProps> = ({ onFolderOpen, onFolderDeleted, refreshNotifications }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [showFolders, setShowFolders] = useState(true);
@@ -26,24 +32,85 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({ onFolderOpen, onFo
   const createRef = useRef<HTMLDivElement | null>(null);
   const [renaming, setRenaming] = useState<FolderItem | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [workspaces, setWorkspaces] = useState<UserWorkspace[]>([]);
+  const [currentWorkspace, setCurrentWorkspace] = useState<string>("");
+  const [workspacesLoading, setWorkspacesLoading] = useState(false);
+  const [showWorkspaces, setShowWorkspaces] = useState(true);
+  const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [selectedWorkspaceForInvite, setSelectedWorkspaceForInvite] = useState<{ workspaceId: string; workspaceName: string } | null>(null);
+  const [hoveredWorkspace, setHoveredWorkspace] = useState<string | null>(null);
 
   const loadRootFolders = async () => {
     try {
       setLoading(true);
       const data = await directoryService.listChildren("root");
       const onlyDirs = (data?.items || [])
-        .filter((x: any) => x.kind === "directory")
-        .map((x: any) => x.item) as FolderItem[];
+        .filter((x: { kind: string }) => x.kind === "directory")
+        .map((x: { item: FolderItem }) => x.item);
       setFolders(onlyDirs);
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast.error("Failed to load folders");
     } finally {
       setLoading(false);
     }
   };
 
+  const loadWorkspaces = async () => {
+    try {
+      setWorkspacesLoading(true);
+      const data = await workspaceInvitationService.getUserWorkspaces();
+      setWorkspaces(data.workspaces || []);
+      const workspaceId = data.currentWorkspace || data.workspaces?.[0]?.workspaceDomain || "";
+      setCurrentWorkspace(workspaceId);
+      
+      // Update localStorage with the correct workspace ID
+      if (workspaceId) {
+        const { setCurrentWorkspace } = await import("../services/workspaceContext");
+        setCurrentWorkspace(workspaceId);
+      }
+      
+      // If no workspaces and user is admin, show message
+      if (data.workspaces.length === 0) {
+        // Workspace modal should already be handled by ProtectedLayout
+      }
+    } catch (error) {
+      console.error("Error loading workspaces:", error);
+    } finally {
+      setWorkspacesLoading(false);
+    }
+  };
+
+  const handleWorkspaceChange = async (workspaceDomain: string) => {
+    try {
+      const result = await workspaceInvitationService.switchWorkspace(workspaceDomain);
+      const newWorkspace = result.currentWorkspace || workspaceDomain;
+      setCurrentWorkspace(newWorkspace);
+      
+      // Update localStorage
+      const { setCurrentWorkspace: setWorkspace } = await import("../services/workspaceContext");
+      setWorkspace(newWorkspace);
+      
+      toast.success(`Switched to ${workspaces.find((w) => w.workspaceDomain === workspaceDomain)?.workspaceName || workspaceDomain}`);
+      window.location.reload();
+    } catch (error) {
+      console.error("Error switching workspace:", error);
+      toast.error("Failed to switch workspace");
+    }
+  };
+
+  const getDisplayName = (ws: UserWorkspace): string => {
+    const existing = (ws.workspaceName || "").trim();
+    if (existing && existing.toLowerCase() !== `${(ws.workspaceDomain || "").toLowerCase()} workspace`) {
+      return existing;
+    }
+    const domain = (ws.workspaceDomain || "").split(".")[0];
+    return `${domain.charAt(0).toUpperCase() + domain.slice(1)} Workspace`;
+  };
+
   useEffect(() => {
     loadRootFolders();
+    loadWorkspaces();
     let active = true;
     const loadUnread = async () => {
       try {
@@ -105,7 +172,7 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({ onFolderOpen, onFo
       toast.error("Folder name is required");
       return;
     }
-    try {
+    try { 
       setCreating(true);
       const created = await directoryService.create(newName.trim(), null);
       setNewName("");
@@ -115,8 +182,8 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({ onFolderOpen, onFo
         onFolderOpen?.({ id: created.id, name: created.name });
       }
       toast.success("Folder created");
-    } catch (e: any) {
-      if (e?.response?.status === 409) {
+    } catch (e: unknown) {
+      if ((e as any)?.response?.status === 409) {
         toast.error("A folder with this name already exists");
       } else {
         toast.error("Failed to create folder");
@@ -136,7 +203,7 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({ onFolderOpen, onFo
       await loadRootFolders();
       onFolderDeleted?.();
       toast.success("Folder and all documents deleted");
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast.error("Failed to delete folder");
     } finally {
       setDeleting(false);
@@ -164,8 +231,8 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({ onFolderOpen, onFo
       await directoryService.update(renaming.id, { name: newName });
       toast.success("Folder renamed");
       await loadRootFolders();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.error || "Failed to rename folder");
+    } catch (e: unknown) {
+      toast.error((e as any)?.response?.data?.error || "Failed to rename folder");
     } finally {
       cancelRename();
     }
@@ -208,7 +275,98 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({ onFolderOpen, onFo
         )}
       </div>
 
-      <nav className="px-4 space-y-2">
+      {/* Create Workspace Button - Admin Only - Below New Folder */}
+      {user?.role === "admin" && (
+        <div className="px-4 py-2">
+          <button
+            onClick={() => setShowCreateWorkspaceModal(true)}
+            className="w-full flex items-center justify-between rounded-xl px-4 py-3 bg-[#ECE9E2] text-[#4B2A06] font-semibold hover:bg-[#DDD5C9] transition-colors"
+            title="Create new workspace"
+          >
+            <span>New Workspace</span>
+            <Plus className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+
+      {/* Workspaces Section */}
+      <nav className="px-4 pb-2 space-y-2 border-b max-h-[35vh] border-gray-200">
+        <button
+          className="w-full flex items-center gap-3 px-5 justify-between text-sm text-gray-800 hover:text-[#4B2A06]"
+          onClick={() => setShowWorkspaces((v) => !v)}
+        >
+          <div className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            Workspaces
+          </div>
+          <div className="flex items-center gap-2">
+            {showWorkspaces ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </div>
+        </button>
+        {showWorkspaces && (
+          <div className="pl-7 pr-2 max-h-[30vh] overflow-y-auto space-y-2">
+            {workspacesLoading ? (
+              <div className="text-xs text-gray-500 py-2">Loading...</div>
+            ) : workspaces.length === 0 ? (
+              <div className="space-y-2">
+                <div className="text-xs text-gray-500 py-2">
+                  No workspaces. Create one to get started.
+                </div>
+                {/* Only show available workspaces list when user has NO workspaces */}
+                <div className="mt-2">
+                  <AvailableWorkspacesList />
+                </div>
+              </div>
+            ) : (
+              <ul className="space-y-1">
+                {workspaces.map((ws) => (
+                  <li 
+                    key={ws.workspaceDomain}
+                    className="group relative"
+                    onMouseEnter={() => setHoveredWorkspace(ws.workspaceDomain)}
+                    onMouseLeave={() => setHoveredWorkspace(null)}
+                  >
+                    <button
+                      className={`w-full flex items-center gap-2 text-left px-3 py-2 text-sm rounded-md truncate ${
+                        currentWorkspace === ws.workspaceDomain
+                          ? "bg-[#ECE9E2] text-[#4B2A06] font-medium"
+                          : "text-gray-700 hover:text-[#4B2A06] hover:bg-gray-50"
+                      }`}
+                      title={getDisplayName(ws)}
+                      onClick={() => handleWorkspaceChange(ws.workspaceDomain)}
+                    >
+                      <Building2 className="h-4 w-4 flex-shrink-0" />
+                      <span className="truncate flex-1">{getDisplayName(ws)}</span>
+                      {user?.role === "admin" && hoveredWorkspace === ws.workspaceDomain && (
+                        <button
+                          className="ml-auto p-1 rounded hover:bg-[#DDD5C9] transition-colors flex-shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedWorkspaceForInvite({
+                              workspaceId: ws.workspaceDomain,
+                              workspaceName: getDisplayName(ws),
+                            });
+                            setInviteDialogOpen(true);
+                          }}
+                          title="Invite to workspace"
+                        >
+                          <UserPlus className="h-3 w-3 text-[#4B2A06]" />
+                        </button>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </nav>
+      {/* Folders Section */}
+      <nav className="px-4 space-y-2 pt-2 max-h-[40vh]">
         <button
           className="w-full flex items-center gap-3 px-5 justify-between text-sm text-gray-800 hover:text-[#4B2A06]"
           onClick={() => setShowFolders((v) => !v)}
@@ -228,7 +386,7 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({ onFolderOpen, onFo
           </div>
         </button>
         {showFolders && (
-          <div className="pl-7 pr-2 h-[75vh] overflow-y-auto ">
+          <div className="pl-7 pr-2 max-h-[40vh] overflow-y-auto">
             {loading ? (
               <div className="text-xs text-gray-500 py-2">Loading...</div>
             ) : folders.length === 0 ? (
@@ -365,6 +523,31 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({ onFolderOpen, onFo
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Create Workspace Modal */}
+      <CreateWorkspaceModal
+        open={showCreateWorkspaceModal}
+        onOpenChange={setShowCreateWorkspaceModal}
+        onCreated={() => {
+          setShowCreateWorkspaceModal(false);
+          loadWorkspaces();
+          window.location.reload(); // Reload to refresh workspace context
+        }}
+        isFirstLogin={false}
+      />
+
+      {/* Invite Workspace Dialog */}
+      {selectedWorkspaceForInvite && (
+        <InviteWorkspaceDialog
+          open={inviteDialogOpen}
+          onOpenChange={setInviteDialogOpen}
+          workspaceId={selectedWorkspaceForInvite.workspaceId}
+          workspaceName={selectedWorkspaceForInvite.workspaceName}
+          onInviteSent={() => {
+            // Optionally refresh workspace list
+          }}
+        />
       )}
     </aside>
   );

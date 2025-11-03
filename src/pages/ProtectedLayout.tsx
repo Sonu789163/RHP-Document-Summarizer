@@ -2,6 +2,8 @@ import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { workspaceService } from "@/services/workspaceService";
+import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
 
 export interface ProtectedLayoutContext {
   recentDocuments: any[];
@@ -27,6 +29,10 @@ const ProtectedLayout = () => {
   });
   const [currentDocument, setCurrentDocument] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  
+  // First-login workspace creation
+  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
+  const [checkingFirstLogin, setCheckingFirstLogin] = useState(true);
 
   // Additional check to ensure authentication is properly validated
   useEffect(() => {
@@ -34,6 +40,28 @@ const ProtectedLayout = () => {
       navigate("/login", { replace: true });
     }
   }, [isAuthenticated, loading, navigate]);
+
+  // Check if admin needs to create workspace (first-login)
+  useEffect(() => {
+    const checkFirstLogin = async () => {
+      if (!loading && isAuthenticated && user) {
+        try {
+          const result = await workspaceService.checkFirstLogin();
+          if (result.needsWorkspace && result.isAdmin) {
+            setShowWorkspaceModal(true);
+          }
+        } catch (error) {
+          console.error("Error checking first login:", error);
+        } finally {
+          setCheckingFirstLogin(false);
+        }
+      } else {
+        setCheckingFirstLogin(false);
+      }
+    };
+
+    checkFirstLogin();
+  }, [loading, isAuthenticated, user]);
 
   const handleDocumentSelect = (doc) => {
     setCurrentDocument(doc);
@@ -54,8 +82,8 @@ const ProtectedLayout = () => {
     navigate(`/doc/${namespace || documentId}`);
   };
 
-  // Show loading spinner while authentication is being checked
-  if (loading) {
+  // Show loading spinner while authentication is being checked or first-login check
+  if (loading || checkingFirstLogin) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -78,7 +106,20 @@ const ProtectedLayout = () => {
     handleUploadComplete,
   };
 
-  return <Outlet context={context satisfies ProtectedLayoutContext} />;
+  return (
+    <>
+      <CreateWorkspaceModal
+        open={showWorkspaceModal}
+        onOpenChange={setShowWorkspaceModal}
+        isFirstLogin={true}
+        onCreated={() => {
+          setShowWorkspaceModal(false);
+          window.location.reload();
+        }}
+      />
+      <Outlet context={context satisfies ProtectedLayoutContext} />
+    </>
+  );
 };
 
 export default ProtectedLayout;

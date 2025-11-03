@@ -30,6 +30,10 @@ export interface SendInvitationData {
     | "last90"
     | "all"
   )[];
+  grantedDirectories?: Array<{
+    directoryId: string;
+    role: "viewer" | "editor";
+  }>;
 }
 
 export interface UserWorkspace {
@@ -212,6 +216,55 @@ export const workspaceInvitationService = {
     const response = await axios.post(
       `${API_URL}/workspace-invitations/user/update-workspace-name`,
       { workspaceDomain, workspaceName },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  },
+
+  // Admin: grant directory access to a user
+  async grantDirectoryAccess(
+    userEmail: string,
+    directoryIds: string[],
+    role: "viewer" | "editor"
+  ): Promise<{ message: string; granted: string[]; errors?: string[] }> {
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.post(
+      `${API_URL}/workspace-invitations/workspace/users/directories/grant`,
+      { userEmail, directoryIds, role },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  },
+
+  // Admin: revoke directory access from a user
+  async revokeDirectoryAccess(
+    userEmail: string,
+    directoryId: string
+  ): Promise<{ message: string }> {
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.post(
+      `${API_URL}/workspace-invitations/workspace/users/directories/revoke`,
+      { userEmail, directoryId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  },
+
+  // Admin: get all directories a user has access to
+  async getUserDirectories(
+    userEmail: string
+  ): Promise<{
+    directories: Array<{
+      directoryId: string;
+      directoryName: string;
+      role: "viewer" | "editor";
+      shareId: string;
+      createdAt: string;
+    }>;
+  }> {
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.get(
+      `${API_URL}/workspace-invitations/workspace/users/${encodeURIComponent(userEmail)}/directories`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     return response.data;

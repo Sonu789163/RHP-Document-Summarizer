@@ -29,6 +29,8 @@ import { ShareDialog } from "../components/ShareDialog";
 import { ViewSummaryModal } from "@/components/ViewSummaryModal";
 import { ViewReportModal } from "@/components/ViewReportModal";
 import { WorkspaceInvitationManager } from "../components/WorkspaceInvitationManager";
+import { WorkspaceRequestsManager } from "../components/WorkspaceRequestsManager";
+import { InviteeManagement } from "../components/InviteeManagement";
 import { workspaceService, WorkspaceDTO } from "../services/workspaceService";
 import { CreateWorkspaceModal } from "../components/CreateWorkspaceModal";
 import {
@@ -148,6 +150,7 @@ export default function AdminDashboardPage() {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const [addUsersOpen, setAddUsersOpen] = useState(false);
   const [removeUsersOpen, setRemoveUsersOpen] = useState(false);
+  const [viewRequestsOpen, setViewRequestsOpen] = useState(false);
   const [targetWorkspace, setTargetWorkspace] = useState<WorkspaceDTO | null>(null);
   const [workspaceMembers, setWorkspaceMembers] = useState<Array<{ _id: string; name?: string; email: string; status: string; role: string }>>([]);
   const [userSearch, setUserSearch] = useState("");
@@ -175,18 +178,9 @@ export default function AdminDashboardPage() {
       setWorkspacesLoading(true);
       const data = await workspaceService.listWorkspaces();
       const items = data.workspaces || [];
-      const defaultSlug = String((user as any)?.domain || "");
-      const defaultWs: WorkspaceDTO = {
-        workspaceId: "default",
-        domain: defaultSlug,
-        name: `${defaultSlug} Workspace`,
-        slug: defaultSlug,
-        status: "active",
-        color: "#4B2A06",
-        createdAt: new Date().toISOString(),
-      } as any;
-      const combined = [defaultWs, ...items];
-      setWorkspaces(combined);
+      // Only show actual workspaces from database, no fake "default" workspace
+      // Use workspace.name (not slug) for display
+      setWorkspaces(items);
     } catch (error) {
       console.error("Error loading workspaces:", error);
       toast.error("Failed to load workspaces");
@@ -477,6 +471,20 @@ export default function AdminDashboardPage() {
     try {
       loadingToast = toast.loading("Download processing...");
       const blob = await summaryService.downloadDocx(summary.id);
+      
+      // Check if blob is actually an error response
+      if (blob.type && blob.type !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document" && blob.type !== "application/octet-stream") {
+        // Might be an error response, try to parse it
+        const text = await blob.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+          throw new Error(errorData.message || errorData.error || "DOCX generation service unavailable");
+        } catch (parseError) {
+          throw new Error("Invalid DOCX response from server");
+        }
+      }
+      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -487,9 +495,10 @@ export default function AdminDashboardPage() {
       document.body.removeChild(a);
       toast.dismiss(loadingToast);
       toast.success("Summary DOCX downloaded successfully");
-    } catch (error) {
+    } catch (error: any) {
       toast.dismiss(loadingToast);
-      toast.error("Error downloading summary DOCX: " + (error as any).message);
+      const errorMessage = error?.message || "Failed to download DOCX";
+      toast.error(errorMessage);
       console.error("Error downloading summary DOCX:", error);
     }
   };
@@ -526,9 +535,10 @@ export default function AdminDashboardPage() {
       document.body.removeChild(a);
       toast.dismiss(loadingToast);
       toast.success("Report PDF downloaded successfully");
-    } catch (error) {
+    } catch (error: any) {
       toast.dismiss(loadingToast);
-      toast.error("Error downloading report PDF: " + (error as any).message);
+      const errorMessage = error?.message || "Failed to download PDF";
+      toast.error(errorMessage);
       console.error("Error downloading report PDF:", error);
     }
   };
@@ -538,6 +548,20 @@ export default function AdminDashboardPage() {
     try {
       loadingToast = toast.loading("Download processing...");
       const blob = await reportService.downloadDocx(report.id);
+      
+      // Check if blob is actually an error response
+      if (blob.type && blob.type !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document" && blob.type !== "application/octet-stream") {
+        // Might be an error response, try to parse it
+        const text = await blob.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+          throw new Error(errorData.message || errorData.error || "DOCX generation service unavailable");
+        } catch (parseError) {
+          throw new Error("Invalid DOCX response from server");
+        }
+      }
+      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -548,9 +572,10 @@ export default function AdminDashboardPage() {
       document.body.removeChild(a);
       toast.dismiss(loadingToast);
       toast.success("Report DOCX downloaded successfully");
-    } catch (error) {
+    } catch (error: any) {
       toast.dismiss(loadingToast);
-      toast.error("Error downloading report DOCX: " + (error as any).message);
+      const errorMessage = error?.message || "Failed to download DOCX";
+      toast.error(errorMessage);
       console.error("Error downloading report DOCX:", error);
     }
   };
@@ -1454,13 +1479,10 @@ export default function AdminDashboardPage() {
                       ) : (
                         <div>
                           <div className="font-medium text-[#4B2A06] text-sm">
-                            {workspace.name}
-                            {workspace.workspaceId === "default" && (
-                              <span className="ml-2 text-xs text-gray-500">(Default)</span>
-                            )}
+                            {workspace.name || workspace.workspaceId}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {workspace.slug} • {workspace.status}
+                            ID: {workspace.workspaceId} • {workspace.status}
                           </div>
                         </div>
                       )}
@@ -1480,6 +1502,16 @@ export default function AdminDashboardPage() {
                           className="px-2 py-1 text-sm rounded bg-white text-[#4B2A06] border border-gray-200 hover:bg-gray-50"
                         >
                           Remove user
+                        </button>
+                        <button
+                          onClick={() => {
+                            setTargetWorkspace(workspace);
+                            setViewRequestsOpen(true);
+                          }}
+                          className="px-2 py-1 text-sm rounded bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
+                          title="View requests"
+                        >
+                          Requests
                         </button>
                         <button
                           onClick={() => {
@@ -1509,17 +1541,39 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
+        {/* Workspace Request Management Dialog */}
+        <Dialog open={viewRequestsOpen} onOpenChange={setViewRequestsOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Workspace Access Requests</DialogTitle>
+            </DialogHeader>
+            {targetWorkspace && (
+              <WorkspaceRequestsManager
+                workspaceId={targetWorkspace.workspaceId}
+                workspaceName={targetWorkspace.name}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* Workspace Invitation Management Section */}
-        {/* <div className="mt-8 border-t border-gray-200 pt-4">
-          <h2 className="text-2xl font-bold text-[#4B2A06] mb-6">
-            Workspace Invitations
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Invite users from other domains to access your workspace and
-            collaborate on documents, summaries, and reports.
-          </p>
-          <WorkspaceInvitationManager />
-        </div> */}
+        <div className="mt-8 border-t border-gray-200 pt-6 space-y-6">
+          {/* Invitee Management - List of all members and their access */}
+          <InviteeManagement />
+          
+          {/* Workspace Invitation Manager - Send new invitations */}
+          <Card className="bg-white shadow-sm">
+            <CardHeader className="bg-[#ECE9E2]">
+              <CardTitle className="text-[#4B2A06] flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Send Workspace Invitations
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <WorkspaceInvitationManager />
+            </CardContent>
+          </Card>
+        </div>
 
         
       </div>
