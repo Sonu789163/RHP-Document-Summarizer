@@ -5,7 +5,7 @@ import { ChatPanel } from "@/components/ChatPanel";
 import { Loader2 } from "lucide-react";
 import { uploadService } from "@/lib/api/uploadService";
 import { sessionService } from "@/lib/api/sessionService";
-import { documentService, shareService } from "@/services/api";
+import { documentService, shareService, summaryService } from "@/services/api";
 import { Sidebar } from "@/components/Sidebar";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -31,6 +31,7 @@ export default function ChatSummaryLayout() {
   const [isSummaryProcessing, setIsSummaryProcessing] = useState(false);
   const [isInitialDocumentProcessing, setIsInitialDocumentProcessing] =
     useState(true);
+  const [isDocumentProcessing, setIsDocumentProcessing] = useState(false);
   const [sessionData] = useState(() => sessionService.initializeSession());
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -84,13 +85,95 @@ export default function ChatSummaryLayout() {
           setCurrentDocument(doc);
           setSelectedSummaryId(null);
           setIsSummaryProcessing(false);
+          
+          // Check document status - but don't block view if status is processing
           const statusResponse = await uploadService.checkDocumentStatus(
             doc.id,
             sessionData
           );
+          
           if (isMounted) {
-            if (statusResponse.status !== "processing") {
-              setIsInitialDocumentProcessing(false);
+            // Always allow document to open, even if processing
+            setIsInitialDocumentProcessing(false);
+            
+            // Check if document is still processing
+            // Also check if summaries exist - if summaries exist, processing is likely complete
+            let hasSummaries = false;
+            try {
+              const summaries = await summaryService.getByDocumentId(doc.id);
+              hasSummaries = summaries && summaries.length > 0;
+            } catch (summaryError) {
+              // Ignore summary check errors - summaries might not exist yet
+              console.log("Could not check summaries:", summaryError);
+            }
+            
+            // Document is considered processed if:
+            // 1. Status is "completed" or "ready", OR
+            // 2. Status is "processing" but summaries exist (processing completed but status not updated)
+            const isActuallyProcessing = statusResponse.status === "processing" && !hasSummaries;
+            
+            if (isActuallyProcessing) {
+              setIsDocumentProcessing(true);
+              
+              // Poll for status updates in the background
+              let pollAttempts = 0;
+              const maxPollAttempts = 120; // 10 minutes
+              const pollInterval = 5000; // 5 seconds
+              
+              const pollForCompletion = async () => {
+                if (pollAttempts >= maxPollAttempts) {
+                  setIsDocumentProcessing(false);
+                  return;
+                }
+                
+                try {
+                  const updatedDoc = await documentService.getById(namespace, linkToken || undefined);
+                  
+                  // Check for summaries as indicator of completion
+                  let summariesExist = false;
+                  try {
+                    const summaries = await summaryService.getByDocumentId(updatedDoc.id);
+                    summariesExist = summaries && summaries.length > 0;
+                  } catch {}
+                  
+                  // Document is complete if status is not processing OR if summaries exist
+                  if (updatedDoc && (updatedDoc.status !== "processing" || summariesExist)) {
+                    // Document processing completed
+                    setCurrentDocument(updatedDoc);
+                    setIsDocumentProcessing(false);
+                    if (updatedDoc.status === "completed" || updatedDoc.status === "ready" || summariesExist) {
+                      toast.success("Document processing completed!");
+                    }
+                  } else {
+                    // Still processing, continue polling
+                    pollAttempts++;
+                    setTimeout(pollForCompletion, pollInterval);
+                  }
+                } catch (error) {
+                  // Stop polling on error
+                  console.error("Error polling document status:", error);
+                  setIsDocumentProcessing(false);
+                }
+              };
+              
+              // Start polling after a delay
+              setTimeout(pollForCompletion, pollInterval);
+            } else {
+              // Not processing (either status is complete/ready, or summaries exist)
+              setIsDocumentProcessing(false);
+              
+              // If summaries exist but status is still processing, try to refresh the document
+              if (hasSummaries && statusResponse.status === "processing") {
+                // Try to refresh document to get updated status
+                try {
+                  const refreshedDoc = await documentService.getById(namespace, linkToken || undefined);
+                  if (refreshedDoc) {
+                    setCurrentDocument(refreshedDoc);
+                  }
+                } catch (error) {
+                  console.error("Error refreshing document:", error);
+                }
+              }
             }
           }
         }
@@ -235,6 +318,17 @@ export default function ChatSummaryLayout() {
             </div>
           </div>
         )}
+        {/* Document Processing Banner */}
+        {isDocumentProcessing && currentDocument && (
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-3 mx-4 mt-2">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+              <span className="text-sm text-blue-800">
+                Document is being processed. Some features may be unavailable until processing completes.
+              </span>
+            </div>
+          </div>
+        )}
         <div className="flex flex-1 w-full h-[calc(100vh-80px)] overflow-hidden">
           {/* Summary Card */}
           <div
@@ -247,7 +341,7 @@ export default function ChatSummaryLayout() {
           >
             <div className="flex-1 overflow-y-auto pr-1 ">
               <SummaryPanel
-                isDocumentProcessed={true}
+                isDocumentProcessed={!isDocumentProcessing}
                 currentDocument={currentDocument}
                 onProcessingChange={setIsSummaryProcessing}
                 selectedSummaryId={selectedSummaryId}
@@ -338,7 +432,7 @@ export default function ChatSummaryLayout() {
               </div>
               <ChatPanel
                 key={`${currentDocument?.id}-${chatId || 'new'}`}
-                isDocumentProcessed={true}
+                isDocumentProcessed={!isDocumentProcessing}
                 currentDocument={currentDocument}
                 onProcessingChange={setIsSummaryProcessing}
                 newChatTrigger={newChatTrigger}
