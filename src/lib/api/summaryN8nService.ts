@@ -56,9 +56,11 @@ export const summaryN8nService = {
         params.append("documentId", documentId);
       }
 
-      // Attach domain, domainId, and workspaceId from JWT/localStorage if present
+      // Attach domain, domainId, and workspaceId from JWT/localStorage/document if present
       try {
         const token = localStorage.getItem("accessToken");
+        let domainId: string | undefined;
+        
         if (token) {
           const payload = JSON.parse(atob(token.split(".")[1]));
           let domain: string | undefined = payload?.domain;
@@ -68,10 +70,29 @@ export const summaryN8nService = {
           }
           if (domain) params.append("domain", domain);
           
-          // Add domainId if available in JWT (may need to add this to JWT in future)
-          if (payload?.domainId) {
-            params.append("domainId", payload.domainId);
+          // Try to get domainId from JWT first
+          domainId = payload?.domainId;
+        }
+        
+        // Fallback: If domainId not in JWT and we have documentId, try to get it from document
+        if (!domainId && documentId) {
+          try {
+            const { documentService } = await import("@/services/api");
+            const doc = await documentService.getById(documentId);
+            if (doc?.domainId) {
+              domainId = doc.domainId;
+              console.log("Retrieved domainId from document:", domainId);
+            }
+          } catch (docError) {
+            console.warn("Could not fetch document to get domainId:", docError);
           }
+        }
+        
+        // Add domainId to params if we have it
+        if (domainId) {
+          params.append("domainId", domainId);
+        } else {
+          console.warn("domainId not found in JWT token or document for summary request");
         }
         
         // Add workspaceId from localStorage
@@ -79,7 +100,9 @@ export const summaryN8nService = {
         if (currentWorkspace) {
           params.append("workspaceId", currentWorkspace);
         }
-      } catch {}
+      } catch (error) {
+        console.error("Error extracting domain/domainId from token:", error);
+      }
 
       // Use RHP webhook if type is 'RHP', otherwise use default
       const webhookUrl =

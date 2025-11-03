@@ -69,9 +69,12 @@ export const n8nService = {
           }
           if (domain) params.append("domain", domain);
           
-          // Add domainId if available in JWT (may need to add this to JWT in future)
-          if (payload?.domainId) {
-            params.append("domainId", payload.domainId);
+          // Add domainId if available in JWT - ALWAYS try to include it
+          const domainId = payload?.domainId;
+          if (domainId) {
+            params.append("domainId", domainId);
+          } else {
+            console.warn("domainId not found in JWT token for chat request");
           }
         }
         
@@ -80,7 +83,9 @@ export const n8nService = {
         if (currentWorkspace) {
           params.append("workspaceId", currentWorkspace);
         }
-      } catch {}
+      } catch (error) {
+        console.error("Error extracting domain/domainId from token:", error);
+      }
 
       const response = await axios.get(
         `${webhookUrl}?${params.toString()}`,

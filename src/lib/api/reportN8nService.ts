@@ -42,13 +42,16 @@ export const reportN8nService = {
         })(),
       };
 
-      // Add domainId and workspaceId if available
+      // Add domainId and workspaceId if available - ALWAYS try to include domainId
       try {
         const token = localStorage.getItem("accessToken");
         if (token) {
           const jwtPayload = JSON.parse(atob(token.split(".")[1]));
-          if (jwtPayload?.domainId) {
-            payload.domainId = jwtPayload.domainId;
+          const domainId = jwtPayload?.domainId;
+          if (domainId) {
+            payload.domainId = domainId;
+          } else {
+            console.warn("domainId not found in JWT token for report request");
           }
         }
         
@@ -56,7 +59,9 @@ export const reportN8nService = {
         if (currentWorkspace) {
           payload.workspaceId = currentWorkspace;
         }
-      } catch {}
+      } catch (error) {
+        console.error("Error extracting domainId from token:", error);
+      }
 
       const response = await axios.post(REPORT_N8N_WEBHOOK_URL, payload, {
         headers: {
