@@ -182,7 +182,7 @@ export const WorkspaceInvitationPopover: React.FC = () => {
         })),
       });
 
-      toast.success(`Invitation sent with access to ${inviteForm.selectedDirectories.length} director${inviteForm.selectedDirectories.length > 1 ? 'ies' : 'y'}`);
+        toast.success(`Invitation sent with access to ${inviteForm.selectedDirectories.length} director${inviteForm.selectedDirectories.length > 1 ? 'ies' : 'y'}`);
       
       setIsSendDialogOpen(false);
       setInviteForm({
@@ -355,25 +355,25 @@ export const WorkspaceInvitationPopover: React.FC = () => {
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <div>
+                <div>
                       <Label>Directory Access *</Label>
                       <p className="text-xs text-gray-500 mt-1">Select directories to grant access. Documents within these directories will be accessible to the invited user.</p>
                     </div>
-                    <Select 
-                      value={inviteForm.directoryRole} 
-                      onValueChange={(value: "viewer" | "editor") =>
-                        setInviteForm({ ...inviteForm, directoryRole: value })
-                      }
-                    >
-                      <SelectTrigger className="w-28 h-8 bg-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border border-gray-200">
-                        <SelectItem value="viewer">Viewer</SelectItem>
-                        <SelectItem value="editor">Editor</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                      <Select 
+                        value={inviteForm.directoryRole} 
+                        onValueChange={(value: "viewer" | "editor") =>
+                          setInviteForm({ ...inviteForm, directoryRole: value })
+                        }
+                      >
+                        <SelectTrigger className="w-28 h-8 bg-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border border-gray-200">
+                          <SelectItem value="viewer">Viewer</SelectItem>
+                          <SelectItem value="editor">Editor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-700">
@@ -753,8 +753,8 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
       const result = await workspaceInvitationService.grantDirectoryAccess(
         invite.inviteeEmail,
         directoryIds,
-        dirRole
-      );
+          dirRole
+        );
       toast.success(`Access granted to ${result.granted.length} director${result.granted.length > 1 ? "ies" : "y"}`);
       if (result.errors && result.errors.length > 0) {
         toast.error(`Some errors: ${result.errors.join(", ")}`);
@@ -839,7 +839,7 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
               <div className="max-h-32 overflow-y-auto border rounded bg-white">
                 {dirLoading ? (
                   <div className="text-xs text-gray-500 p-2">Loading directories...</div>
-                ) : (
+            ) : (
                   (directories || [])
                     .filter((d: any) =>
                       dirSearch ? (d.name || "").toLowerCase().includes(dirSearch.toLowerCase()) : true

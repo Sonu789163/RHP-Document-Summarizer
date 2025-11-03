@@ -109,14 +109,14 @@ export function InviteeManagement() {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className="bg-white border-0 shadow-none">
+        <CardHeader className="bg-white border-b border-gray-200">
+          <CardTitle className="flex items-center gap-2 text-[#4B2A06]">
             <Users className="h-5 w-5" />
             Workspace Members
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="bg-white">
           <div className="text-center py-8">
             <Loader2 className="h-6 w-6 animate-spin mx-auto text-gray-400" />
             <p className="text-sm text-gray-500 mt-2">Loading members...</p>
@@ -127,18 +127,18 @@ export function InviteeManagement() {
   }
 
   return (
-    <Card>
-      <CardHeader className="bg-[#ECE9E2]">
+    <Card className="bg-white rounded-lg border-0 shadow-none">
+      <CardHeader className="bg-white border-b border-gray-200">
         <CardTitle className="flex items-center gap-2 text-[#4B2A06]">
           <Users className="h-5 w-5" />
           Workspace Members & Invitations
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-4">
+      <CardContent className="p-4 bg-white">
         {/* Accepted Members */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
-            <UserCheck className="h-4 w-4 text-green-600" />
+            <UserCheck className="h-4 w-4 text-gray-600" />
             <h3 className="font-semibold text-[#4B2A06]">
               Active Members ({acceptedInvitations.length})
             </h3>
@@ -166,7 +166,7 @@ export function InviteeManagement() {
                     </div>
                     <Badge
                       variant="secondary"
-                      className="bg-green-100 text-green-800 border-green-200"
+                      className="bg-gray-100 text-gray-700 border-gray-200"
                     >
                       Active
                     </Badge>
@@ -211,7 +211,7 @@ export function InviteeManagement() {
         {/* Pending Invitations */}
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <Mail className="h-4 w-4 text-amber-600" />
+            <Mail className="h-4 w-4 text-gray-600" />
             <h3 className="font-semibold text-[#4B2A06]">
               Pending Invitations ({pendingInvitations.length})
             </h3>
@@ -243,7 +243,7 @@ export function InviteeManagement() {
                     </div>
                     <Badge
                       variant="secondary"
-                      className="bg-amber-100 text-amber-800 border-amber-200"
+                      className="bg-gray-100 text-gray-700 border-gray-200"
                     >
                       Pending
                     </Badge>
@@ -252,9 +252,8 @@ export function InviteeManagement() {
                     <Select
                       value={inv.invitedRole}
                       disabled
-                      className="w-28 h-8 text-xs opacity-60"
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-28 h-8 text-xs opacity-60">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

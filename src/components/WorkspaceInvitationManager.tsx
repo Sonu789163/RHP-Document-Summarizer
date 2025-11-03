@@ -111,11 +111,11 @@ export function WorkspaceInvitationManager({
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      pending: { color: "bg-yellow-100 text-yellow-800", icon: Clock },
-      accepted: { color: "bg-green-100 text-green-800", icon: CheckCircle },
-      declined: { color: "bg-red-100 text-red-800", icon: XCircle },
-      expired: { color: "bg-gray-100 text-gray-800", icon: Clock },
-      cancelled: { color: "bg-gray-100 text-gray-800", icon: XCircle },
+      pending: { color: "bg-gray-100 text-gray-700 border-gray-200", icon: Clock },
+      accepted: { color: "bg-gray-100 text-gray-700 border-gray-200", icon: CheckCircle },
+      declined: { color: "bg-gray-100 text-gray-700 border-gray-200", icon: XCircle },
+      expired: { color: "bg-gray-100 text-gray-700 border-gray-200", icon: Clock },
+      cancelled: { color: "bg-gray-100 text-gray-700 border-gray-200", icon: XCircle },
     };
 
     const config =
@@ -146,15 +146,15 @@ export function WorkspaceInvitationManager({
 
   return (
     <div className={className}>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between bg-[#ECE9E2] text-[#4B2A06]">
-          <CardTitle className="flex items-center gap-2">
+      <Card className="bg-white border-0 shadow-none">
+        <CardHeader className="flex flex-row items-center justify-between rounded-lg bg-white border-b border-gray-200">
+          <CardTitle className="flex items-center gap-2 text-[#4B2A06]">
             <UserPlus className="h-5 w-5" />
             Workspace Invitations
           </CardTitle>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-[#ECE9E2] text-[#4B2A06] shadow-md hover:bg-[#ECE9E2] transition">
+              <Button className="bg-[#4B2A06] text-white shadow-md hover:bg-[#3A2004] transition">
                 <Mail className="h-4 w-4 mr-2" />
                 Send Invitation
               </Button>
@@ -307,23 +307,23 @@ export function WorkspaceInvitationManager({
             </DialogContent>
           </Dialog>
         </CardHeader>
-        <CardContent className="bg-[#ECE9E2] text-[#4B2A06]">
+        <CardContent className="bg-white">
           {loading ? (
-            <div className="text-center py-4">Loading invitations...</div>
+            <div className="text-center py-4 text-gray-600">Loading invitations...</div>
           ) : invitations.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Mail className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <p>No invitations sent yet</p>
-              <p className="text-sm">
+              <p className="text-gray-600">No invitations sent yet</p>
+              <p className="text-sm text-gray-500">
                 Send your first invitation to get started
               </p>
             </div>
           ) : (
-            <div className="space-y-4 ">
+            <div className="space-y-4">
               {invitations.map((invitation) => (
                 <div
                   key={invitation.id}
-                  className="flex items-center justify-between p-4 shadow-md rounded-lg bg-[#ECE9E3]  "
+                  className="flex items-center justify-between p-4 rounded-lg bg-white border border-gray-200"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
@@ -513,10 +513,10 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <Select value={bucket} onValueChange={(v: any) => setBucket(v)}>
-          <SelectTrigger className="w-[160px] bg-[#ECE9E2] text-[#4B2A06]">
+          <SelectTrigger className="w-[160px] bg-white text-[#4B2A06] border-gray-300">
             <SelectValue placeholder="Today" />
           </SelectTrigger>
-          <SelectContent className="bg-[#ECE9E2] text-[#4B2A06]">
+          <SelectContent className="bg-white text-[#4B2A06] border-gray-200">
             <SelectItem value="today">Today</SelectItem>
             <SelectItem value="last7">Last 7 days</SelectItem>
             <SelectItem value="last15">Last 15 days</SelectItem>
@@ -525,7 +525,7 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
             <SelectItem value="all">All</SelectItem>
           </SelectContent>
         </Select>
-        <Button size="sm" className="bg-[#ECE9E2] text-[#4B2A06] hover:bg-[#ECE9E2] transition"  onClick={update} disabled={saving}>
+        <Button size="sm" className="bg-[#4B2A06] text-white hover:bg-[#3A2004] transition" onClick={update} disabled={saving}>
           {saving ? "Saving..." : "Update"}
         </Button>
       </div>
@@ -593,7 +593,7 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
         {shares.length > 0 && (
           <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
             {shares.map((s) => (
-              <div key={s.id} className="flex items-center justify-between text-xs bg-[#F9F6F2] rounded px-2 py-1">
+              <div key={s.id} className="flex items-center justify-between text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1">
                 <div>
                   <div className="font-medium">{s.resourceName || s.scope === 'link' ? 'Directory link' : s.scope}</div>
                   <div className="text-gray-600">Role: {s.role}</div>

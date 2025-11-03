@@ -1557,19 +1557,19 @@ export default function AdminDashboardPage() {
         </Dialog>
 
         {/* Workspace Invitation Management Section */}
-        <div className="mt-8 border-t border-gray-200 pt-6 space-y-6">
+        <div className="mt-8  pt-6 space-y-6">
           {/* Invitee Management - List of all members and their access */}
           <InviteeManagement />
           
           {/* Workspace Invitation Manager - Send new invitations */}
-          <Card className="bg-white shadow-sm">
-            <CardHeader className="bg-[#ECE9E2]">
+          <Card className="bg-white border-0 shadow-none">
+            <CardHeader className="bg-white border-b border-gray-200">
               <CardTitle className="text-[#4B2A06] flex items-center gap-2">
                 <Shield className="h-5 w-5" />
                 Send Workspace Invitations
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="bg-white">
               <WorkspaceInvitationManager />
             </CardContent>
           </Card>
