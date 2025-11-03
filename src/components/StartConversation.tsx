@@ -364,18 +364,11 @@ export const StartConversation: React.FC = () => {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("namespace", file.name); // Use exact filename with .pdf extension
+      formData.append("type", uploadType); // Send document type (DRHP or RHP) to backend
       if (currentFolder?.id) formData.append("directoryId", currentFolder.id);
       
-      // Choose the correct upload endpoint based on document type
-      let uploadEndpoint = `${import.meta.env.VITE_API_URL}/documents/upload`;
-      
-      if (uploadType === "RHP") {
-        // For RHP upload, we need a DRHP ID - this should be handled differently
-        // For now, use the regular upload endpoint and let backend handle it
-        uploadEndpoint = `${import.meta.env.VITE_API_URL}/documents/upload`;
-        // Note: Standalone RHP uploads will need to be handled separately
-        // or linked to a DRHP later. For now, upload as regular document.
-      }
+      // Use the regular upload endpoint - backend will handle type based on formData
+      const uploadEndpoint = `${import.meta.env.VITE_API_URL}/documents/upload`;
       
       const res = await fetch(uploadEndpoint, {
         method: "POST",
