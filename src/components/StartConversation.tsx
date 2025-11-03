@@ -367,9 +367,15 @@ export const StartConversation: React.FC = () => {
       if (currentFolder?.id) formData.append("directoryId", currentFolder.id);
       
       // Choose the correct upload endpoint based on document type
-      const uploadEndpoint = uploadType === "RHP" 
-        ? `${import.meta.env.VITE_API_URL}/documents/upload-rhp`
-        : `${import.meta.env.VITE_API_URL}/documents/upload`;
+      let uploadEndpoint = `${import.meta.env.VITE_API_URL}/documents/upload`;
+      
+      if (uploadType === "RHP") {
+        // For RHP upload, we need a DRHP ID - this should be handled differently
+        // For now, use the regular upload endpoint and let backend handle it
+        uploadEndpoint = `${import.meta.env.VITE_API_URL}/documents/upload`;
+        // Note: Standalone RHP uploads will need to be handled separately
+        // or linked to a DRHP later. For now, upload as regular document.
+      }
       
       const res = await fetch(uploadEndpoint, {
         method: "POST",
@@ -431,11 +437,89 @@ export const StartConversation: React.FC = () => {
       }
       console.log("file response:", response);
 
-      // Show modal instead of toast
-      setUploadedDoc(response.document);
-      setShowSuccessModal(true);
+      const uploadedDocument = response.document;
+      
+      // Update toast to show processing status
       toast.dismiss(toastId);
-      fetchDocuments(); // Refresh the document list
+      toast.loading(
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Processing {file.name}... This may take a few moments.</span>
+        </div>,
+        { id: `upload-processing-${uploadedDocument.id}`, duration: Infinity }
+      );
+
+      // Poll for document processing status
+      let pollAttempts = 0;
+      const maxPollAttempts = 120; // 10 minutes (5 second intervals)
+      const pollInterval = 5000; // 5 seconds
+      
+      const pollForStatus = async () => {
+        try {
+          const doc = await documentService.getById(uploadedDocument.id);
+          
+          // Check if processing is complete
+          if (doc.status === "completed" || doc.status === "ready") {
+            toast.dismiss(`upload-processing-${uploadedDocument.id}`);
+            toast.success(
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <span>{file.name} processed successfully!</span>
+              </div>
+            );
+            
+            // Show success modal
+            setUploadedDoc(doc);
+            setShowSuccessModal(true);
+            fetchDocuments(); // Refresh the document list
+            setIsUploading(false);
+            return;
+          }
+          
+          // Check if processing failed
+          if (doc.status === "failed" || doc.status === "error") {
+            toast.dismiss(`upload-processing-${uploadedDocument.id}`);
+            toast.error(
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-destructive" />
+                <span>Processing failed for {file.name}. Please try uploading again.</span>
+              </div>
+            );
+            setIsUploading(false);
+            return;
+          }
+          
+          // Continue polling if still processing
+          pollAttempts++;
+          if (pollAttempts < maxPollAttempts) {
+            setTimeout(pollForStatus, pollInterval);
+          } else {
+            // Timeout after max attempts
+            toast.dismiss(`upload-processing-${uploadedDocument.id}`);
+            toast.warning(
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <span>{file.name} is taking longer than expected. You can check its status later.</span>
+              </div>
+            );
+            setIsUploading(false);
+            fetchDocuments(); // Refresh anyway
+          }
+        } catch (error) {
+          console.error("Error polling document status:", error);
+          pollAttempts++;
+          if (pollAttempts < maxPollAttempts) {
+            setTimeout(pollForStatus, pollInterval);
+          } else {
+            toast.dismiss(`upload-processing-${uploadedDocument.id}`);
+            toast.error("Failed to check processing status. Please refresh the page.");
+            setIsUploading(false);
+          }
+        }
+      };
+      
+      // Start polling after a short delay
+      setTimeout(pollForStatus, pollInterval);
     } catch (error) {
       console.error("Upload error:", error);
       toast.error(
@@ -692,9 +776,35 @@ export const StartConversation: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen bg-white flex flex-col font-sans"
+      className="min-h-screen bg-white flex flex-col font-sans relative"
       style={{ fontFamily: "Inter, Arial, sans-serif" }}
     >
+      {/* Upload/Processing Overlay - Blocks UI during upload and processing */}
+      {isUploading && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-16 w-16 animate-spin text-[#4B2A06]" />
+              <div className="text-center">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Processing Document
+                </h3>
+                <p className="text-sm text-gray-600 mb-2">
+                  Your document is being uploaded and processed through our system.
+                </p>
+                <p className="text-xs text-gray-500">
+                  Please do not close this window or refresh the page.
+                </p>
+                <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>This may take a few moments...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Top navbar full width */}
       <Navbar
         showSearch
@@ -1622,14 +1732,23 @@ export const StartConversation: React.FC = () => {
           />
 
           {/* DRHP Upload Modal */}
-          <DrhpUploadModal
-            open={showDrhpUploadModal}
-            onOpenChange={setShowDrhpUploadModal}
-            setIsUploading={setIsUploading}
-            onUploadSuccess={(file) => {
-              handleUpload(file, "DRHP");
-            }}
-          />
+        <DrhpUploadModal
+          open={showDrhpUploadModal}
+          onOpenChange={(open) => {
+            if (!isUploading) {
+              setShowDrhpUploadModal(open);
+            }
+          }}
+          setIsUploading={setIsUploading}
+          onUploadSuccess={(file) => {
+            handleUpload(file, "DRHP").finally(() => {
+              // Close modal after upload completes (success or error)
+              setTimeout(() => {
+                setShowDrhpUploadModal(false);
+              }, 500);
+            });
+          }}
+        />
 
           {/* RHP Upload Modal for Standalone Upload */}
           {showRhpUploadModal && (

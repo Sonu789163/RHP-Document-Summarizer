@@ -72,24 +72,16 @@ export const DrhpUploadModal: React.FC<DrhpUploadModalProps> = ({
       // The parent component will handle the actual upload
       onUploadSuccess?.(file);
       
-      // Close modal after successful callback
-      onOpenChange(false);
-      setFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      // Don't close modal immediately - let parent handle it after upload completes
+      // The modal will be closed by the parent component after upload processing
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to prepare upload"
       );
-    } finally {
       setUploading(false);
       setIsUploading?.(false);
-      setFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
     }
+    // Note: Don't set uploading to false here - parent component manages the upload state
   };
 
   return (
