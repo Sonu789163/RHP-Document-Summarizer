@@ -16,9 +16,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { UserPlus, Mail, Loader2 } from "lucide-react";
+import { Mail, Loader2 } from "lucide-react";
 import {
   workspaceInvitationService,
   SendInvitationData,
@@ -150,17 +149,14 @@ export function InviteWorkspaceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md bg-gray-50 text-[#4B2A06]" hideClose>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5" />
-            Invite to {workspaceName}
-          </DialogTitle>
+          <DialogTitle>Invite to {workspaceName}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address *</Label>
+          <div>
+            <Label htmlFor="email">Email *</Label>
             <Input
               id="email"
               type="email"
@@ -169,25 +165,27 @@ export function InviteWorkspaceDialog({
               onChange={(e) =>
                 setFormData({ ...formData, inviteeEmail: e.target.value })
               }
+              className="border-none focus:outline-none focus:ring-0 bg-white"
               required
             />
           </div>
 
-          <div className="space-y-2">
+          <div>
             <Label htmlFor="name">Name *</Label>
             <Input
               id="name"
               type="text"
-              placeholder="User Name"
+              placeholder="Full Name"
               value={formData.inviteeName}
               onChange={(e) =>
                 setFormData({ ...formData, inviteeName: e.target.value })
               }
+              className="border-none focus:outline-none focus:ring-0 bg-white"
               required
             />
           </div>
 
-          <div className="space-y-2">
+          <div>
             <Label htmlFor="role">Role</Label>
             <Select
               value={formData.invitedRole}
@@ -195,101 +193,116 @@ export function InviteWorkspaceDialog({
                 setFormData({ ...formData, invitedRole: value })
               }
             >
-              <SelectTrigger id="role">
+              <SelectTrigger className="border-none focus:outline-none focus:ring-0 bg-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="user">User</SelectItem>
-                <SelectItem value="viewer">Viewer</SelectItem>
-                <SelectItem value="editor">Editor</SelectItem>
+              <SelectContent className="bg-white border border-gray-200">
+                <SelectItem className="bg-white hover:bg-gray-50 data-[highlighted]:bg-gray-50" value="user">User</SelectItem>
+                <SelectItem className="bg-white hover:bg-gray-50 data-[highlighted]:bg-gray-50" value="viewer">Viewer</SelectItem>
+                <SelectItem className="bg-white hover:bg-gray-50 data-[highlighted]:bg-gray-50" value="editor">Editor</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="space-y-2">
+          <div>
             <Label htmlFor="message">Message (Optional)</Label>
             <Textarea
               id="message"
-              placeholder="Add a personal message to your invitation..."
+              placeholder="Welcome to our workspace..."
               value={formData.message}
               onChange={(e) =>
                 setFormData({ ...formData, message: e.target.value })
               }
+              className="border-none focus:outline-none focus:ring-0 bg-white"
               rows={3}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Select Directories to Grant Access *</Label>
-            <Input
-              placeholder="Search directories..."
-              value={dirSearch}
-              onChange={(e) => setDirSearch(e.target.value)}
-              className="mb-2"
-            />
-            <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
-              {dirLoading ? (
-                <div className="text-sm text-gray-500 py-4 text-center">
-                  Loading directories...
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <Label>Directory Access *</Label>
+                <p className="text-xs text-gray-500 mt-1">Select directories to grant access. Documents within these directories will be accessible to the invited user.</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">
+                  Available Directories ({directories.length})
+                </span>
+              </div>
+              <Input
+                placeholder="Search directories..."
+                value={dirSearch}
+                onChange={(e) => setDirSearch(e.target.value)}
+                className="h-8 bg-white"
+              />
+              <div className="border rounded bg-white max-h-64 overflow-y-auto">
+                {dirLoading ? (
+                  <div className="text-xs text-gray-500 p-4 text-center">Loading directories...</div>
+                ) : filteredDirectories.length === 0 ? (
+                  <div className="text-xs text-gray-500 p-4 text-center">No directories available</div>
+                ) : (
+                  filteredDirectories.map((dir) => {
+                    const isSelected = selectedDirectories.some(
+                      (d) => d.id === dir.id
+                    );
+                    return (
+                      <label 
+                        key={dir.id} 
+                        className="flex items-center gap-3 text-sm px-4 py-3 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleDirectory(dir)}
+                          className="w-4 h-4 cursor-pointer"
+                        />
+                        <span className="truncate flex-1 font-medium">{dir.name}</span>
+                        {isSelected && (
+                          <span className="text-xs text-green-600 font-medium">Selected</span>
+                        )}
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+              {selectedDirectories.length > 0 && (
+                <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded">
+                  <strong>{selectedDirectories.length}</strong> director{selectedDirectories.length > 1 ? 'ies' : 'y'} selected: {selectedDirectories.map(d => d.name).join(", ")}
                 </div>
-              ) : filteredDirectories.length === 0 ? (
-                <div className="text-sm text-gray-500 py-4 text-center">
-                  No directories found
-                </div>
-              ) : (
-                filteredDirectories.map((dir) => {
-                  const isSelected = selectedDirectories.some(
-                    (d) => d.id === dir.id
-                  );
-                  return (
-                    <div
-                      key={dir.id}
-                      className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                      onClick={() => toggleDirectory(dir)}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleDirectory(dir)}
-                        className="rounded"
-                      />
-                      <span className="text-sm flex-1">{dir.name}</span>
-                    </div>
-                  );
-                })
               )}
             </div>
-            {selectedDirectories.length > 0 && (
-              <div className="text-xs text-gray-600 mt-2">
-                {selectedDirectories.length} director
-                {selectedDirectories.length !== 1 ? "ies" : "y"} selected
-              </div>
-            )}
           </div>
 
-          <DialogFooter>
+          <div className="flex justify-end gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
+              className="bg-gray-200 text-[#4B2A06] hover:bg-gray-200 border-none hover:text-[#4B2A06]"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className="bg-[#4B2A06] text-white hover:bg-[#4B2A06] hover:text-white"
+            >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Sending...
                 </>
               ) : (
                 <>
-                  <Mail className="h-4 w-4 mr-2" />
+                  <Mail className="mr-2 h-4 w-4" />
                   Send Invitation
                 </>
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

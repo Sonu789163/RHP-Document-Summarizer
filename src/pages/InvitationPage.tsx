@@ -22,6 +22,7 @@ interface InvitationDetails {
   inviterName: string;
   inviterEmail: string;
   workspaceName: string;
+  status: string;
   workspaceDomain: string;
   invitedRole: string;
   message?: string;
@@ -65,6 +66,13 @@ export default function InvitationPage() {
       return;
     }
 
+    // Check if invitation is already accepted before making the request
+    if (invitation?.status === "accepted") {
+      toast.info("This invitation has already been accepted");
+      navigate("/dashboard");
+      return;
+    }
+
     try {
       setProcessing(true);
       const result = await workspaceInvitationService.acceptInvitation(
@@ -87,6 +95,22 @@ export default function InvitationPage() {
       console.error("Error accepting invitation:", error);
       const status = error?.response?.status;
       const invitedEmail = error?.response?.data?.invitedEmail;
+      const errorMessage = error?.response?.data?.message;
+      
+      if (status === 400 && errorMessage?.includes("already been accepted")) {
+        // Invitation already accepted - reload the invitation to get updated status
+        toast.info("This invitation has already been accepted");
+        await loadInvitation(); // Reload to show accepted status
+        return;
+      }
+      
+      if (status === 400 && error?.response?.data?.alreadyAccepted) {
+        // User already has access
+        toast.info("You already have access to this workspace");
+        navigate("/dashboard");
+        return;
+      }
+      
       if (status === 403 && invitedEmail) {
         toast.error(
           `Please sign in as ${invitedEmail} to accept this invitation.`
@@ -94,9 +118,7 @@ export default function InvitationPage() {
         // Offer redirect to login preserving invitation id
         navigate(`/login?invitation=${invitationId}`);
       } else {
-        toast.error(
-          error.response?.data?.message || "Failed to accept invitation"
-        );
+        toast.error(errorMessage || "Failed to accept invitation");
       }
     } finally {
       setProcessing(false);
@@ -248,13 +270,37 @@ export default function InvitationPage() {
           </div>
 
           {/* Actions */}
-          {expired ? (
+          {invitation.status === "accepted" ? (
+            <div className="text-center">
+              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Invitation Already Accepted</h3>
+              <p className="text-gray-600 mb-4">
+                This invitation has already been accepted. You have access to this workspace.
+              </p>
+              <Button onClick={() => navigate("/dashboard")} className="bg-[#4B2A06] hover:bg-[#3A2004] text-white">
+                Go to Dashboard
+              </Button>
+            </div>
+          ) : expired ? (
             <div className="text-center">
               <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Invitation Expired</h3>
               <p className="text-gray-600 mb-4">
                 This invitation has expired. Please contact the workspace
                 administrator for a new invitation.
+              </p>
+              <Button onClick={() => navigate("/")} variant="outline">
+                Go Home
+              </Button>
+            </div>
+          ) : invitation.status === "declined" || invitation.status === "cancelled" ? (
+            <div className="text-center">
+              <XCircle className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">
+                Invitation {invitation.status === "declined" ? "Declined" : "Cancelled"}
+              </h3>
+              <p className="text-gray-600 mb-4">
+                This invitation has been {invitation.status}.
               </p>
               <Button onClick={() => navigate("/")} variant="outline">
                 Go Home
