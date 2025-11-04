@@ -22,13 +22,13 @@ import {
   Check,
   X,
   Pencil,
+  Divide,
 } from "lucide-react";
 import { Navbar } from "../components/Navbar";
 import { DocumentPopover } from "@/components/ChatPanel";
 import { ShareDialog } from "../components/ShareDialog";
 import { ViewSummaryModal } from "@/components/ViewSummaryModal";
 import { ViewReportModal } from "@/components/ViewReportModal";
-import { WorkspaceInvitationManager } from "../components/WorkspaceInvitationManager";
 import { WorkspaceRequestsManager } from "../components/WorkspaceRequestsManager";
 import { InviteeManagement } from "../components/InviteeManagement";
 import { workspaceService, WorkspaceDTO } from "../services/workspaceService";
@@ -50,6 +50,7 @@ import {
   directoryService,
 } from "../services/api";
 import { userService } from "../lib/api/userService";
+import { Separator } from "@radix-ui/react-dropdown-menu";
 
 interface Document {
   id: string;
@@ -155,7 +156,6 @@ export default function AdminDashboardPage() {
   const [workspaceMembers, setWorkspaceMembers] = useState<Array<{ _id: string; name?: string; email: string; status: string; role: string }>>([]);
   const [userSearch, setUserSearch] = useState("");
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-  // removed per-user access form in favor of inline controls in WorkspaceInvitationManager
 
   const currentUserId = String((user as any)?.id || (user as any)?._id || "");
 
@@ -1429,7 +1429,7 @@ export default function AdminDashboardPage() {
           <div className="text-sm font-medium text-gray-600 mb-3">
             All Workspaces ({workspaces.length})
           </div>
-          <div className="h-[30vh] overflow-y-auto pr-2 scrollbar-hide">
+          <div className="max-h-[30vh]  overflow-y-auto pr-2 scrollbar-hide">
             {workspacesLoading ? (
               <div className="text-center py-4 text-gray-600">
                 Loading workspaces...
@@ -1541,9 +1541,10 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
+        <Separator className="border-t border-gray-200 mt-5" />
         {/* Workspace Request Management Dialog */}
         <Dialog open={viewRequestsOpen} onOpenChange={setViewRequestsOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[70vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Workspace Access Requests</DialogTitle>
             </DialogHeader>
@@ -1561,18 +1562,6 @@ export default function AdminDashboardPage() {
           {/* Invitee Management - List of all members and their access */}
           <InviteeManagement />
           
-          {/* Workspace Invitation Manager - Send new invitations */}
-          <Card className="bg-white border-0 shadow-none">
-            <CardHeader className="bg-white border-b border-gray-200">
-              <CardTitle className="text-[#4B2A06] flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Send Workspace Invitations
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="bg-white">
-              <WorkspaceInvitationManager />
-            </CardContent>
-          </Card>
         </div>
 
         
