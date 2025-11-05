@@ -79,14 +79,14 @@ export function InviteeManagement() {
     }
   };
 
-  const handleRevokeAccess = async (inviteeEmail: string) => {
+  const handleRevokeAccess = async (invitationId: string, inviteeEmail: string) => {
     if (!window.confirm(`Revoke access for ${inviteeEmail}?`)) {
       return;
     }
 
     try {
       setUpdating(inviteeEmail);
-      await workspaceInvitationService.revokeUserAccess(inviteeEmail);
+      await workspaceInvitationService.revokeUserAccess(invitationId);
       toast.success(`Access revoked for ${inviteeEmail}`);
       loadInvitations();
     } catch (error: any) {
@@ -191,7 +191,7 @@ export function InviteeManagement() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleRevokeAccess(inv.inviteeEmail)}
+                      onClick={() => handleRevokeAccess(inv.invitationId, inv.inviteeEmail)}
                       disabled={updating === inv.inviteeEmail}
                       className="h-8 text-xs"
                     >

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getCurrentWorkspace } from "./workspaceContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -83,12 +84,18 @@ export const workspaceInvitationService = {
   },
 
   // Admin: revoke user access to current workspace
-  async revokeUserAccess(userEmail: string): Promise<{ message: string }> {
+  async revokeUserAccess(invitationId: string): Promise<{ message: string }> {
     const token = localStorage.getItem("accessToken");
+    const currentWorkspace = getCurrentWorkspace();
     const response = await axios.post(
       `${API_URL}/workspace-invitations/workspace/revoke-user-access`,
-      { userEmail },
-      { headers: { Authorization: `Bearer ${token}` } }
+      { invitationId },
+      { 
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+        } 
+      }
     );
     return response.data;
   },

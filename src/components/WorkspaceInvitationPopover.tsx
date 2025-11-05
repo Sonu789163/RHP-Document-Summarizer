@@ -897,7 +897,7 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
         className="h-8 px-3"
         onClick={async () => {
           try {
-            await workspaceInvitationService.revokeUserAccess(invite.inviteeEmail);
+            await workspaceInvitationService.revokeUserAccess(invite.invitationId);
             toast.success("Invitee removed and all access revoked");
           } catch (e: any) {
             toast.error(e.response?.data?.message || "Failed to remove invitee");
