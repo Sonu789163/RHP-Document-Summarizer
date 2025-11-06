@@ -60,6 +60,7 @@ import {
   Users,
   Shield,
   UserCheck,
+  UserX,
   MoreVertical,
   Home,
   Globe,
@@ -308,10 +309,10 @@ export default function AdminUsersPage() {
           <div className="w-[80vw]  grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
             <Card className="bg-[rgba(99,117,135,1)] text-white">
               <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  <div>
-                    <p className="text-sm text-white/80">Total Users</p>
+                <div className="flex items-start gap-2">
+                  {/* <Users className="h-4 w-4 mt-0.5 flex-shrink-0" /> */}
+                  <div className="flex-1">
+                    <p className="text-sm text-white font-bold flex items-center">Total Users</p>
                     <p className="text-2xl font-bold">{stats.total}</p>
                   </div>
                 </div>
@@ -319,10 +320,10 @@ export default function AdminUsersPage() {
             </Card>
             <Card className="bg-[rgba(99,117,135,1)] text-white">
               <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <UserCheck className="h-5 w-5" />
-                  <div>
-                    <p className="text-sm text-white/80">Active Users</p>
+                <div className="flex items-start gap-2">
+                  {/* <UserCheck className="h-4 w-4 mt-0.5 flex-shrink-0" /> */}
+                  <div className="flex-1">
+                    <p className="text-sm text-white font-bold flex items-center">Active Users</p>
                     <p className="text-2xl font-bold">{stats.active}</p>
                   </div>
                 </div>
@@ -330,10 +331,10 @@ export default function AdminUsersPage() {
             </Card>
             <Card className="bg-[rgba(99,117,135,1)] text-white">
               <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  <div>
-                    <p className="text-sm text-white/80">Admins</p>
+                <div className="flex items-start gap-2">
+                  {/* <Shield className="h-4 w-4 mt-0.5 flex-shrink-0" /> */}
+                  <div className="flex-1">
+                    <p className="text-sm text-white flex font-bold items-center">Admins</p>
                     <p className="text-2xl font-bold">{stats.admins}</p>
                   </div>
                 </div>
@@ -341,10 +342,10 @@ export default function AdminUsersPage() {
             </Card>
             <Card className="bg-[rgba(99,117,135,1)] text-white">
               <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  <div>
-                    <p className="text-sm text-white/80">Regular Users</p>
+                <div className="flex items-start gap-2">
+                  {/* <Users className="h-4 w-4 mt-0.5 flex-shrink-0" /> */}
+                  <div className="flex-1">
+                    <p className="text-sm text-white flex font-bold items-center">Regular Users</p>
                     <p className="text-2xl font-bold">{stats.users}</p>
                   </div>
                 </div>
@@ -352,9 +353,10 @@ export default function AdminUsersPage() {
             </Card>
             <Card className="bg-[rgba(99,117,135,1)] text-white">
               <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <div>
-                    <p className="text-sm text-white/80">Suspended</p>
+                <div className="flex items-start gap-2">
+                  {/* <UserX className="h-4 w-4 mt-0.5 flex-shrink-0" /> */}
+                  <div className="flex-1">
+                    <p className="text-sm text-white flex font-bold items-center">Suspended</p>
                     <p className="text-2xl font-bold">{stats.suspended}</p>
                   </div>
                 </div>
@@ -372,7 +374,7 @@ export default function AdminUsersPage() {
                 placeholder="Search"
                 value={searchTerm}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10 bg-gray-100 border-gray-200 rounded-lg"
+                className="pl-10 bg-gray-100 border-gray-200 rounded-lg focus:ring-0 focus:outline-none bg-white"
               />
             </div>
             <div className="text-sm text-gray-500 ml-4">Date : All</div>
@@ -390,7 +392,7 @@ export default function AdminUsersPage() {
               onOpenChange={setIsCreateDialogOpen}
             >
               <DialogTrigger asChild>
-                <Button className="flex items-center gap-2 bg-[#ECE9E2] hover:bg-[#ECE9E2] text-[#4B2A06]">
+                <Button className="flex items-center gap-2 bg-[rgba(99,117,135,1)] text-white hover:bg-[rgba(99,117,135,1)] hover:text-white focus:ring-0 focus:outline-none">
                   <UserPlus className="h-4 w-4" />
                   Add User
                 </Button>
@@ -572,7 +574,7 @@ export default function AdminUsersPage() {
                         </td>
                         <td className="w-[20vw] text-right p-3">
                           <DropdownMenu>
-                            <DropdownMenuTrigger asChild className="hover:bg-[#ECE9E2] hover:text-[#4B2A06]">
+                            <DropdownMenuTrigger asChild className="hover:bg-gray-200 hover:text-[#4B2A06]">
                               <Button variant="ghost" size="sm">
                                 <MoreVertical className="h-4 w-4 " />
                               </Button>

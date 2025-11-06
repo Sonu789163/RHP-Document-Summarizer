@@ -68,10 +68,33 @@ export const StartConversation: React.FC = () => {
   const docRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "card">("list");
+  // Initialize current folder from localStorage to restore navigation state
   const [currentFolder, setCurrentFolder] = useState<{
     id: string | null;
     name: string;
-  } | null>(null);
+  } | null>(() => {
+    const saved = localStorage.getItem("currentFolder");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && (parsed.id === null || typeof parsed.id === "string") && typeof parsed.name === "string") {
+          return parsed;
+        }
+      } catch (e) {
+        // Invalid JSON, ignore
+      }
+    }
+    return null;
+  });
+
+  // Save current folder to localStorage whenever it changes
+  useEffect(() => {
+    if (currentFolder) {
+      localStorage.setItem("currentFolder", JSON.stringify(currentFolder));
+    } else {
+      localStorage.removeItem("currentFolder");
+    }
+  }, [currentFolder]);
   const [shareDocId, setShareDocId] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<string>("all");
   const [showTimeFilter, setShowTimeFilter] = useState(false);
@@ -82,7 +105,16 @@ export const StartConversation: React.FC = () => {
   >(null);
   const [movingDocToWorkspaceId, setMovingDocToWorkspaceId] = useState<string | null>(null);
   const [movingDocToWorkspaceName, setMovingDocToWorkspaceName] = useState<string>("");
-  const [documentTypeFilter, setDocumentTypeFilter] = useState<string>("DRHP");
+  // Initialize document type filter from localStorage or default to "DRHP"
+  const [documentTypeFilter, setDocumentTypeFilter] = useState<string>(() => {
+    const saved = localStorage.getItem("documentTypeFilter");
+    return saved === "DRHP" || saved === "RHP" ? saved : "DRHP";
+  });
+
+  // Save filter selection to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("documentTypeFilter", documentTypeFilter);
+  }, [documentTypeFilter]);
   const [showUploadDropdown, setShowUploadDropdown] = useState(false);
   const [selectedUploadType, setSelectedUploadType] = useState<string>("");
   const [showRhpUploadModal, setShowRhpUploadModal] = useState(false);
@@ -1259,9 +1291,13 @@ export const StartConversation: React.FC = () => {
                                 : ""
                             }
                           `}
-                              onClick={() =>
-                                navigate(`/doc/${doc.id || doc.namespace}`)
-                              }
+                              onClick={() => {
+                                // Store current folder before navigating
+                                if (currentFolder) {
+                                  localStorage.setItem("currentFolder", JSON.stringify(currentFolder));
+                                }
+                                navigate(`/doc/${doc.id || doc.namespace}`);
+                              }}
                               onAnimationEnd={() => {
                                 if (highlightedDocId === doc.id)
                                   setHighlightedDocId(null);
@@ -1407,27 +1443,30 @@ export const StartConversation: React.FC = () => {
                                     : ""}
                                 </span>
                                 <div className="flex justify-between items-center ">
-                                  {/* Star icon for DRHP with RHP */}
-                                  {doc.type === "DRHP" && doc.relatedRhpId && (
-                                    <span
-                                      className={`text-xs px-2 py-1 mx-1 rounded-full ${
-                                        doc.type === "DRHP"
-                                          ? "bg-[#ECE9E2] text-[#4B2A06]"
-                                          : "bg-[#ECE9E2] text-[#4B2A06]"
-                                      }`}
-                                    >
-                                      {"RHP"}
+                                  {/* Show both types if document is linked */}
+                                  {doc.type === "DRHP" && doc.relatedRhpId ? (
+                                    <>
+                                      <span className="text-xs px-2 py-1 mx-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">
+                                        DRHP
+                                      </span>
+                                      <span className="text-xs px-2 py-1 mx-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">
+                                        RHP
+                                      </span>
+                                    </>
+                                  ) : doc.type === "RHP" && doc.relatedDrhpId ? (
+                                    <>
+                                      <span className="text-xs px-2 py-1 mx-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">
+                                        RHP
+                                      </span>
+                                      <span className="text-xs px-2 py-1 mx-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">
+                                        DRHP
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <span className="text-xs px-2 py-1 mx-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">
+                                      {doc.type}
                                     </span>
                                   )}
-                                  <span
-                                    className={`text-xs px-2 py-1 mx-1 rounded-full ${
-                                      doc.type === "DRHP"
-                                        ? "bg-[#ECE9E2] text-[#4B2A06]"
-                                        : "bg-[#ECE9E2] text-[#4B2A06]"
-                                    }`}
-                                  >
-                                    {doc.type}
-                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -1468,9 +1507,13 @@ export const StartConversation: React.FC = () => {
                                 : ""
                             }
                           `}
-                              onClick={() =>
-                                navigate(`/doc/${doc.id || doc.namespace}`)
-                              }
+                              onClick={() => {
+                                // Store current folder before navigating
+                                if (currentFolder) {
+                                  localStorage.setItem("currentFolder", JSON.stringify(currentFolder));
+                                }
+                                navigate(`/doc/${doc.id || doc.namespace}`);
+                              }}
                               onAnimationEnd={() => {
                                 if (highlightedDocId === doc.id)
                                   setHighlightedDocId(null);
@@ -1516,14 +1559,30 @@ export const StartConversation: React.FC = () => {
                               {/* Doc Type Column */}
                               <div className="col-span-2 flex items-center">
                                 <div className="flex gap-1">
-                                  {doc.type === "DRHP" && doc.relatedRhpId && (
+                                  {/* Show both types if document is linked */}
+                                  {doc.type === "DRHP" && doc.relatedRhpId ? (
+                                    <>
+                                      <span className="text-xs px-2 py-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">
+                                        DRHP
+                                      </span>
+                                      <span className="text-xs px-2 py-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">
+                                        RHP
+                                      </span>
+                                    </>
+                                  ) : doc.type === "RHP" && doc.relatedDrhpId ? (
+                                    <>
+                                      <span className="text-xs px-2 py-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">
+                                        RHP
+                                      </span>
+                                      <span className="text-xs px-2 py-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">
+                                        DRHP
+                                      </span>
+                                    </>
+                                  ) : (
                                     <span className="text-xs px-2 py-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">
-                                      RHP
+                                      {doc.type}
                                     </span>
                                   )}
-                                  <span className="text-xs px-2 py-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">
-                                    {doc.type}
-                                  </span>
                                 </div>
                               </div>
 

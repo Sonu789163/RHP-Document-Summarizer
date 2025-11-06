@@ -261,7 +261,7 @@ export default function ChatSummaryLayout() {
       {/* Sidebar */}
       <div
         className={`transition-all duration-300 h-full ${
-          sidebarOpen ? "w-[15%] min-w-[200px]" : "w-0 min-w-0 max-w-0"
+          sidebarOpen ? "w-[15%] min-w-[250px]" : "w-0 min-w-0 max-w-0"
         } bg-white shadow-xl`}
         style={{ overflow: "hidden" }}
         data-sidebar="true"
@@ -288,7 +288,7 @@ export default function ChatSummaryLayout() {
           onSidebarOpen={() => setSidebarOpen(true)}
           sidebarOpen={sidebarOpen}
           showRhpActions={!!currentDocument}
-          hasRhp={!!currentDocument?.relatedRhpId}
+          hasRhp={!!(currentDocument?.relatedRhpId || currentDocument?.relatedDrhpId)}
           currentDocument={currentDocument}
           onUploadRhp={() => setShowRhpModal(true)}
           onCompare={() =>

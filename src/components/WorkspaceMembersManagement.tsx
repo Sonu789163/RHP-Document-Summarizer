@@ -156,61 +156,62 @@ export function WorkspaceMembersManagement() {
 
   if (loading) {
     return (
-      <Card className="bg-white border-0 shadow-none">
-        <CardHeader className="border-b border-gray-200">
-          <CardTitle className="text-lg font-semibold text-[#4B2A06]">
-            Workspace Members
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
+      <div className=" rounded-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-[#4B2A06] mb-4 sm:mb-0">
+          Workspace Members
+          </h2>
+        </div>
+      
+        <CardContent >
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
         </CardContent>
-      </Card>
+      </div>
     );
   }
 
   return (
     <>
-      <Card className="bg-white border-0 shadow-none">
-        <CardHeader className="border-b border-gray-200">
-          <CardTitle className="text-lg font-semibold text-[#4B2A06]">
-            Workspace Members
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
+      <div className="rounded-lg">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-[#4B2A06] mb-4 sm:mb-0">
+          Workspace Members
+          </h2>
+        </div>
+        <div >
           {/* Filters */}
           <div className="flex gap-4 mb-6">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 border-none text-gray-400" />
               <Input
                 placeholder="Search by name or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-gray-200 focus:ring-0 focus:outline-none"
+                className="pl-10 bg-white border-gray-300 text-[#4B2A06] focus:ring-0 focus:outline-none"
               />
             </div>
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-40 border-gray-200 focus:ring-0 focus:outline-none">
+              <SelectTrigger className="w-40 bg-white border-gray-300 text-[#4B2A06] focus:ring-0 focus:outline-none">
                 <SelectValue placeholder="All Roles" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="editor">Editor</SelectItem>
-                <SelectItem value="viewer">Viewer</SelectItem>
+              <SelectContent className="bg-white border border-gray-200">
+                <SelectItem className="bg-white hover:bg-gray-100 data-[highlighted]:bg-gray-100 hover:text-[#4B2A06]" value="all">All Roles</SelectItem>
+                <SelectItem className="bg-white hover:bg-gray-100 data-[highlighted]:bg-gray-100 hover:text-[#4B2A06]" value="admin">Admin</SelectItem>
+                <SelectItem className="bg-white hover:bg-gray-100 data-[highlighted]:bg-gray-100 hover:text-[#4B2A06]" value="editor">Editor</SelectItem>
+                <SelectItem className="bg-white hover:bg-gray-100 data-[highlighted]:bg-gray-100 hover:text-[#4B2A06]" value="viewer">Viewer</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Active Members */}
           <div className="mb-8">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">
+            <h3 className="text-sm font-semibold text-[rgba(114, 120, 127, 1)] mb-4">
               Active Members ({filteredMembers.length})
             </h3>
             {filteredMembers.length === 0 ? (
-              <div className="text-sm text-gray-500 py-4 text-center">
+              <div className="text-sm text-[rgba(114, 120, 127, 1)] py-4 text-center">
                 No members found
               </div>
             ) : (
@@ -218,17 +219,17 @@ export function WorkspaceMembersManagement() {
                 {filteredMembers.map((member) => (
                   <div
                     key={member.userId}
-                    className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="flex items-center justify-between p-4 bg-white shadow-sm rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         <div>
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-[rgba(38,40,43,1)]">
                             {member.name || member.email}
                           </div>
-                          <div className="text-sm text-gray-500">{member.email}</div>
+                          <div className="text-sm text-[rgba(114, 120, 127, 1)]">{member.email}</div>
                           {member.domain && (
-                            <div className="text-xs text-gray-400 mt-1">
+                            <div className="text-xs text-[rgba(114, 120, 127, 1)] mt-1">
                               Domain: {member.domain}
                             </div>
                           )}
@@ -301,13 +302,13 @@ export function WorkspaceMembersManagement() {
                         }
                         disabled={updating === member.userId}
                       >
-                        <SelectTrigger className="w-32 h-8 text-xs border-gray-200">
+                        <SelectTrigger className="w-32 h-8 text-xs bg-white border-gray-300 text-[#4B2A06] focus:ring-0 focus:outline-none">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="editor">Editor</SelectItem>
-                          <SelectItem value="viewer">Viewer</SelectItem>
+                        <SelectContent className="bg-white border border-gray-200">
+                          <SelectItem className="bg-white hover:bg-gray-100 data-[highlighted]:bg-gray-100 hover:text-[#4B2A06]" value="admin">Admin</SelectItem>
+                          <SelectItem className="bg-white hover:bg-gray-100 data-[highlighted]:bg-gray-100 hover:text-[#4B2A06]" value="editor">Editor</SelectItem>
+                          <SelectItem className="bg-white hover:bg-gray-100 data-[highlighted]:bg-gray-100 hover:text-[#4B2A06]" value="viewer">Viewer</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -320,20 +321,20 @@ export function WorkspaceMembersManagement() {
           {/* Pending Invitations */}
           {filteredPending.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">
+              <h3 className="text-sm font-semibold text-[rgba(114, 120, 127, 1)] mb-4">
                 Pending Invitations ({filteredPending.length})
               </h3>
               <div className="space-y-2">
                 {filteredPending.map((pendingMember) => (
                   <div
                     key={pendingMember.invitationId}
-                    className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
+                    className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex-1">
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-[rgba(38,40,43,1)]">
                         {pendingMember.name || pendingMember.email}
                       </div>
-                      <div className="text-sm text-gray-500">{pendingMember.email}</div>
+                      <div className="text-sm text-[rgba(114, 120, 127, 1)]">{pendingMember.email}</div>
                       <div className="flex items-center gap-2 mt-2">
                         <Badge className={getRoleBadgeColor(pendingMember.workspaceRole)}>
                           {pendingMember.workspaceRole}
@@ -354,8 +355,8 @@ export function WorkspaceMembersManagement() {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Permissions Dialog */}
       <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
@@ -373,13 +374,13 @@ export function WorkspaceMembersManagement() {
             <div className="space-y-6">
               {/* Workspace Permissions */}
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-[rgba(38,40,43,1)] mb-2 flex items-center gap-2">
                   <Shield className="h-4 w-4" />
                   Workspace Permissions
                 </h4>
-                <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="bg-white border border-gray-200 p-4 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-700">Role:</span>
+                    <span className="text-sm text-[rgba(114, 120, 127, 1)]">Role:</span>
                     <Badge className={getRoleBadgeColor(memberPermissions.member.workspaceRole)}>
                       {memberPermissions.member.workspaceRole}
                     </Badge>
@@ -415,22 +416,22 @@ export function WorkspaceMembersManagement() {
 
               {/* Directory Access */}
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-[rgba(38,40,43,1)] mb-2 flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Directory Access ({memberPermissions.permissions.directories.length})
                 </h4>
                 {memberPermissions.permissions.directories.length === 0 ? (
-                  <div className="text-sm text-gray-500 py-2">No directory access granted</div>
+                  <div className="text-sm text-[rgba(114, 120, 127, 1)] py-2">No directory access granted</div>
                 ) : (
                   <div className="space-y-2">
                     {memberPermissions.permissions.directories.map((dir) => (
                       <div
                         key={dir.directoryId}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                        className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg"
                       >
                         <div>
-                          <div className="font-medium text-sm">{dir.directoryName}</div>
-                          <div className="text-xs text-gray-500">
+                          <div className="font-medium text-sm text-[rgba(38,40,43,1)]">{dir.directoryName}</div>
+                          <div className="text-xs text-[rgba(114, 120, 127, 1)]">
                             Granted: {new Date(dir.grantedAt).toLocaleDateString()}
                           </div>
                         </div>
@@ -444,7 +445,7 @@ export function WorkspaceMembersManagement() {
               {/* Document Access */}
               {memberPermissions.permissions.documents.length > 0 && (
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <h4 className="font-semibold text-[rgba(38,40,43,1)] mb-2 flex items-center gap-2">
                     <FileEdit className="h-4 w-4" />
                     Document Access ({memberPermissions.permissions.documents.length})
                   </h4>
@@ -452,11 +453,11 @@ export function WorkspaceMembersManagement() {
                     {memberPermissions.permissions.documents.map((doc) => (
                       <div
                         key={doc.documentId}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                        className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg"
                       >
                         <div>
-                          <div className="font-medium text-sm">{doc.documentName}</div>
-                          <div className="text-xs text-gray-500">
+                          <div className="font-medium text-sm text-[rgba(38,40,43,1)]">{doc.documentName}</div>
+                          <div className="text-xs text-[rgba(114, 120, 127, 1)]">
                             Granted: {new Date(doc.grantedAt).toLocaleDateString()}
                           </div>
                         </div>

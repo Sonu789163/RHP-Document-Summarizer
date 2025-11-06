@@ -461,31 +461,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     return html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
   }
 
-  const handleDownloadPdf = async () => {
-    if (!selectedReport) return;
-    let loadingToast;
-    try {
-      loadingToast = toast.loading("Download processing...");
-      const blob = await reportService.downloadHtmlPdf(selectedReport.id);
-      if (blob.type !== "application/pdf" || blob.size < 100) {
-        throw new Error("Failed to generate PDF. Please try again later.");
-      }
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${selectedReport.title}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.dismiss(loadingToast);
-      toast.success("PDF downloaded successfully");
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      console.error("Error downloading PDF:", error);
-      toast.error("Failed to download PDF");
-    }
-  };
+  // Removed handleDownloadPdf - use handlePrint instead which allows saving as PDF
 
   const handleDownloadDocx = async () => {
     if (!selectedReport) return;
@@ -761,7 +737,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
         <div
           className={`transition-all duration-300 ease-in-out ${
             sidebarOpen ? "w-80" : "w-16"
-          } fixed top-[10vh] left-0 bg-white border-r border-gray-200 h-[90vh] pl-12 flex flex-col overflow-hidden`}
+          } fixed top-[10vh] left-0 bg-white border-r border-gray-200 h-[90vh] px-5 flex flex-col overflow-hidden`}
         >
           {sidebarOpen && (
             <>
@@ -970,14 +946,14 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                 >
                   <FileText className="h-4 w-4 " />
                 </button>
-                {/* Download PDF */}
+                {/* Download PDF
                 <button
                   className="p-1  rounded hover:bg-gray-100"
                   onClick={handleDownloadPdf}
                   title="Download PDF"
                 >
                   <Download className="h-4 w-4 " />
-                </button>
+                </button> */}
                 {/* Print */}
                 <button
                   className="p-1 rounded hover:bg-gray-100"

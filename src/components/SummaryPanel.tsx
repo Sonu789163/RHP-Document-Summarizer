@@ -4,11 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Loader2,
-  Download,
   Copy,
   CheckCircle,
   FileText,
-  FileDown,
   Printer,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -512,41 +510,6 @@ export function SummaryPanel({
     }
   };
 
-  const handleDownloadPdf = async () => {
-    if (!selectedSummaryId) {
-      toast.error("No summary selected");
-      return;
-    }
-    let loadingToast;
-    try {
-      loadingToast = toast.loading("Download processing...");
-      const blob = await summaryService.downloadHtmlPdf(selectedSummaryId);
-      if (blob.type !== "application/pdf" || blob.size < 100) {
-        throw new Error("Failed to generate PDF. Please try again later.");
-      }
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${currentDocument?.name || "summary"}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.dismiss(loadingToast);
-      toast.success("PDF downloaded successfully");
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      toast.error("Failed to download PDF");
-    }
-  };
-
-  // Find the selected summary object
-  const selectedSummaryObj = allSummaries.find(
-    (s) => s.id === selectedSummaryId
-  );
-  const hasPdf = !!(
-    selectedSummaryObj && (selectedSummaryObj as any).pdfFileKey
-  );
 
   // Print handler for summary
   const handlePrintSummary = () => {
@@ -674,19 +637,37 @@ export function SummaryPanel({
               )}
             </Button>
 
-            {/* Download PDF and Print buttons side by side */}
+            {/* Download DOCX, Copy, and Print buttons - placed after New Summary button */}
             <div className="flex gap-2 items-center">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     className="bg-white border border-border rounded-sm p-2 w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-foreground shadow-none"
-                    onClick={handleDownloadPdf}
-                    title="Download PDF file"
+                    onClick={handleDownloadDocx}
+                    title="Download DOCX file"
                   >
-                    <FileDown className="h-6 w-6 text-[#3F2306]" />
+                    <FileText className="h-6 w-6 text-blue-700" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>Download PDF file</TooltipContent>
+                <TooltipContent>Download DOCX file</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="bg-white border border-border rounded-sm p-2 w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-foreground shadow-none"
+                    onClick={handleCopySummary}
+                    title={isCopied ? "Copied!" : "Copy to clipboard"}
+                  >
+                    {isCopied ? (
+                      <CheckCircle className="h-6 w-6 text-green-500" />
+                    ) : (
+                      <Copy className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isCopied ? "Copied!" : "Copy to clipboard"}
+                </TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -707,40 +688,6 @@ export function SummaryPanel({
             className="flex-1 bg-[#ECE9E2] rounded-lg p-4 overflow-y-auto min-h-0 animate-fade-in relative"
             style={{ height: "100%" }}
           >
-            {/* Copy and download icons at top-right */}
-            <div className="sticky top-0 left-[90%] z-10 flex gap-2 justify-end">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    className="p-2 rounded-sm bg-background shadow hover:bg-muted transition-colors"
-                    onClick={handleCopySummary}
-                    title={isCopied ? "Copied!" : "Copy to clipboard"}
-                  >
-                    {isCopied ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <Copy className="h-5 w-5 text-muted-foreground" />
-                    )}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {isCopied ? "Copied!" : "Copy to clipboard"}
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    className="p-2 rounded-sm bg-background shadow hover:bg-muted transition-colors"
-                    onClick={handleDownloadDocx}
-                    title="Download DOCX file"
-                  >
-                    <FileText className="h-5 w-5 text-blue-700" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>Download DOCX file</TooltipContent>
-              </Tooltip>
-            </div>
             {/* Add local table styles for summary contentbg-[#ECE9E2] text-[#4B2A06] */}
             <style>{`
               .summary-content table {
@@ -777,7 +724,7 @@ export function SummaryPanel({
             <div className="overflow-x-auto hide-scrollbar ">
               {/* Document Type Badge */}
               {currentDocument?.type && (
-                <div className="mb-2 absolute top-5 left-5 right-0 z-100">
+                <div className="mb-2 absolute top-5 right-5 right-0 z-100">
                   <Badge variant="default" className="text-xs ">
                     {currentDocument.type}
                   </Badge>
@@ -830,3 +777,4 @@ export function SummaryPanel({
     </div>
   );
 }
+

@@ -21,6 +21,8 @@ import {
   LayoutDashboardIcon,
   UserPlus,
   SettingsIcon,
+  Menu,
+  Sidebar,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -205,7 +207,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <>
       <header
-        className={`w-full flex items-center h-[10vh] min-h-[60px] px-[4vw] bg-white border-b border-[#F3F3F3] relative transition-all duration-300`}
+        className={`w-full flex items-center h-[10vh] min-h-[60px] pl-[1vw] px-[4vw] bg-white border-b border-[#F3F3F3] relative transition-all duration-300`}
       >
         {/* Hamburger menu for chat summary page */}
         {isChatSummaryPage && onSidebarOpen && !sidebarOpen && (
@@ -253,8 +255,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
           <button
             onClick={() => navigate("/dashboard")}
-            className={`text-2xl font-extrabold text-[#232323] tracking-tight transition-all duration-300 hover:text-[#FF7A1A] cursor-pointer ${isChatSummaryPage && sidebarOpen ? "ml-[-3vw]" : "ml-[0.5vw]"
-              }`}
+            className={`text-2xl font-extrabold text-[#232323] tracking-tight transition-all duration-300 hover:text-[#FF7A1A] cursor-pointer ${
+              isChatSummaryPage && !sidebarOpen && onSidebarOpen 
+                ? "ml-[4vw]" 
+                : isChatSummaryPage && sidebarOpen 
+                  ? "ml-[0vw]" 
+                  : "ml-[0.5vw]"
+            }`}
             style={{
               fontFamily: "Inter, Arial, sans-serif",
             }}
@@ -291,7 +298,17 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             ) : (
               <button
-                onClick={() => currentDocument && navigate(`/compare/${currentDocument.id}`)}
+                onClick={() => {
+                  // Navigate to compare page using DRHP ID (for both DRHP and RHP documents)
+                  if (currentDocument) {
+                    const drhpId = currentDocument.type === "DRHP" 
+                      ? currentDocument.id 
+                      : currentDocument.relatedDrhpId;
+                    if (drhpId) {
+                      navigate(`/compare/${drhpId}`);
+                    }
+                  }
+                }}
                 className="flex items-center gap-2 text-2xl font-bold text-[#232323] hover:text-[#FF7A1A] transition-colors"
                 title="View Comparison Report"
               >

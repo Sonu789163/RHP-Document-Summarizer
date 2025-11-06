@@ -23,6 +23,7 @@ import {
   X,
   Pencil,
   Divide,
+  Printer,
 } from "lucide-react";
 import { Navbar } from "../components/Navbar";
 import { DocumentPopover } from "@/components/ChatPanel";
@@ -442,28 +443,112 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleDownloadSummaryPdf = async (summary: Summary) => {
-    let loadingToast;
+  const handlePrintSummary = async (summary: Summary) => {
     try {
-      loadingToast = toast.loading("Download processing...");
-      const blob = await summaryService.downloadHtmlPdf(summary.id);
-      if (blob.type !== "application/pdf" || blob.size < 100) {
-        throw new Error("Failed to generate PDF. Please try again later.");
+      // Fetch full summary data with content
+      const token = localStorage.getItem("accessToken");
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+      const response = await fetch(`${API_URL}/summaries/${summary.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch summary");
+      const fullSummary = await response.json();
+      const summaryContent = fullSummary.content || "No content available";
+      const summaryTitle = fullSummary.title || summary.title || "Summary";
+      
+      // Create a print window with the summary content
+      const printWindow = window.open("", "", "width=900,height=650");
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Print Summary - ${summaryTitle}</title>
+              <style>
+                body { 
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+                  margin: 0; 
+                  padding: 2rem; 
+                  line-height: 1.6;
+                  color: #1F2937;
+                }
+                .summary-content {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                  line-height: 1.6;
+                  color: #1F2937;
+                }
+                .summary-content table {
+                  border-collapse: collapse;
+                  width: 100%;
+                  border: 2px solid #d1d5de;
+                  margin: 20px 0;
+                  font-size: 14px;
+                  background: #ECE9E2;
+                  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                .summary-content th, .summary-content td {
+                  border: 1px solid #d1d5de;
+                  padding: 10px 12px;
+                  text-align: left;
+                  vertical-align: top;
+                }
+                .summary-content th {
+                  background: #4B2A06;
+                  color: white;
+                  font-weight: 600;
+                  font-size: 13px;
+                }
+                .summary-content tr:nth-child(even) td {
+                  background: #F5F5F5;
+                }
+                .summary-content tr:nth-child(odd) td {
+                  background: #ECE9E2;
+                }
+                @media print {
+                  .summary-content table {
+                    border-collapse: collapse !important;
+                    width: 100% !important;
+                    border: 2px solid #d1d5de !important;
+                    background: #ECE9E2 !important;
+                    box-shadow: none !important;
+                  }
+                  .summary-content th, .summary-content td {
+                    border: 1px solid #d1d5de !important;
+                    padding: 10px 12px !important;
+                    text-align: left !important;
+                    vertical-align: top !important;
+                  }
+                  .summary-content th {
+                    background: #4B2A06 !important;
+                    color: white !important;
+                    font-weight: 600 !important;
+                    font-size: 13px !important;
+                  }
+                  .summary-content tr:nth-child(even) td {
+                    background: #F5F5F5 !important;
+                  }
+                  .summary-content tr:nth-child(odd) td {
+                    background: #ECE9E2 !important;
+                  }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="summary-content">
+                ${summaryContent}
+              </div>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        // Open print dialog - user can select "Save as PDF" from the print dialog
+        printWindow.print();
       }
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${summary.title || "summary"}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.dismiss(loadingToast);
-      toast.success("Summary PDF downloaded successfully");
     } catch (error) {
-      toast.dismiss(loadingToast);
-      toast.error("Error downloading summary PDF: " + (error as any).message);
-      console.error("Error downloading summary PDF:", error);
+      console.error("Error fetching summary for print:", error);
+      toast.error("Failed to load summary content for printing");
     }
   };
 
@@ -518,29 +603,104 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleDownloadReportPdf = async (report: Report) => {
-    let loadingToast;
+  const handlePrintReport = async (report: Report) => {
     try {
-      loadingToast = toast.loading("Download processing...");
-      const blob = await reportService.downloadHtmlPdf(report.id);
-      if (blob.type !== "application/pdf" || blob.size < 100) {
-        throw new Error("Failed to generate PDF. Please try again later.");
+      // Fetch full report data with content
+      const fullReport = await reportService.getById(report.id);
+      const reportContent = fullReport.content || "No content available";
+      const reportTitle = fullReport.title || report.drhpNamespace || "Report";
+      
+      // Create a print window with the report content
+      const printWindow = window.open("", "", "width=900,height=650");
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Print Report - ${reportTitle}</title>
+              <style>
+                body { 
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+                  margin: 0; 
+                  padding: 2rem; 
+                  line-height: 1.6;
+                  color: #1F2937;
+                }
+                .summary-content {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                  line-height: 1.6;
+                  color: #1F2937;
+                }
+                .summary-content table {
+                  border-collapse: collapse;
+                  width: 100%;
+                  border: 2px solid #d1d5de;
+                  margin: 20px 0;
+                  font-size: 14px;
+                  background: #ECE9E2;
+                  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                .summary-content th, .summary-content td {
+                  border: 1px solid #d1d5de;
+                  padding: 10px 12px;
+                  text-align: left;
+                  vertical-align: top;
+                }
+                .summary-content th {
+                  background: #4B2A06;
+                  color: white;
+                  font-weight: 600;
+                  font-size: 13px;
+                }
+                .summary-content tr:nth-child(even) td {
+                  background: #F5F5F5;
+                }
+                .summary-content tr:nth-child(odd) td {
+                  background: #ECE9E2;
+                }
+                @media print {
+                  .summary-content table {
+                    border-collapse: collapse !important;
+                    width: 100% !important;
+                    border: 2px solid #d1d5de !important;
+                    background: #ECE9E2 !important;
+                    box-shadow: none !important;
+                  }
+                  .summary-content th, .summary-content td {
+                    border: 1px solid #d1d5de !important;
+                    padding: 10px 12px !important;
+                    text-align: left !important;
+                    vertical-align: top !important;
+                  }
+                  .summary-content th {
+                    background: #4B2A06 !important;
+                    color: white !important;
+                    font-weight: 600 !important;
+                    font-size: 13px !important;
+                  }
+                  .summary-content tr:nth-child(even) td {
+                    background: #F5F5F5 !important;
+                  }
+                  .summary-content tr:nth-child(odd) td {
+                    background: #ECE9E2 !important;
+                  }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="summary-content">
+                ${reportContent}
+              </div>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        // Open print dialog - user can select "Save as PDF" from the print dialog
+        printWindow.print();
       }
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${report.drhpNamespace || "report"}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.dismiss(loadingToast);
-      toast.success("Report PDF downloaded successfully");
-    } catch (error: any) {
-      toast.dismiss(loadingToast);
-      const errorMessage = error?.message || "Failed to download PDF";
-      toast.error(errorMessage);
-      console.error("Error downloading report PDF:", error);
+    } catch (error) {
+      console.error("Error fetching report for print:", error);
+      toast.error("Failed to load report content for printing");
     }
   };
 
@@ -922,11 +1082,11 @@ export default function AdminDashboardPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-white w-56 border border-gray-200">
                               <DropdownMenuItem
-                                onClick={() => handleDownloadSummaryPdf(summary)}
+                                onClick={() => handlePrintSummary(summary)}
                                 className="flex items-center gap-2 cursor-pointer hover:bg-white data-[highlighted]:bg-gray-50"
                               >
-                                <Download className="h-4 w-4" />
-                                <span>Download PDF</span>
+                                <Printer className="h-4 w-4" />
+                                <span>Print (Save as PDF)</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => setViewSummaryId(summary.id)}
@@ -1196,7 +1356,7 @@ export default function AdminDashboardPage() {
               <h2 className="text-2xl font-bold text-[#4B2A06] ">
                 Chat Management
               </h2>
-              <div className="grid grid-cols-2 gap-4 p-3">
+              <div className="grid grid-cols-2 gap-4 pt-3">
                 <div className="shadow-sm bg-white rounded-lg" >
                   <CardHeader className="flex flex-row items-center space-y-0 ">
                     <CardTitle className="text-md font-bold text-[rgba(114, 120, 127, 1)]">
@@ -1377,11 +1537,11 @@ export default function AdminDashboardPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="bg-white w-56 border border-gray-200 " align="end" >
                         <DropdownMenuItem
-                          onClick={() => handleDownloadReportPdf(report)}
+                          onClick={() => handlePrintReport(report)}
                           className="flex items-center gap-2 cursor-pointer hover:bg-white data-[highlighted]:bg-gray-50"
                         >
-                          <Download className="h-4 w-4 " />
-                          <span>Download PDF</span>
+                          <Printer className="h-4 w-4 " />
+                          <span>Print (Save as PDF)</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => setViewReportId(report.id)}
@@ -1559,7 +1719,7 @@ export default function AdminDashboardPage() {
         </Dialog>
 
         {/* Workspace Invitation Management Section */}
-        <div className="mt-8 pt-6 space-y-6">
+        <div className=" pt-6">
           {/* Workspace Members Management - Comprehensive member management */}
           <WorkspaceMembersManagement />
           

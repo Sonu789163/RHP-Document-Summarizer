@@ -86,7 +86,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<any | null>(null);
   const [shareDocId, setShareDocId] = useState<string | null>(null);
-  const [documentTypeFilter, setDocumentTypeFilter] = useState<string>("DRHP");
+  // Initialize document type filter from localStorage or default to "DRHP"
+  const [documentTypeFilter, setDocumentTypeFilter] = useState<string>(() => {
+    const saved = localStorage.getItem("documentTypeFilter");
+    return saved === "DRHP" || saved === "RHP" ? saved : "DRHP";
+  });
+
+  // Save filter selection to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("documentTypeFilter", documentTypeFilter);
+  }, [documentTypeFilter]);
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -265,7 +274,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               Documents
             </span>
             <Search
-              className=" outline-none h-6 w-6 text-[#232323] cursor-pointer"
+              className=" outline-none h-5 w-5 text-[#232323] cursor-pointer"
               onClick={() => setDocSearchVisible(!docSearchVisible)}
             />
           </div>
@@ -273,7 +282,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Document Type Filter */}
           <div className="flex bg-[#F5F3EF] rounded-lg p-1 mb-4">
             <button
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-5 py-2 rounded-md text-sm font-medium transition-all ${
                 documentTypeFilter === "DRHP"
                   ? "bg-white text-[#4B2A06] shadow-sm"
                   : "text-[#7C7C7C] hover:text-[#4B2A06]"
@@ -285,7 +294,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               DRHP
             </button>
             <button
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-5 py-2 rounded-md text-sm font-medium transition-all ${
                 documentTypeFilter === "RHP"
                   ? "bg-white text-[#4B2A06] shadow-sm"
                   : "text-[#7C7C7C] hover:text-[#4B2A06]"
@@ -361,7 +370,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               Chat History
             </span>
             <Search
-              className=" outline-none h-6 w-6 text-[#232323] cursor-pointer"
+              className=" outline-none h-5 w-5 text-[#232323] cursor-pointer"
               onClick={() => setChatSearchVisible(!chatSearchVisible)}
             />
           </div>
@@ -381,7 +390,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="space-y-1">
             {error && <p className="text-destructive text-sm">{error}</p>}
             {groupedChats.length === 0 && !error ? (
-              <p className="text-muted-foreground text-sm">No chats yet.</p>
+              <p className="text-muted-foreground text-sm ml-1">No chats yet.</p>
             ) : (
               groupedChats.map((group) => (
                 <div key={group.label} className="mb-4">

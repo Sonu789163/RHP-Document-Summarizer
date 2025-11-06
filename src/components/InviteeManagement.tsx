@@ -134,8 +134,8 @@ export function InviteeManagement() {
 
   if (loading) {
     return (
-      <Card className="bg-white border-0 shadow-none">
-        <CardHeader className="bg-white border-b border-gray-200">
+      <div className=" rounded-lg">
+        <CardHeader className=" border-gray-200">
           <CardTitle className="flex items-center gap-2 text-[#4B2A06]">
             <Users className="h-5 w-5" />
             Workspace Members
@@ -144,32 +144,31 @@ export function InviteeManagement() {
         <CardContent className="bg-white">
           <div className="text-center py-8">
             <Loader2 className="h-6 w-6 animate-spin mx-auto text-gray-400" />
-            <p className="text-sm text-gray-500 mt-2">Loading members...</p>
+            <p className="text-sm text-[rgba(114, 120, 127, 1)] mt-2">Loading members...</p>
           </div>
         </CardContent>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <Card className="bg-white rounded-lg border-0 shadow-none">
-      <CardHeader className="bg-white border-b border-gray-200">
-        <CardTitle className="flex items-center gap-2 text-[#4B2A06]">
-          <Users className="h-5 w-5" />
+    <div className=" border-b border-gray-200 rounded-lg">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
+      <h2 className="text-2xl font-bold text-[#4B2A06] mb-4 sm:mb-0">
           Workspace Members & Invitations
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-4 bg-white">
+        </h2>
+      </div>
+      <div>
         {/* Accepted Members */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
             <UserCheck className="h-4 w-4 text-gray-600" />
             <h3 className="font-semibold text-[#4B2A06]">
-              Active Members ({acceptedInvitations.length})
+              Invited Members ({acceptedInvitations.length})
             </h3>
           </div>
           {acceptedInvitations.length === 0 ? (
-            <div className="text-sm text-gray-500 py-4 text-center">
+            <div className="text-sm text-[rgba(114, 120, 127, 1)] py-4 text-center">
               No active members yet
             </div>
           ) : (
@@ -182,16 +181,16 @@ export function InviteeManagement() {
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-sm text-[#4B2A06] truncate">
+                      <div className="font-medium text-sm text-[rgba(38,40,43,1)] truncate">
                         {inv.inviteeEmail}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-[rgba(114, 120, 127, 1)]">
                         Invited: {new Date(inv.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                     <Badge
                       variant="secondary"
-                      className="bg-gray-100 text-gray-700 border-gray-200"
+                      className="bg-white text-[rgba(114, 120, 127, 1)] border-gray-200"
                     >
                       Active
                     </Badge>
@@ -204,13 +203,13 @@ export function InviteeManagement() {
                       }
                       disabled={updating === inv.invitationId}
                     >
-                      <SelectTrigger className="w-28 h-8 text-xs">
+                      <SelectTrigger className="w-28 h-8 text-xs bg-white border-gray-300 text-[#4B2A06] focus:ring-0 focus:outline-none">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="viewer">Viewer</SelectItem>
-                        <SelectItem value="editor">Editor</SelectItem>
+                      <SelectContent className="bg-white border border-gray-200">
+                        <SelectItem className="bg-white hover:bg-gray-100 data-[highlighted]:bg-gray-100 hover:text-[#4B2A06]" value="user">User</SelectItem>
+                        <SelectItem className="bg-white hover:bg-gray-100 data-[highlighted]:bg-gray-100 hover:text-[#4B2A06]" value="viewer">Viewer</SelectItem>
+                        <SelectItem className="bg-white hover:bg-gray-100 data-[highlighted]:bg-gray-100 hover:text-[#4B2A06]" value="editor">Editor</SelectItem>
                       </SelectContent>
                     </Select>
                     <Button
@@ -218,7 +217,7 @@ export function InviteeManagement() {
                       size="sm"
                       onClick={() => handleRevokeAccess(inv.invitationId, inv.inviteeEmail)}
                       disabled={updating === inv.invitationId}
-                      className="h-8 text-xs"
+                      className="h-8 text-xs bg-[#4B2A06] text-white hover:bg-[#4B2A06] hover:text-white focus:ring-0 focus:outline-none"
                     >
                       {updating === inv.invitationId ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -242,7 +241,7 @@ export function InviteeManagement() {
             </h3>
           </div>
           {pendingInvitations.length === 0 ? (
-            <div className="text-sm text-gray-500 py-4 text-center">
+            <div className="text-sm text-[rgba(114, 120, 127, 1)] py-4 text-center">
               No pending invitations
             </div>
           ) : (
@@ -255,10 +254,10 @@ export function InviteeManagement() {
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-sm text-[#4B2A06] truncate">
+                      <div className="font-medium text-sm text-[rgba(38,40,43,1)] truncate">
                         {inv.inviteeEmail}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-[rgba(114, 120, 127, 1)]">
                         Invited: {new Date(inv.createdAt).toLocaleDateString()}
                         {inv.expiresAt &&
                           new Date(inv.expiresAt) > new Date() && (
@@ -268,7 +267,7 @@ export function InviteeManagement() {
                     </div>
                     <Badge
                       variant="secondary"
-                      className="bg-gray-100 text-gray-700 border-gray-200"
+                      className="bg-white text-[rgba(114, 120, 127, 1)] border-gray-200"
                     >
                       Pending
                     </Badge>
@@ -278,13 +277,13 @@ export function InviteeManagement() {
                       value={inv.invitedRole}
                       disabled
                     >
-                      <SelectTrigger className="w-28 h-8 text-xs opacity-60">
+                      <SelectTrigger className="w-28 h-8 text-xs bg-white border-gray-300 text-[#4B2A06] opacity-60 focus:ring-0 focus:outline-none">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="viewer">Viewer</SelectItem>
-                        <SelectItem value="editor">Editor</SelectItem>
+                      <SelectContent className="bg-white border border-gray-200">
+                        <SelectItem className="bg-white hover:bg-gray-100 data-[highlighted]:bg-gray-100 hover:text-[#4B2A06]" value="user">User</SelectItem>
+                        <SelectItem className="bg-white hover:bg-gray-100 data-[highlighted]:bg-gray-100 hover:text-[#4B2A06]" value="viewer">Viewer</SelectItem>
+                        <SelectItem className="bg-white hover:bg-gray-100 data-[highlighted]:bg-gray-100 hover:text-[#4B2A06]" value="editor">Editor</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -293,8 +292,8 @@ export function InviteeManagement() {
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>  
   );
 }
 
