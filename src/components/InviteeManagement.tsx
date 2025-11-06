@@ -58,21 +58,46 @@ export function InviteeManagement() {
   };
 
   const handleUpdateRole = async (
-    inviteeEmail: string,
+    invitation: WorkspaceInvitation,
     newRole: "user" | "viewer" | "editor"
   ) => {
     try {
-      setUpdating(inviteeEmail);
-      // Note: You may need to add an API endpoint to update user role
-      // For now, we'll use the existing updateUserBuckets as a placeholder
-      // You should implement a proper updateRole endpoint
-      await workspaceInvitationService.updateUserBuckets(inviteeEmail, ["all"]);
-      toast.success(`Updated access for ${inviteeEmail}`);
+      setUpdating(invitation.invitationId);
+      
+      // If invitation is accepted, update the membership role
+      if (invitation.status === "accepted") {
+        // Use getWorkspaceMembers to get the user ID instead of getAllUsers
+        // This is more efficient and doesn't require fetching all users
+        const membersData = await workspaceInvitationService.getWorkspaceMembers();
+        const member = membersData.members.find(
+          (m: any) => m.email.toLowerCase() === invitation.inviteeEmail.toLowerCase()
+        );
+        
+        if (member) {
+          // Map invitation role to membership role
+          let membershipRole: "admin" | "editor" | "viewer" = "editor";
+          if (newRole === "viewer") {
+            membershipRole = "viewer";
+          } else if (newRole === "editor" || newRole === "user") {
+            membershipRole = "editor";
+          }
+          
+          await workspaceInvitationService.updateMemberRole(member.userId, membershipRole);
+          toast.success(`Updated role for ${invitation.inviteeEmail}`);
+        } else {
+          toast.error("User not found. They may need to accept the invitation first.");
+        }
+      } else {
+        // For pending invitations, we can update the invitation itself
+        // But this requires a new endpoint or we update when they accept
+        toast.info("Role will be applied when invitation is accepted");
+      }
+      
       loadInvitations();
     } catch (error: any) {
       console.error("Error updating role:", error);
       toast.error(
-        error.response?.data?.message || "Failed to update access"
+        error.response?.data?.message || "Failed to update role"
       );
     } finally {
       setUpdating(null);
@@ -175,9 +200,9 @@ export function InviteeManagement() {
                     <Select
                       value={inv.invitedRole}
                       onValueChange={(value: "user" | "viewer" | "editor") =>
-                        handleUpdateRole(inv.inviteeEmail, value)
+                        handleUpdateRole(inv, value)
                       }
-                      disabled={updating === inv.inviteeEmail}
+                      disabled={updating === inv.invitationId}
                     >
                       <SelectTrigger className="w-28 h-8 text-xs">
                         <SelectValue />
@@ -192,10 +217,10 @@ export function InviteeManagement() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleRevokeAccess(inv.invitationId, inv.inviteeEmail)}
-                      disabled={updating === inv.inviteeEmail}
+                      disabled={updating === inv.invitationId}
                       className="h-8 text-xs"
                     >
-                      {updating === inv.inviteeEmail ? (
+                      {updating === inv.invitationId ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
                       ) : (
                         <UserX className="h-3 w-3" />

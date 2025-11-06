@@ -46,6 +46,66 @@ export interface UserWorkspace {
   isActive: boolean;
 }
 
+// Workspace Member Management Types
+export interface WorkspaceMember {
+  userId: string;
+  email: string;
+  name: string;
+  domain: string;
+  workspaceRole: "admin" | "editor" | "viewer";
+  joinedAt: string;
+  invitedBy?: string;
+  directoryAccess: Array<{
+    directoryId: string;
+    role: "editor" | "viewer";
+    grantedAt: string;
+  }>;
+}
+
+export interface PendingMember {
+  invitationId: string;
+  email: string;
+  name: string;
+  workspaceRole: "user" | "viewer" | "editor";
+  invitedAt: string;
+  invitedBy: string;
+  directoryAccess: Array<{
+    directoryId: string;
+    role: "viewer" | "editor";
+  }>;
+  expiresAt: string;
+}
+
+export interface WorkspaceMembersResponse {
+  members: WorkspaceMember[];
+  pending: PendingMember[];
+}
+
+export interface MemberPermissions {
+  member: WorkspaceMember;
+  permissions: {
+    workspace: {
+      role: string;
+      canInvite: boolean;
+      canEdit: boolean;
+      canView: boolean;
+    };
+    directories: Array<{
+      directoryId: string;
+      directoryName: string;
+      role: string;
+      grantedAt: string;
+      grantedBy?: string;
+    }>;
+    documents: Array<{
+      documentId: string;
+      documentName: string;
+      role: string;
+      grantedAt: string;
+    }>;
+  };
+}
+
 export const workspaceInvitationService = {
   // Send workspace invitation
   async sendInvitation(
@@ -273,6 +333,74 @@ export const workspaceInvitationService = {
     const response = await axios.get(
       `${API_URL}/workspace-invitations/workspace/users/${encodeURIComponent(userEmail)}/directories`,
       { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  },
+
+  // Admin: Get all workspace members
+  async getWorkspaceMembers(): Promise<WorkspaceMembersResponse> {
+    const token = localStorage.getItem("accessToken");
+    const currentWorkspace = getCurrentWorkspace();
+    const response = await axios.get(
+      `${API_URL}/workspace-invitations/workspace/members`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+        },
+      }
+    );
+    return response.data;
+  },
+
+  // Admin: Update member role
+  async updateMemberRole(
+    userId: string,
+    role: "admin" | "editor" | "viewer"
+  ): Promise<{ message: string; membership: any }> {
+    const token = localStorage.getItem("accessToken");
+    const currentWorkspace = getCurrentWorkspace();
+    const response = await axios.post(
+      `${API_URL}/workspace-invitations/workspace/members/role`,
+      { userId, role },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+        },
+      }
+    );
+    return response.data;
+  },
+
+  // Admin: Remove member from workspace
+  async removeWorkspaceMember(userId: string): Promise<{ message: string }> {
+    const token = localStorage.getItem("accessToken");
+    const currentWorkspace = getCurrentWorkspace();
+    const response = await axios.delete(
+      `${API_URL}/workspace-invitations/workspace/members/${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+        },
+      }
+    );
+    return response.data;
+  },
+
+  // Admin: Get member's detailed permissions
+  async getMemberPermissions(userId: string): Promise<MemberPermissions> {
+    const token = localStorage.getItem("accessToken");
+    const currentWorkspace = getCurrentWorkspace();
+    const response = await axios.get(
+      `${API_URL}/workspace-invitations/workspace/members/${userId}/permissions`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+        },
+      }
     );
     return response.data;
   },

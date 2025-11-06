@@ -31,6 +31,7 @@ import { ViewSummaryModal } from "@/components/ViewSummaryModal";
 import { ViewReportModal } from "@/components/ViewReportModal";
 import { WorkspaceRequestsManager } from "../components/WorkspaceRequestsManager";
 import { InviteeManagement } from "../components/InviteeManagement";
+import { WorkspaceMembersManagement } from "../components/WorkspaceMembersManagement";
 import { workspaceService, WorkspaceDTO } from "../services/workspaceService";
 import { CreateWorkspaceModal } from "../components/CreateWorkspaceModal";
 import {
@@ -1558,10 +1559,12 @@ export default function AdminDashboardPage() {
         </Dialog>
 
         {/* Workspace Invitation Management Section */}
-        <div className="mt-8  pt-6 space-y-6">
+        <div className="mt-8 pt-6 space-y-6">
+          {/* Workspace Members Management - Comprehensive member management */}
+          <WorkspaceMembersManagement />
+          
           {/* Invitee Management - List of all members and their access */}
           <InviteeManagement />
-          
         </div>
 
         

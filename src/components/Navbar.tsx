@@ -26,7 +26,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import SettingsModal from "./SettingsModal";
 import { WorkspaceInvitationPopover } from "./WorkspaceInvitationPopover";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "./ui/switch";
 import { Bell } from "lucide-react";
 import { notificationsService, documentService } from "@/services/api";
@@ -317,6 +317,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </button>
                 </DialogTrigger>
                 <DialogContent className="w-[90vw] max-w-[800px]  p-0" hideClose>
+                  <DialogTitle className="sr-only">Workspace Invitations</DialogTitle>
+                  <DialogDescription className="sr-only">Manage workspace invitations and user access</DialogDescription>
                   <WorkspaceInvitationPopover />
                 </DialogContent>
               </Dialog>

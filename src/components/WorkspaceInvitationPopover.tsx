@@ -17,6 +17,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
@@ -210,6 +211,7 @@ export const WorkspaceInvitationPopover: React.FC = () => {
       await workspaceInvitationService.cancelInvitation(invitationId);
       toast.success("Invitation cancelled");
       loadInvitations();
+      
     } catch (error: any) {
       const message =
         error.response?.data?.message || "Failed to cancel invitation";
@@ -227,6 +229,7 @@ export const WorkspaceInvitationPopover: React.FC = () => {
       await workspaceInvitationService.deleteInvitation(invitationId);
       toast.success("Invitation deleted");
       loadInvitations();
+      window.location.reload();
     } catch (error: any) {
       const message =
         error.response?.data?.message || "Failed to delete invitation";
@@ -308,6 +311,7 @@ export const WorkspaceInvitationPopover: React.FC = () => {
             <DialogContent  className="sm:max-w-md bg-gray-50 text-[#4B2A06]" hideClose>
               <DialogHeader>
                 <DialogTitle>Send Workspace Invitation</DialogTitle>
+                <DialogDescription>Invite a user to join your workspace with specific directory access</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 ">
                 <div>
@@ -531,12 +535,12 @@ export const WorkspaceInvitationPopover: React.FC = () => {
           ) : filteredInvitations.length === 0 ? (
             <div className="text-center text-gray-500 py-8">
               <Mail className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-              <p>
+              <p key="message">
                 {invitations.length === 0
                   ? "No invitations yet"
                   : "No invitations match your search"}
               </p>
-              <p className="text-sm">
+              <p key="submessage" className="text-sm">
                 {invitations.length === 0
                   ? "Send your first invitation to get started"
                   : "Try adjusting your search or filter"}
@@ -559,6 +563,7 @@ export const WorkspaceInvitationPopover: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-2 mb-2">
                         <Badge
+                          key={`status-badge-${invitation.id}`}
                           variant="secondary"
                           className={`text-xs ${getStatusColor(
                             invitation.status
@@ -566,16 +571,16 @@ export const WorkspaceInvitationPopover: React.FC = () => {
                         >
                           {invitation.status}
                         </Badge>
-                        <Badge variant="outline" className="text-xs">
+                        <Badge key={`role-badge-${invitation.id}`} variant="outline" className="text-xs">
                           {invitation.invitedRole}
                         </Badge>
                       </div>
                       <div className="text-xs text-gray-500 space-y-1">
-                        <div className="flex items-center gap-1">
+                        <div key={`date-${invitation.id}`} className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           Sent: {formatDate(invitation.createdAt)}
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div key={`role-${invitation.id}`} className="flex items-center gap-1">
                           <Shield className="h-3 w-3" />
                           Role: {invitation.invitedRole}
                         </div>
@@ -583,13 +588,14 @@ export const WorkspaceInvitationPopover: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {invitation.status === "accepted" && (
-                        <PerUserAccessEditor invite={invitation} />
+                        <PerUserAccessEditor key={`editor-${invitation.id}`} invite={invitation} />
                       )}
                       <DropdownMenu>
                         
                         <DropdownMenuContent align="end">
                           {invitation.status === "pending" && (
                             <DropdownMenuItem
+                              key={`cancel-${invitation.id}`}
                               onClick={() =>
                                 handleCancelInvitation(invitation.invitationId)
                               }
@@ -600,6 +606,7 @@ export const WorkspaceInvitationPopover: React.FC = () => {
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem
+                            key={`delete-${invitation.id}`}
                             onClick={() =>
                               handleDeleteInvitation(invitation.invitationId)
                             }
@@ -687,35 +694,37 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
-    const loadRootDirs = async () => {
-      try {
-        setDirLoading(true);
-        console.log("Loading directories in PerUserAccessEditor...");
-        const res = await directoryService.listChildren("root", {
-          pageSize: 200,
-          sort: "name",
-          order: "asc",
-        });
-        console.log("Directories response in PerUserAccessEditor:", res);
-        
-        // Extract only directories from the response
-        const allItems = res?.items || [];
-        const dirs = allItems
-          .filter((item: any) => item.kind === "directory")
-          .map((item: any) => item.item);
-        
-        setDirectories(dirs);
-        console.log("Set directories in PerUserAccessEditor:", dirs);
-      } catch (error) {
-        console.error("Error loading directories in PerUserAccessEditor:", error);
-        setDirectories([]);
-      } finally {
-        setDirLoading(false);
-      }
-    };
-    loadRootDirs();
-    loadGrantedDirectories();
-  }, []);
+    if (isDialogOpen) {
+      const loadRootDirs = async () => {
+        try {
+          setDirLoading(true);
+          console.log("Loading directories in PerUserAccessEditor...");
+          const res = await directoryService.listChildren("root", {
+            pageSize: 200,
+            sort: "name",
+            order: "asc",
+          });
+          console.log("Directories response in PerUserAccessEditor:", res);
+          
+          // Extract only directories from the response
+          const allItems = res?.items || [];
+          const dirs = allItems
+            .filter((item: any) => item.kind === "directory")
+            .map((item: any) => item.item);
+          
+          setDirectories(dirs);
+          console.log("Set directories in PerUserAccessEditor:", dirs);
+        } catch (error) {
+          console.error("Error loading directories in PerUserAccessEditor:", error);
+          setDirectories([]);
+        } finally {
+          setDirLoading(false);
+        }
+      };
+      loadRootDirs();
+      loadGrantedDirectories();
+    }
+  }, [isDialogOpen]);
 
   const loadGrantedDirectories = async () => {
     try {
@@ -760,7 +769,18 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
         toast.error(`Some errors: ${result.errors.join(", ")}`);
       }
       setSelectedDirs([]);
-      loadGrantedDirectories();
+      await loadGrantedDirectories();
+      // Reload directories list to refresh available directories
+      const res = await directoryService.listChildren("root", {
+        pageSize: 200,
+        sort: "name",
+        order: "asc",
+      });
+      const allItems = res?.items || [];
+      const dirs = allItems
+        .filter((item: any) => item.kind === "directory")
+        .map((item: any) => item.item);
+      setDirectories(dirs);
     } catch (e: any) {
       toast.error(e.response?.data?.message || "Failed to grant access");
     } finally {
@@ -772,7 +792,18 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
     try {
       await workspaceInvitationService.revokeDirectoryAccess(invite.inviteeEmail, directoryId);
       toast.success("Access revoked");
-      loadGrantedDirectories();
+      await loadGrantedDirectories();
+      // Reload directories list to show the revoked directory in available list
+      const res = await directoryService.listChildren("root", {
+        pageSize: 200,
+        sort: "name",
+        order: "asc",
+      });
+      const allItems = res?.items || [];
+      const dirs = allItems
+        .filter((item: any) => item.kind === "directory")
+        .map((item: any) => item.item);
+      setDirectories(dirs);
     } catch (e: any) {
       toast.error(e.response?.data?.message || "Failed to revoke");
     }
@@ -787,6 +818,7 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
         <DialogContent className="sm:max-w-lg bg-gray-50 text-[#4B2A06]" hideClose>
           <DialogHeader>
             <DialogTitle>Update Access for {invite.inviteeEmail}</DialogTitle>
+            <DialogDescription>Manage time bucket permissions and directory access for this user</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -812,7 +844,9 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
             
             {/* Grant new directory access */}
             <div className="space-y-2">
-              <div className="text-xs font-medium text-gray-600">Grant Directory Access</div>
+              <div className="text-xs font-medium text-gray-600">
+                Grant Directory Access ({directories.filter((d: any) => !grantedDirectories.some((gd: any) => gd.directoryId === d.id)).length} available)
+              </div>
               <div className="flex gap-2">
                 <Input
                   placeholder="Search directories..."
@@ -841,9 +875,13 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
                   <div className="text-xs text-gray-500 p-2">Loading directories...</div>
             ) : (
                   (directories || [])
-                    .filter((d: any) =>
-                      dirSearch ? (d.name || "").toLowerCase().includes(dirSearch.toLowerCase()) : true
-                    )
+                    .filter((d: any) => {
+                      // Filter by search term
+                      const matchesSearch = dirSearch ? (d.name || "").toLowerCase().includes(dirSearch.toLowerCase()) : true;
+                      // Filter out already granted directories
+                      const isGranted = grantedDirectories.some((gd: any) => gd.directoryId === d.id);
+                      return matchesSearch && !isGranted;
+                    })
                     .map((d: any) => {
                       const checked = selectedDirs.some((s) => s.id === d.id);
                       return (
@@ -869,7 +907,7 @@ function PerUserAccessEditor({ invite }: { invite: WorkspaceInvitation }) {
 
             {/* Currently granted directories */}
             <div className="space-y-2">
-              <div className="text-xs font-medium text-gray-600">Current Directory Access</div>
+              <div className="text-xs font-medium text-gray-600">Current Directory Access ({grantedDirectories.length} granted)</div>
               <div className="max-h-48 overflow-y-auto space-y-2">
                 {grantedDirectories.length === 0 ? (
                   <div className="text-xs text-gray-500">No directories shared to this user.</div>

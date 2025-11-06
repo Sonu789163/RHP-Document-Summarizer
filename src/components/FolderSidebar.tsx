@@ -6,7 +6,8 @@ import { workspaceInvitationService, UserWorkspace } from "@/services/workspaceI
 import { useAuth } from "@/contexts/AuthContext";
 import { CreateWorkspaceModal } from "./CreateWorkspaceModal";
 import { AvailableWorkspacesList } from "./AvailableWorkspacesList";
-import { InviteWorkspaceDialog } from "./InviteWorkspaceDialog";
+import { WorkspaceInvitationPopover } from "./WorkspaceInvitationPopover";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 type FolderItem = { id: string; name: string };
@@ -342,8 +343,8 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({ onFolderOpen, onFo
                       <Building2 className="h-4 w-4 flex-shrink-0" />
                       <span className="truncate flex-1">{getDisplayName(ws)}</span>
                       {user?.role === "admin" && hoveredWorkspace === ws.workspaceDomain && (
-                        <button
-                          className="ml-auto p-1 rounded hover:bg-[#DDD5C9] transition-colors flex-shrink-0"
+                        <div
+                          className="ml-auto p-1 rounded hover:bg-[#DDD5C9] transition-colors flex-shrink-0 cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedWorkspaceForInvite({
@@ -352,10 +353,23 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({ onFolderOpen, onFo
                             });
                             setInviteDialogOpen(true);
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedWorkspaceForInvite({
+                                workspaceId: ws.workspaceDomain,
+                                workspaceName: getDisplayName(ws),
+                              });
+                              setInviteDialogOpen(true);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
                           title="Invite to workspace"
                         >
                           <UserPlus className="h-3 w-3 text-[#4B2A06]" />
-                        </button>
+                        </div>
                       )}
                     </button>
                   </li>
@@ -424,23 +438,41 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({ onFolderOpen, onFo
                           >
                             {f.name}
                             <div className="flex items-center gap-2">
-                            <button
-                            className="opacity-0 group-hover:opacity-100 text-[#5A6473] hover:text-blue-600 transition-opacity"
+                            <div
+                            className="opacity-0 group-hover:opacity-100 text-[#5A6473] hover:text-blue-600 transition-opacity cursor-pointer"
                             onClick={(e) => { e.stopPropagation(); startRename(f); }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                startRename(f);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
                             title="Rename folder"
                           >
                             <Edit2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            className="opacity-0 group-hover:opacity-100  text-[#5A6473] hover:text-red-600 transition-opacity"
+                          </div>
+                          <div
+                            className="opacity-0 group-hover:opacity-100  text-[#5A6473] hover:text-red-600 transition-opacity cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation();
                               setDeleteConfirm(f);
                             }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setDeleteConfirm(f);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
                             title="Delete folder"
                           >
                             <Trash2 className="h-4 w-4" />
-                          </button>
+                          </div>
                             </div>
                           </button>
                           
@@ -539,15 +571,13 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({ onFolderOpen, onFo
 
       {/* Invite Workspace Dialog */}
       {selectedWorkspaceForInvite && (
-        <InviteWorkspaceDialog
-          open={inviteDialogOpen}
-          onOpenChange={setInviteDialogOpen}
-          workspaceId={selectedWorkspaceForInvite.workspaceId}
-          workspaceName={selectedWorkspaceForInvite.workspaceName}
-          onInviteSent={() => {
-            // Optionally refresh workspace list
-          }}
-        />
+        <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+          <DialogContent className="w-[90vw] max-w-[800px] p-0" hideClose>
+            <DialogTitle className="sr-only">Workspace Invitations</DialogTitle>
+            <DialogDescription className="sr-only">Manage workspace invitations and user access</DialogDescription>
+            <WorkspaceInvitationPopover />
+          </DialogContent>
+        </Dialog>
       )}
     </aside>
   );
