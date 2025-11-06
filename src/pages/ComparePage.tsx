@@ -129,8 +129,28 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
   };
 
   // Separate function to refresh only reports (used after job completion)
-  const refreshReports = async (delay = 0) => {
-    if (!drhp || !rhp) return;
+  const refreshReports = async (delay = 0, useCurrentDocs = true) => {
+    // Fetch fresh documents if not using current ones
+    let currentDrhp = drhp;
+    let currentRhp = rhp;
+    
+    if (!useCurrentDocs || !currentDrhp || !currentRhp) {
+      if (drhpId) {
+        try {
+          currentDrhp = await documentService.getById(drhpId, linkToken);
+          if (currentDrhp?.relatedRhpId) {
+            currentRhp = await documentService.getById(currentDrhp.relatedRhpId, linkToken);
+          }
+        } catch (error) {
+          console.error("Error fetching documents for refresh:", error);
+        }
+      }
+    }
+
+    if (!currentDrhp || !currentRhp) {
+      console.warn("Cannot refresh reports: missing documents");
+      return;
+    }
 
     // Add a small delay to ensure backend has processed the report
     if (delay > 0) {
@@ -141,8 +161,8 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       const allReports = await reportService.getAll();
       const filteredReports = allReports.filter(
         (r) =>
-          r.drhpNamespace === drhp.namespace ||
-          (rhp && r.rhpNamespace === rhp.rhpNamespace)
+          r.drhpNamespace === currentDrhp.namespace ||
+          (currentRhp && r.rhpNamespace === currentRhp.rhpNamespace)
       );
 
       // Sort reports by updatedAt to get the latest first
@@ -156,14 +176,17 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       // Always select the latest report if available
       if (sortedReports.length > 0) {
         const latestReport = sortedReports[0];
-        console.log('Selecting latest report:', latestReport.title, 'Updated:', latestReport.updatedAt);
+        console.log('✅ Selecting latest report:', latestReport.title, 'Updated:', latestReport.updatedAt);
         setSelectedReport(latestReport);
+        return latestReport; // Return for verification
       } else {
         console.log('No reports found for this document pair');
         setSelectedReport(null);
+        return null;
       }
     } catch (error) {
       console.error("Error refreshing reports:", error);
+      throw error; // Re-throw for retry mechanism
     }
   };
 
@@ -253,20 +276,67 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
           setComparing(false);
           if (drhpId) localStorage.removeItem(`report_processing_${drhpId}`);
 
-          // Force refresh reports with a small delay to ensure backend processing is complete
-          try {
-            await refreshReports(1000); // 1 second delay
-            // If we have a specific reportId, try to select it
-            if (reportId) {
-              const allReports = await reportService.getAll();
-              const newReport = allReports.find((r) => r.id === reportId);
-              if (newReport) {
-                setSelectedReport(newReport);
+          // Force refresh reports with retry mechanism to ensure we get the latest report
+          const refreshWithRetry = async (retries = 3, initialDelay = 1000) => {
+            let delay = initialDelay;
+            for (let i = 0; i < retries; i++) {
+              try {
+                console.log(`🔄 Refreshing reports (attempt ${i + 1}/${retries})...`);
+                
+                // Use fresh documents (don't rely on closure)
+                const latestReport = await refreshReports(delay, false);
+                
+                if (latestReport) {
+                  console.log('✅ Latest report loaded:', latestReport.title, 'Updated:', latestReport.updatedAt);
+                  
+                  // If we have a specific reportId, verify it matches
+                  if (reportId) {
+                    if (latestReport.id === reportId) {
+                      console.log('✅ Report ID matches:', reportId);
+                    } else {
+                      console.log(`⚠️ Report ID mismatch. Expected: ${reportId}, Got: ${latestReport.id}`);
+                    }
+                  }
+                  
+                  // Verify the report is actually the latest by checking updatedAt
+                  const reportTimestamp = new Date(latestReport.updatedAt).getTime();
+                  const now = Date.now();
+                  const timeDiff = now - reportTimestamp;
+                  
+                  if (timeDiff < 60000) { // Report was updated within the last minute
+                    console.log(`✅ Report is fresh (updated ${Math.round(timeDiff / 1000)}s ago)`);
+                    return; // Success, exit retry loop
+                  } else {
+                    console.log(`⚠️ Report might be stale (updated ${Math.round(timeDiff / 1000)}s ago)`);
+                  }
+                } else {
+                  console.log('⚠️ No reports found yet');
+                }
+                
+                // If no reports found or report seems stale, and we have retries left, wait and retry
+                if (i < retries - 1) {
+                  console.log(`⏳ Retrying in ${delay}ms...`);
+                  await new Promise((resolve) => setTimeout(resolve, delay));
+                  delay = Math.min(delay * 1.5, 5000); // Exponential backoff, max 5 seconds
+                }
+              } catch (error) {
+                console.error(`❌ Error refreshing reports (attempt ${i + 1}):`, error);
+                if (i < retries - 1) {
+                  await new Promise((resolve) => setTimeout(resolve, delay));
+                  delay = Math.min(delay * 1.5, 5000);
+                }
               }
             }
-          } catch (error) {
-            console.error("Error refreshing reports after completion:", error);
-          }
+            
+            // If we get here, all retries failed
+            console.warn('⚠️ Failed to refresh reports after all retries');
+          };
+          
+          // Start refresh with retry
+          refreshWithRetry().catch((error) => {
+            console.error("❌ Error refreshing reports after completion:", error);
+            toast.error("Report generated but failed to load. Please refresh the page.");
+          });
         } else if (cleanStatus === "failed") {
           toast.error(`Comparison failed: ${error || "Unknown error"}`);
           setComparing(false);
@@ -289,7 +359,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     return () => {
       socket.disconnect();
     };
-  }, [drhpId]);
+  }, [drhpId, drhp, rhp, linkToken]);
 
   useEffect(() => {
     // On mount and on window focus, check if report is ready
