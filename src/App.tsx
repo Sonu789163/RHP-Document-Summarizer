@@ -5,30 +5,30 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigationType } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import ChatSummaryLayout from "./pages/ChatSummaryLayout";
-import NotFound from "./pages/NotFound";
-import ChatHistoryPage from "./pages/ChatHistoryPage";
-import SettingsPage from "./pages/SettingsPage";
-import LandingPage from "./pages/LandingPage";
-import AuthPage from "./pages/AuthPage";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import TestPage from "./pages/TestPage";
-import ProtectedLayout from "./pages/ProtectedLayout";
+import ChatSummaryLayout from "./pages/documentpages/ChatSummaryLayout";
+import NotFound from "./pages/sharedpages/NotFound";
+import ChatHistoryPage from "./pages/chatpages/ChatHistoryPage";
+import SettingsPage from "./pages/sharedpages/SettingsPage";
+import LandingPage from "./pages/sharedpages/LandingPage";
+import AuthPage from "./pages/authpages/AuthPage";
+import AuthCallbackPage from "./pages/authpages/AuthCallbackPage";
+import ForgotPasswordPage from "./pages/authpages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/authpages/ResetPasswordPage";
+import ProtectedLayout from "./pages/sharedpages/ProtectedLayout";
 import AppLayout from "./AppLayout";
 import { Loader2 } from "lucide-react";
-import { MainLayout } from "./components/MainLayout";
-import StartConversationPage from "./pages/StartConversationPage";
-import ComparePage from "./pages/ComparePage";
-import ProfilePage from "./pages/ProfilePage";
-import AdminDashboardPage from "./pages/AdminDashboardPage";
-import AdminUsersPage from "./pages/AdminUsersPage";
-import AdminWorkspaceManagement from "./pages/AdminWorkspaceManagement";
-import InvitationPage from "./pages/InvitationPage";
+import { MainLayout } from "./components/sharedcomponents/MainLayout";
+import StartConversationPage from "./pages/documentpages/StartConversationPage";
+import ComparePage from "./pages/documentpages/ComparePage";
+import ProfilePage from "./pages/sharedpages/ProfilePage";
+import AdminDashboardPage from "./pages/adminpages/AdminDashboardPage";
+import AdminUsersPage from "./pages/adminpages/AdminUsersPage";
+import AdminWorkspaceManagement from "./pages/workspacepages/AdminWorkspaceManagement";
+import InvitationPage from "./pages/workspacepages/InvitationPage";
 import { useAuthProtection } from "./hooks/useAuthProtection";
-import NotificationsPage from "./pages/NotificationsPage";
-import TrashPage from "./pages/TrashPage";
+import NotificationsPage from "./pages/sharedpages/NotificationsPage";
+import TrashPage from "./pages/sharedpages/TrashPage";
+import NewsArticles from "./pages/newsmonitor/NewsArticles";
 
 const queryClient = new QueryClient();
 
@@ -90,41 +90,41 @@ const AppRoutes = () => {
 
   return (
     <>
-    <ScrollRestorer />
-    <Routes>
-      <Route element={<AppLayout />}>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<AuthPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/test" element={<TestPage />} />
-        <Route path="/auth-callback" element={<AuthCallbackPage />} />
-        <Route path="/invitation/:invitationId" element={<InvitationPage />} />
+      <ScrollRestorer />
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<AuthPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/auth-callback" element={<AuthCallbackPage />} />
+          <Route path="/invitation/:invitationId" element={<InvitationPage />} />
 
-        <Route element={<ProtectedLayout />}>
-          <Route path="/dashboard" element={<StartConversationPage />} />
-          <Route path="/notifications" element={<NotificationsPage />} />
-          <Route path="/bin" element={<TrashPage />} />
-          <Route path="/compare/:drhpId" element={<ComparePage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route element={<ProtectedLayout />}>
+            <Route path="/dashboard" element={<StartConversationPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/bin" element={<TrashPage />} />
+            <Route path="/compare/:drhpId" element={<ComparePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/news-monitor" element={<NewsArticles />} />
 
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminDashboardPage />} />
-          <Route path="/admin/users" element={<AdminUsersPage />} />
-          <Route path="/admin/workspaces" element={<AdminWorkspaceManagement />} />
-          {/* Domain Config removed */}
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/workspaces" element={<AdminWorkspaceManagement />} />
+            {/* Domain Config removed */}
 
-          <Route element={<MainLayout />}>
-            <Route path="/doc/:namespace" element={<ChatSummaryLayout />} />
-            <Route path="/chat-history" element={<ChatHistoryPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route element={<MainLayout />}>
+              <Route path="/doc/:namespace" element={<ChatSummaryLayout />} />
+              <Route path="/chat-history" element={<ChatHistoryPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Route>
 
-        <Route path="*" element={<NotFound />} />
-      </Route>
-    </Routes>
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
     </>
   );
 };

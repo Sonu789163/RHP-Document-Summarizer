@@ -13,6 +13,17 @@ const getSharedLinkToken = (): string | null => {
 
 // Attach shared link token header automatically if present.
 axios.interceptors.request.use((config) => {
+  // Don't send link token for auth endpoints
+  const isAuthEndpoint = config.url?.includes('/auth/') || 
+                         config.url?.includes('/login') || 
+                         config.url?.includes('/register') ||
+                         config.url?.includes('/forgot-password') ||
+                         config.url?.includes('/reset-password');
+  
+  if (isAuthEndpoint) {
+    return config;
+  }
+  
   const linkToken = getSharedLinkToken();
   if (linkToken) {
     // Axios v1 uses AxiosHeaders; prefer set when available
@@ -34,6 +45,21 @@ axios.interceptors.response.use(
   (res) => res,
   (error) => {
     try {
+      // Check for domain mismatch error
+      if (error?.response?.data?.code === "DOMAIN_MISMATCH" || 
+          error?.response?.data?.message?.includes("cannot access documents from other domains")) {
+        // Clear the link token on domain mismatch
+        localStorage.removeItem("sharedLinkToken");
+        // Remove linkToken from URL if present
+        if (typeof window !== "undefined") {
+          const newUrl = new URL(window.location.href);
+          if (newUrl.searchParams.has("linkToken")) {
+            newUrl.searchParams.delete("linkToken");
+            window.history.replaceState({}, "", newUrl.toString());
+          }
+        }
+      }
+      
       const status = error?.response?.status as number | undefined;
       const url: string = error?.config?.url || "";
       const hasLinkToken = !!getSharedLinkToken();
@@ -74,10 +100,12 @@ export const documentService = {
     const token = localStorage.getItem("accessToken");
     const domain = getUserDomain();
     const currentWorkspace = getCurrentWorkspace();
+    const linkToken = localStorage.getItem("sharedLinkToken");
     const search = new URLSearchParams();
     if (domain) search.set("domain", domain);
     if (params?.directoryId) search.set("directoryId", params.directoryId);
     if (params?.includeDeleted) search.set("includeDeleted", "1");
+    if (linkToken) search.set("linkToken", linkToken);
     const qs = search.toString();
     const url = qs ? `${API_URL}/documents?${qs}` : `${API_URL}/documents`;
     const response = await axios.get(url, {
@@ -480,6 +508,63 @@ export const directoryService = {
     });
     return res.data;
   },
+
+  // NEW: Search directories with fuzzy matching
+  async search(query: string, limit: number = 10): Promise<Array<{
+    id: string;
+    name: string;
+    normalizedName: string;
+    similarity: number;
+    documentCount: number;
+    drhpCount: number;
+    rhpCount: number;
+    lastDocumentUpload?: Date;
+  }>> {
+    const token = localStorage.getItem("accessToken");
+    const currentWorkspace = getCurrentWorkspace();
+    const url = `${API_URL}/directories/search?query=${encodeURIComponent(query)}&limit=${limit}`;
+    const res = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+      },
+    });
+    return res.data;
+  },
+
+  // NEW: Check for duplicate/similar directories
+  async checkDuplicate(name: string): Promise<{
+    isDuplicate: boolean;
+    exactMatch: {
+      id: string;
+      name: string;
+      similarity: number;
+    } | null;
+    similarDirectories: Array<{
+      id: string;
+      name: string;
+      normalizedName: string;
+      similarity: number;
+      documentCount: number;
+      drhpCount: number;
+      rhpCount: number;
+      lastDocumentUpload?: Date;
+    }>;
+  }> {
+    const token = localStorage.getItem("accessToken");
+    const currentWorkspace = getCurrentWorkspace();
+    const res = await axios.post(
+      `${API_URL}/directories/check-duplicate`,
+      { name },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(currentWorkspace && { "x-workspace": currentWorkspace }),
+        },
+      }
+    );
+    return res.data;
+  },
 };
 
 // Share Services
@@ -513,6 +598,7 @@ export const shareService = {
     principalId?: string;
     role: "viewer" | "editor" | "owner";
     expiresAt?: string;
+    invitedEmail?: string;
   }) {
     const token = localStorage.getItem("accessToken");
     const domain = getUserDomain();
@@ -672,14 +758,16 @@ export const chatService = {
     });
     return response.data;
   },
-  getByDocumentId: async (documentId: string) => {
+  getByDocumentId: async (documentId: string, linkToken?: string) => {
     const token = localStorage.getItem("accessToken");
     const domain = getUserDomain();
     const currentWorkspace = getCurrentWorkspace();
-    const url = domain
-      ? `${API_URL}/chats/document/${documentId}?domain=${encodeURIComponent(
-          domain
-        )}`
+    const effectiveLinkToken = linkToken || localStorage.getItem("sharedLinkToken");
+    const params = new URLSearchParams();
+    if (domain) params.set("domain", domain);
+    if (effectiveLinkToken) params.set("linkToken", effectiveLinkToken);
+    const url = params.toString()
+      ? `${API_URL}/chats/document/${documentId}?${params.toString()}`
       : `${API_URL}/chats/document/${documentId}`;
     const response = await axios.get(url, {
       headers: {
@@ -783,8 +871,12 @@ export const reportService = {
     const token = localStorage.getItem("accessToken");
     const domain = getUserDomain();
     const currentWorkspace = getCurrentWorkspace();
-    const url = domain
-      ? `${API_URL}/reports?domain=${encodeURIComponent(domain)}`
+    const linkToken = localStorage.getItem("sharedLinkToken");
+    const params = new URLSearchParams();
+    if (domain) params.set("domain", domain);
+    if (linkToken) params.set("linkToken", linkToken);
+    const url = params.toString()
+      ? `${API_URL}/reports?${params.toString()}`
       : `${API_URL}/reports`;
     const response = await axios.get(url, {
       headers: {
@@ -1041,8 +1133,12 @@ export const summaryService = {
     const token = localStorage.getItem("accessToken");
     const domain = getUserDomain();
     const currentWorkspace = getCurrentWorkspace();
-    const url = domain
-      ? `${API_URL}/summaries?domain=${encodeURIComponent(domain)}`
+    const linkToken = localStorage.getItem("sharedLinkToken");
+    const params = new URLSearchParams();
+    if (domain) params.set("domain", domain);
+    if (linkToken) params.set("linkToken", linkToken);
+    const url = params.toString()
+      ? `${API_URL}/summaries?${params.toString()}`
       : `${API_URL}/summaries`;
     const response = await axios.get(url, {
       headers: {
@@ -1062,14 +1158,16 @@ export const summaryService = {
     return response.data;
   },
 
-  async getByDocumentId(documentId: string): Promise<Summary[]> {
+  async getByDocumentId(documentId: string, linkToken?: string): Promise<Summary[]> {
     const token = localStorage.getItem("accessToken");
     const domain = getUserDomain();
     const currentWorkspace = getCurrentWorkspace();
-    const url = domain
-      ? `${API_URL}/summaries/document/${documentId}?domain=${encodeURIComponent(
-          domain
-        )}`
+    const effectiveLinkToken = linkToken || localStorage.getItem("sharedLinkToken");
+    const params = new URLSearchParams();
+    if (domain) params.set("domain", domain);
+    if (effectiveLinkToken) params.set("linkToken", effectiveLinkToken);
+    const url = params.toString()
+      ? `${API_URL}/summaries/document/${documentId}?${params.toString()}`
       : `${API_URL}/summaries/document/${documentId}`;
     const response = await axios.get(url, {
       headers: {

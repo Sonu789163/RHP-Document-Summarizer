@@ -232,3 +232,135 @@ select:focus {
   --tw-ring-shadow: none !important;
   box-shadow: 0 2px 4px 2px rgba(101, 101, 101, 0.1) !important;
 }
+
+/* Sonner Toast Container - Always bottom-right, no hover movement */
+[data-sonner-toaster] {
+  position: fixed !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  top: auto !important;
+  left: auto !important;
+  z-index: 9999 !important;
+  pointer-events: none !important;
+  display: flex !important;
+  flex-direction: column-reverse !important;
+  align-items: flex-end !important;
+  padding: 16px !important;
+  gap: 8px !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast] {
+  pointer-events: auto !important;
+  margin: 0 !important;
+  transform: none !important;
+  position: relative !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast]:hover {
+  transform: none !important;
+}
+
+/* Sonner Toast Close Button Styling */
+[data-sonner-toast] {
+  position: relative !important;
+  padding-right: 32px !important;
+  overflow: visible !important;
+  transform: none !important;
+  transition: opacity 0.2s ease, background-color 0.2s ease !important;
+}
+
+/* Target the close button in Sonner toasts - Top Right Corner, Rounded */
+[data-sonner-toast] button[aria-label="Close"],
+[data-sonner-toast] [data-close-button],
+[data-sonner-toast] button[type="button"]:has(svg) {
+  position: absolute !important;
+  top: 0 !important;
+  right:0 !important;
+  left: auto !important;
+  bottom: auto !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+  z-index: 50 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  border-radius: 50% !important;
+  transition: opacity 0.2s ease, background-color 0.2s ease !important;
+  background-color: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+[data-sonner-toast] button[aria-label="Close"]:hover,
+[data-sonner-toast] [data-close-button]:hover,
+[data-sonner-toast] button[type="button"]:has(svg):hover {
+  opacity: 0.8 !important;
+  background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark [data-sonner-toast] button[aria-label="Close"]:hover,
+.dark [data-sonner-toast] [data-close-button]:hover,
+.dark [data-sonner-toast] button[type="button"]:has(svg):hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-sonner-toast] button[aria-label="Close"] svg,
+[data-sonner-toast] [data-close-button] svg,
+[data-sonner-toast] button[type="button"]:has(svg) svg {
+  width: 12px !important;
+  height: 12px !important;
+  color: currentColor !important;
+  margin: 0 !important;
+}
+
+/* Global styles for select dropdown options */
+/* Note: Native select dropdowns are rendered by the browser, so you cannot control 
+   the dropdown position with CSS. The dropdown position is browser-controlled.
+   You can only style the appearance of options (background, color, padding, etc.) */
+select[name="directoryTimeFilter"] option {
+  background-color: white !important;
+  background: white !important;
+  color: #5A6473 !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+
+  margin-top: 10px !important;
+  /* These properties work on options: */
+  /* background-color, color, padding, font-size, font-weight, text-align */
+  /* These do NOT work: position, top, left, margin, transform */
+}
+
+select[name="directoryTimeFilter"] option:hover,
+select[name="directoryTimeFilter"] option:focus,
+select[name="directoryTimeFilter"] option:active {
+  background-color: #F3F4F6 !important;
+  background: #F3F4F6 !important;
+  color: #5A6473 !important;
+}
+
+select[name="directoryTimeFilter"] option:checked {
+  background-color: white !important;
+  background: white !important;
+  color: #5A6473 !important;
+}
+
+/* Ensure select dropdown appears above other elements */
+select[name="directoryTimeFilter"] {
+  z-index: 9999 !important;
+  position: relative !important;
+}
+
+select[name="directoryTimeFilter"]:focus {
+  z-index: 9999 !important;
+  outline: none !important;
+}
+
+/* Note: To control dropdown position, you would need a custom dropdown component
+   like Radix UI Select or Headless UI Listbox */
