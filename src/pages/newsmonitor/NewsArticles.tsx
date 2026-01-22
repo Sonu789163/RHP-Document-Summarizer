@@ -220,7 +220,7 @@ const NewsArticles: React.FC = () => {
                 return {
                     bgColor: 'bg-green-50',
                     borderColor: 'border-green-200',
-                    textColor: 'text-green-800',
+                    textColor: 'text-gray-800',
                     badgeColor: 'bg-green-100 text-green-800',
                     icon: <CheckCircle className="h-5 w-5" />,
                     iconColor: 'text-green-600'
@@ -229,7 +229,7 @@ const NewsArticles: React.FC = () => {
                 return {
                     bgColor: 'bg-red-50',
                     borderColor: 'border-red-200',
-                    textColor: 'text-red-800',
+                    textColor: 'text-gray-800',
                     badgeColor: 'bg-red-100 text-red-800',
                     icon: <AlertTriangle className="h-5 w-5" />,
                     iconColor: 'text-red-600'
@@ -314,7 +314,7 @@ const NewsArticles: React.FC = () => {
                 sidebarOpen={false}
             />
 
-            <main className="flex-1 max-w-[90vw] w-full mx-auto px-6 py-6">
+            <main className="flex-1 max-w-[100vw]  h-[90vh] fixed top-[10vh] overflow-y-auto w-full m-auto px-6 py-6">
                 {/* Stats Summary */}
                 {stats && (
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
@@ -356,8 +356,8 @@ const NewsArticles: React.FC = () => {
                 )}
 
                 {/* Filters */}
-                <div className="bg-[#F7F5F0] border border-gray-200 rounded-lg p-4 mb-4">
-                    <div className="flex items-center justify-between mb-3">
+                <div className="bg-[#F7F5F0] border border-gray-200 rounded-lg p-2 mb-2">
+                    <div className="flex items-center justify-between pt-2 mb-2">
                         <button
                             className="flex items-center gap-2 text-sm font-semibold text-[#4B2A06] hover:text-[#FF7A1A] transition-colors"
                             onClick={() => setShowFilters(!showFilters)}
@@ -528,7 +528,7 @@ const NewsArticles: React.FC = () => {
                         <p className="text-sm">Try adjusting your filters to see more results</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6 ">
+                    <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-6 ">
                         {articles.map((article) => {
                             const sentimentConfig = getSentimentConfig(article.sentiment);
 
@@ -537,9 +537,9 @@ const NewsArticles: React.FC = () => {
                                     key={article._id}
                                     className={`${sentimentConfig.bgColor} border-2 ${sentimentConfig.borderColor} rounded-xl overflow-hidden hover:shadow-2xl transition-all duration-300`}
                                 >
-                                    <div className="p-6">
+                                    <div className="px-4 py-2">
                                         {/* Header with Company and Sentiment */}
-                                        <div className="flex items-start justify-between mb-4">
+                                        <div className="flex items-start justify-between mb-2">
                                             <div className="flex items-center gap-3">
                                                 <div className={`p-2 rounded-lg ${sentimentConfig.badgeColor}`}>
                                                     <Building2 className="h-5 w-5" />
@@ -560,29 +560,31 @@ const NewsArticles: React.FC = () => {
                                             </div>
 
                                             <div className="flex items-center gap-2">
-                                                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${sentimentConfig.badgeColor} font-semibold text-sm`}>
+                                                <div className={`flex items-center gap-2 px-2 py-1 rounded-full ${sentimentConfig.badgeColor} text-xs`}>
                                                     {sentimentConfig.icon}
                                                     <span className="capitalize">{article.sentiment}</span>
                                                 </div>
                                                 {article.riskLevel && (
-                                                    <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase ${getRiskLevelColor(article.riskLevel)}`}>
+                                                    <span className={`px-2 py-1 rounded-full text-xs uppercase ${getRiskLevelColor(article.riskLevel)}`}>
                                                         {article.riskLevel}
                                                     </span>
                                                 )}
+                                                {/* Category Badge */}
+
+                                                <span className="inline-flex items-center gap-1.5 bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold">
+                                                    <Tag className="h-3 w-3" />
+                                                    {article.category}
+                                                </span>
+
                                             </div>
+
                                         </div>
 
-                                        {/* Category Badge */}
-                                        <div className="mb-4">
-                                            <span className="inline-flex items-center gap-1.5 bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold">
-                                                <Tag className="h-3 w-3" />
-                                                {article.category}
-                                            </span>
-                                        </div>
+
 
                                         {/* Title/Description */}
-                                        <div className={`mb-4 ${sentimentConfig.textColor}`}>
-                                            <p className="text-lg font-semibold leading-relaxed">
+                                        <div className={`mb-2 ${sentimentConfig.textColor}`}>
+                                            <p className="text-sm text-gray leading-relaxed">
                                                 {article.description}
                                             </p>
                                         </div>
@@ -615,7 +617,7 @@ const NewsArticles: React.FC = () => {
                                         )}
 
                                         {/* Footer */}
-                                        <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                                        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                                             <div className="text-xs text-gray-500">
                                                 Source: <span className="font-semibold text-gray-700">{article.source}</span>
                                             </div>
@@ -623,10 +625,10 @@ const NewsArticles: React.FC = () => {
                                                 href={article.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-2 px-4 py-2 bg-[#FF7A1A] text-white rounded-lg text-sm font-semibold hover:bg-[#4B2A06] transition-colors"
+                                                className="inline-flex items-center gap-2 px-2 py-1 bg-[#FF7A1A] text-white rounded-lg text-sm font-semibold hover:bg-[#4B2A06] transition-colors"
                                             >
                                                 View Details
-                                                <ExternalLink className="h-4 w-4" />
+                                                <ExternalLink className="h-3 w-3" />
                                             </a>
                                         </div>
                                     </div>
