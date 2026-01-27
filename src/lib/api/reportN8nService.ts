@@ -1,8 +1,7 @@
 import axios from "axios";
 import { SessionData } from "./sessionService";
 
-const REPORT_N8N_WEBHOOK_URL =
-  "https://n8n-excollo.azurewebsites.net/webhook/compare-rhp-drhp";
+const REPORT_N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_REPORT_WEBHOOK_URL;
 
 interface N8nReportResponse {
   executionId?: string;
@@ -54,7 +53,7 @@ export const reportN8nService = {
             console.warn("domainId not found in JWT token for report request");
           }
         }
-        
+
         const currentWorkspace = localStorage.getItem("currentWorkspace");
         if (currentWorkspace) {
           payload.workspaceId = currentWorkspace;
@@ -63,26 +62,23 @@ export const reportN8nService = {
         console.error("Error extracting domainId from token:", error);
       }
 
-      // Log payload for debugging - shows both namespaces are included
-      console.log("📤 Sending to n8n report webhook payload:", {
-        drhpNamespace: payload.drhpNamespace,
-        rhpNamespace: payload.rhpNamespace,
-        domainId: payload.domainId,
-        workspaceId: payload.workspaceId,
-        domain: payload.domain,
-      });
+      // Log payload for debugging
+      console.log("📤 Sending comparison request to backend:", payload);
 
-      const response = await axios.post(REPORT_N8N_WEBHOOK_URL, payload, {
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+      const token = localStorage.getItem("accessToken");
+
+      const response = await axios.post(`${API_URL}/reports/compare`, payload, {
         headers: {
           "Content-Type": "application/json",
+          "Authorization": token ? `Bearer ${token}` : ""
         },
         signal,
       });
 
       return {
-        executionId: response.data?.executionId,
+        jobId: response.data?.job_id,
         status: response.data?.status,
-        jobId: response.data?.jobId,
         error: response.data?.error,
       };
     } catch (error) {
