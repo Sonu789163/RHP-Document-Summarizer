@@ -86,6 +86,12 @@ function linkifyHtml(html: string): string {
   return out;
 }
 
+// Replace literal '\n' strings with actual newline characters
+function replaceLiteralNewlines(text: string): string {
+  if (!text) return text;
+  return text.replace(/\\n/g, "");
+}
+
 
 export function SummaryPanel({
   isDocumentProcessed,
@@ -694,7 +700,7 @@ export function SummaryPanel({
                     a: ({ node, ...props }) => <a className="text-[#1d4ed8] underline hover:text-[#1e40af] transition-colors" target="_blank" rel="noopener noreferrer" {...props} />,
                   }}
                 >
-                  {linkifyHtml(stripStyleTags(summary))}
+                  {replaceLiteralNewlines(linkifyHtml(stripStyleTags(summary)))}
                 </ReactMarkdown>
               </div>
             </div>
