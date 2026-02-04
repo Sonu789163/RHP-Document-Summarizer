@@ -20,6 +20,9 @@ import {
 } from "@/components/ui/tooltip";
 import { summaryN8nService } from "@/lib/api/summaryN8nService";
 import { io as socketIOClient } from "socket.io-client";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 interface SummaryMetadata {
   pageCount?: Number;
@@ -83,71 +86,6 @@ function linkifyHtml(html: string): string {
   return out;
 }
 
-// Investors list to highlight inside summaries (case-insensitive)
-const INVESTOR_NAMES: string[] = [
-  "Adheesh Kabra",
-  "Shilpa Kabra",
-  "Rishi Agarwal",
-  "Aarth AIF / Aarth AIF Growth Fund",
-  "Chintan Shah",
-  "Sanjay Popatlal Jain",
-  "Manoj Kumar Agrawal",
-  "Manoj Agrawal",
-  "Rajasthan Global Securities Private Limited",
-  "Finavenue Capital Trust",
-  "SB Opportunities Fund",
-  "Smart Horizon Opportunity Fund",
-  "Nav Capital Vcc - Nav Capital Emerging",
-  "Invicta Continuum Fund",
-  "HOLANI VENTURE CAPITAL FUND - HOLANI 1. VENTURE CAPITAL FUND 1",
-  "MERU INVESTMENT FUND PCC- CELL 1",
-  "Finavenue Growth Fund",
-  "Anant Aggarwal",
-  "PACE COMMODITY BROKERS PRIVATE LIMITED",
-  "Bharatbhai Prahaladbhai Patel",
-  "ACCOR OPPORTUNITIES TRUST",
-  "V2K Hospitality Private Limited",
-  "Mihir Jain",
-  "Rajesh Kumar Jain",
-  "Vineet Saboo",
-  "Prabhat Investment Services LLP",
-  "Nikhil Shah",
-  "Nevil Savjani",
-  "Yogesh Jain",
-  "Shivin Jain",
-  "Pushpa Kabra",
-  "KIFS Dealer",
-  "Jitendra Agrawal",
-  "Komalay Investrade Private Limited",
-  "Viney Equity Market LLP",
-  "Nitin Patel",
-  "Pooja Kushal Patel",
-  "Gitaben Patel",
-  "Rishi Agarwal HUF",
-  "Sunil Singhania",
-  "Mukul mahavir Agrawal",
-  "Ashish Kacholia",
-  "Lalit Dua",
-  "Utsav shrivastav"
-];
-
-function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-// Wrap matched investor names with a highlight span
-function highlightInvestors(html: string): string {
-  if (!html) return html;
-  let out = html;
-  for (const name of INVESTOR_NAMES) {
-    const safe = escapeRegExp(name.trim());
-    if (!safe) continue;
-    // Allow matches across word boundaries; keep original casing using $&
-    const re = new RegExp(`(\\b|^)${safe}(?=\\b|$)`, "gi");
-    out = out.replace(re, '<span class="investor-highlight">$&</span>');
-  }
-  return out;
-}
 
 export function SummaryPanel({
   isDocumentProcessed,
@@ -166,7 +104,7 @@ export function SummaryPanel({
   const [allSummaries, setAllSummaries] = useState<Summary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
-  const [linkRole, setLinkRole] = useState<"viewer"|"editor"|"owner"|null>(null);
+  const [linkRole, setLinkRole] = useState<"viewer" | "editor" | "owner" | null>(null);
   const [lastSummaryId, setLastSummaryId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedSummaryId, setCopiedSummaryId] = useState<string | null>(null);
@@ -478,7 +416,7 @@ export function SummaryPanel({
     try {
       loadingToast = toast.loading("Download processing...");
       const blob = await summaryService.downloadDocx(selectedSummaryId);
-      
+
       // Check if blob is actually an error response
       if (blob.type && blob.type !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
         // Might be an error response, try to parse it
@@ -491,7 +429,7 @@ export function SummaryPanel({
           throw new Error("Invalid DOCX response from server");
         }
       }
-      
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -693,8 +631,6 @@ export function SummaryPanel({
               .summary-content table {
                 border-collapse: collapse;
                 width: 100%;
-                border: 2px solid #d1d5de;
-                margin: 16px 0;
                 font-size: 13px;
                 background: #ECE9E2;
               }
@@ -732,14 +668,35 @@ export function SummaryPanel({
               )}
               <div
                 ref={summaryRef}
-                className="summary-content  text-foreground/90 leading-relaxed"
+                className="summary-content text-foreground/90 leading-relaxed"
                 style={{
                   width: "100%",
                   wordBreak: "break-word",
                   overflowWrap: "break-word",
                 }}
-                dangerouslySetInnerHTML={{ __html: highlightInvestors(linkifyHtml(stripStyleTags(summary))) }}
-              />
+              >
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw]}
+                  components={{
+                    table: ({ node, ...props }) => (
+                      <div className="overflow-x-auto  rounded-lg border border-[#d1d5de]">
+                        <table {...props} />
+                      </div>
+                    ),
+                    h1: ({ node, ...props }) => <h1 className="text-2xl font-bold my-4 text-[#1F2937]" {...props} />,
+                    h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3 text-[#1F2937]" {...props} />,
+                    h3: ({ node, ...props }) => <h3 className="text-lg font-bold my-2 text-[#1F2937]" {...props} />,
+                    p: ({ node, ...props }) => <p className="my-2" {...props} />,
+                    ul: ({ node, ...props }) => <ul className="list-disc ml-6 my-2" {...props} />,
+                    ol: ({ node, ...props }) => <ol className="list-decimal ml-6 my-2" {...props} />,
+                    li: ({ node, ...props }) => <li className="my-1" {...props} />,
+                    a: ({ node, ...props }) => <a className="text-[#1d4ed8] underline hover:text-[#1e40af] transition-colors" target="_blank" rel="noopener noreferrer" {...props} />,
+                  }}
+                >
+                  {linkifyHtml(stripStyleTags(summary))}
+                </ReactMarkdown>
+              </div>
             </div>
           </div>
         </>
