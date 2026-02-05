@@ -677,6 +677,7 @@ export function SummaryPanel({
                 className="summary-content text-foreground/90 leading-relaxed"
                 style={{
                   width: "100%",
+                  padding: "8px",
                   wordBreak: "break-word",
                   overflowWrap: "break-word",
                 }}
