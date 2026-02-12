@@ -1,8 +1,10 @@
 import axios from "axios";
 import { SessionData } from "./sessionService";
 
+const n8n_webhook_url = import.meta.env.VITE_N8N_WEBHOOK_URL;
+
 const REPORT_N8N_WEBHOOK_URL =
-  "https://n8n-excollo.azurewebsites.net/webhook/compare-rhp-drhp";
+  `${n8n_webhook_url}/webhook/compare-rhp-drhp`;
 
 interface N8nReportResponse {
   executionId?: string;

@@ -2,8 +2,10 @@ import axios from "axios";
 import { SessionData } from "./sessionService";
 import { documentService } from "@/services/api";
 
+const n8n_webhook_url = import.meta.env.VITE_N8N_WEBHOOK_URL;
+
 const N8N_WEBHOOK_URL =
-  "https://n8n-excollo.azurewebsites.net/webhook/bfda1ff3-99be-4f6e-995f-7728ca5b2f6a";
+  `${n8n_webhook_url}/webhook/bfda1ff3-99be-4f6e-995f-7728ca5b2f6a`;
 
 export interface UploadResponse {
   success: boolean;

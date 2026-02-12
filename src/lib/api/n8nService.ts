@@ -1,9 +1,11 @@
 import axios from "axios";
 import { SessionData, ConversationMemory } from "./sessionService";
 
+const n8n_webhook_url = import.meta.env.VITE_N8N_WEBHOOK_URL;
+
 const N8N_WEBHOOK_URLS = {
-  DRHP: "https://n8n-excollo.azurewebsites.net/webhook/1/chat/docs",
-  RHP: "https://n8n-excollo.azurewebsites.net/webhook/1/chat/docs"
+  DRHP: `${n8n_webhook_url}/webhook/1/chat/docs`,
+  RHP: `${n8n_webhook_url}/webhook/1/chat/docs`
 };
 
 interface N8nResponse {
