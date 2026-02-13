@@ -1,7 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { summaryService } from "@/services/api";
+import { markdownToHtml, isMarkdown, cleanSummaryContent } from "@/lib/utils/markdownConverter";
+
 import { FileText, Printer } from "lucide-react";
+
 import { toast } from "sonner";
 import {
   Tooltip,
@@ -43,8 +46,18 @@ export const ViewSummaryModal: React.FC<ViewSummaryModalProps> = ({ summaryId, o
         // summaries from API include HTML in content
         const all = await summaryService.getAll();
         const target = (all || []).find((s: any) => s.id === summaryId);
-        const content = target?.content || "<div style='padding:8px;color:#666'>No content</div>";
-        setHtml(linkifyHtml(stripStyleTags(content)));
+
+        if (target) {
+          // Clean raw content first (remove \n literals)
+          const content = cleanSummaryContent(target.content);
+          // Check for markdown and convert if needed
+          const processedContent = isMarkdown(content) ? markdownToHtml(content) : content;
+          setHtml(linkifyHtml(stripStyleTags(processedContent)));
+        } else {
+
+          setHtml("<div style='padding:8px;color:#666'>No content found</div>");
+        }
+
       } catch {
         setHtml("<div style='padding:8px;color:#666'>Failed to load content</div>");
       } finally {
@@ -63,7 +76,7 @@ export const ViewSummaryModal: React.FC<ViewSummaryModalProps> = ({ summaryId, o
     try {
       loadingToast = toast.loading("Download processing...");
       const blob = await summaryService.downloadDocx(summaryId);
-      
+
       // Check if blob is actually an error response
       if (blob.type && blob.type !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document" && blob.type !== "application/octet-stream") {
         // Might be an error response, try to parse it
@@ -76,7 +89,7 @@ export const ViewSummaryModal: React.FC<ViewSummaryModalProps> = ({ summaryId, o
           throw new Error("Invalid DOCX response from server");
         }
       }
-      
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -214,26 +227,14 @@ export const ViewSummaryModal: React.FC<ViewSummaryModalProps> = ({ summaryId, o
           {loading ? (
             <div className="text-gray-500">Loading...</div>
           ) : (
-            <>
-              <style>{`
-                .preview-html table { border-collapse: collapse; width: 100%; margin: 12px 0; }
-                .preview-html th, .preview-html td { border: 1px solid #D1D5DB; padding: 6px 8px; text-align: left; }
-                .preview-html th { background: #F3F4F6; font-weight: 600; }
-                .preview-html tr:nth-child(even) td { background: #FAFAFA; }
-                .preview-html h1 { font-size: 22px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-                .preview-html h2 { font-size: 20px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-                .preview-html h3 { font-size: 18px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-                .preview-html h4 { font-size: 16px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-                .preview-html h5 { font-size: 14px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-                .preview-html h6 { font-size: 12px; font-weight: 700; color: #1F2937; margin: 10px 0; }
-                .preview-html b, .preview-html strong { font-weight: 700; }
-                .preview-html hr { border: none; border-top: 1px solid #E5E7EB; margin: 12px 0; }
-                .preview-html a { color: #1d4ed8; text-decoration: underline; word-break: break-word; }
-              `}</style>
-              <div ref={contentRef} className="preview-html" dangerouslySetInnerHTML={{ __html: html }} />
-            </>
+            <div
+              ref={contentRef}
+              className="summary-content preview-html p-4"
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
           )}
         </div>
+
       </DialogContent>
     </Dialog>
   );
