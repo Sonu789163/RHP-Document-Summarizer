@@ -14,16 +14,16 @@ const getSharedLinkToken = (): string | null => {
 // Attach shared link token header automatically if present.
 axios.interceptors.request.use((config) => {
   // Don't send link token for auth endpoints
-  const isAuthEndpoint = config.url?.includes('/auth/') || 
-                         config.url?.includes('/login') || 
-                         config.url?.includes('/register') ||
-                         config.url?.includes('/forgot-password') ||
-                         config.url?.includes('/reset-password');
-  
+  const isAuthEndpoint = config.url?.includes('/auth/') ||
+    config.url?.includes('/login') ||
+    config.url?.includes('/register') ||
+    config.url?.includes('/forgot-password') ||
+    config.url?.includes('/reset-password');
+
   if (isAuthEndpoint) {
     return config;
   }
-  
+
   const linkToken = getSharedLinkToken();
   if (linkToken) {
     // Axios v1 uses AxiosHeaders; prefer set when available
@@ -46,8 +46,8 @@ axios.interceptors.response.use(
   (error) => {
     try {
       // Check for domain mismatch error
-      if (error?.response?.data?.code === "DOMAIN_MISMATCH" || 
-          error?.response?.data?.message?.includes("cannot access documents from other domains")) {
+      if (error?.response?.data?.code === "DOMAIN_MISMATCH" ||
+        error?.response?.data?.message?.includes("cannot access documents from other domains")) {
         // Clear the link token on domain mismatch
         localStorage.removeItem("sharedLinkToken");
         // Remove linkToken from URL if present
@@ -59,7 +59,7 @@ axios.interceptors.response.use(
           }
         }
       }
-      
+
       const status = error?.response?.status as number | undefined;
       const url: string = error?.config?.url || "";
       const hasLinkToken = !!getSharedLinkToken();
@@ -74,7 +74,7 @@ axios.interceptors.response.use(
           localStorage.removeItem("sharedLinkToken");
         }
       }
-    } catch {}
+    } catch { }
     return Promise.reject(error);
   }
 );
@@ -259,8 +259,8 @@ export const documentService = {
     const domain = getUserDomain();
     const url = domain
       ? `${API_URL}/documents/${id}/restore?domain=${encodeURIComponent(
-          domain
-        )}`
+        domain
+      )}`
       : `${API_URL}/documents/${id}/restore`;
     const response = await axios.post(url, null, {
       headers: { Authorization: `Bearer ${token}` },
@@ -274,11 +274,11 @@ export const documentService = {
     const currentWorkspace = getCurrentWorkspace();
     const url = domain
       ? `${API_URL}/documents/check-existing?namespace=${encodeURIComponent(
-          namespace
-        )}&domain=${encodeURIComponent(domain)}`
+        namespace
+      )}&domain=${encodeURIComponent(domain)}`
       : `${API_URL}/documents/check-existing?namespace=${encodeURIComponent(
-          namespace
-        )}`;
+        namespace
+      )}`;
     const response = await axios.get(url, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -456,8 +456,8 @@ export const directoryService = {
         typeof newParentId === "undefined"
           ? undefined
           : newParentId === null
-          ? "root"
-          : newParentId,
+            ? "root"
+            : newParentId,
     };
     const url = domain
       ? `${API_URL}/directories/${id}/move?domain=${encodeURIComponent(domain)}`
@@ -500,8 +500,8 @@ export const directoryService = {
     const domain = getUserDomain();
     const url = domain
       ? `${API_URL}/directories/${id}/restore?domain=${encodeURIComponent(
-          domain
-        )}`
+        domain
+      )}`
       : `${API_URL}/directories/${id}/restore`;
     const res = await axios.post(url, null, {
       headers: { Authorization: `Bearer ${token}` },
@@ -798,8 +798,8 @@ export const chatService = {
     const currentWorkspace = getCurrentWorkspace();
     const url = domain
       ? `${API_URL}/chats/${chatId}/messages?domain=${encodeURIComponent(
-          domain
-        )}`
+        domain
+      )}`
       : `${API_URL}/chats/${chatId}/messages`;
     const response = await axios.post(url, message, {
       headers: {
@@ -1021,7 +1021,7 @@ export const reportService = {
         responseType: "blob",
         validateStatus: (status) => status === 200 || status === 503 || status === 500,
       });
-      
+
       // Check if response is actually an error (JSON) disguised as blob
       if (response.status !== 200) {
         // Try to parse as JSON to get error message
@@ -1034,7 +1034,7 @@ export const reportService = {
         }
         throw new Error(errorData.message || errorData.error || "Failed to generate DOCX");
       }
-      
+
       // Check if the blob is actually a DOCX
       const expectedType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
       if (response.data.type && response.data.type !== expectedType && response.data.type !== "application/octet-stream") {
@@ -1048,7 +1048,7 @@ export const reportService = {
           throw new Error("Invalid DOCX response from server");
         }
       }
-      
+
       return response.data;
     } catch (error: any) {
       if (error.response && error.response.data) {
@@ -1082,7 +1082,7 @@ export const reportService = {
           validateStatus: (status) => status === 200 || status === 503 || status === 500,
         }
       );
-      
+
       // Check if response is actually an error (JSON) disguised as blob
       if (response.status !== 200) {
         // Try to parse as JSON to get error message
@@ -1095,7 +1095,7 @@ export const reportService = {
         }
         throw new Error(errorData.message || errorData.error || "Failed to generate PDF");
       }
-      
+
       // Check if the blob is actually a PDF
       if (response.data.type && response.data.type !== "application/pdf") {
         // Might be an error response, try to parse it
@@ -1108,7 +1108,7 @@ export const reportService = {
           throw new Error("Invalid PDF response from server");
         }
       }
-      
+
       return response.data;
     } catch (error: any) {
       if (error.response && error.response.data) {
@@ -1239,7 +1239,7 @@ export const summaryService = {
           validateStatus: (status) => status === 200 || status === 503 || status === 500,
         }
       );
-      
+
       // Check if response is actually an error (JSON) disguised as blob
       if (response.status !== 200) {
         // Try to parse as JSON to get error message
@@ -1252,7 +1252,7 @@ export const summaryService = {
         }
         throw new Error(errorData.message || errorData.error || "Failed to generate DOCX");
       }
-      
+
       // Check if the blob is actually a DOCX
       const expectedType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
       if (response.data.type && response.data.type !== expectedType && response.data.type !== "application/octet-stream") {
@@ -1266,7 +1266,7 @@ export const summaryService = {
           throw new Error("Invalid DOCX response from server");
         }
       }
-      
+
       return response.data;
     } catch (error: any) {
       if (error.response && error.response.data) {
@@ -1275,11 +1275,18 @@ export const summaryService = {
           const text = await error.response.data.text();
           try {
             const errorData = JSON.parse(text);
-            throw new Error(errorData.message || errorData.error || "DOCX generation failed");
-          } catch {
+            const msg = errorData.message || errorData.error || (errorData.details ? `DOCX Error: ${errorData.details}` : "DOCX generation failed");
+            throw new Error(msg);
+          } catch (e: any) {
+            // Only fall back if JSON parse fails or if the error thrown above is caught here (which it is)
+            // We need to differentiate between JSON parse error and the error we just threw
+            if (e.message !== "DOCX generation service unavailable" && e.message) {
+              throw e;
+            }
             throw new Error("DOCX generation service unavailable");
           }
         }
+
       }
       throw error;
     }
@@ -1300,7 +1307,7 @@ export const summaryService = {
           validateStatus: (status) => status === 200 || status === 503 || status === 500,
         }
       );
-      
+
       // Check if response is actually an error (JSON) disguised as blob
       if (response.status !== 200) {
         // Try to parse as JSON to get error message
@@ -1313,7 +1320,7 @@ export const summaryService = {
         }
         throw new Error(errorData.message || errorData.error || "Failed to generate PDF");
       }
-      
+
       // Check if the blob is actually a PDF
       if (response.data.type && response.data.type !== "application/pdf") {
         // Might be an error response, try to parse it
@@ -1326,7 +1333,7 @@ export const summaryService = {
           throw new Error("Invalid PDF response from server");
         }
       }
-      
+
       return response.data;
     } catch (error: any) {
       if (error.response && error.response.data) {

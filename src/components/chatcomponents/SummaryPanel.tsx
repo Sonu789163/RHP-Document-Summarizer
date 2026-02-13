@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Loader2,
@@ -10,7 +9,6 @@ import {
   Printer,
 } from "lucide-react";
 import { toast } from "sonner";
-import { n8nService } from "@/lib/api/n8nService";
 import { sessionService } from "@/lib/api/sessionService";
 import { summaryService, Summary, shareService } from "@/services/api";
 import {
@@ -18,8 +16,17 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
+import { cleanSummaryContent } from "@/lib/utils/markdownConverter";
 import { summaryN8nService } from "@/lib/api/summaryN8nService";
 import { io as socketIOClient } from "socket.io-client";
+
+
+
+
+
 
 interface SummaryMetadata {
   pageCount?: Number;
@@ -84,71 +91,16 @@ function linkifyHtml(html: string): string {
   return out;
 }
 
-// Investors list to highlight inside summaries (case-insensitive)
-const INVESTOR_NAMES: string[] = [
-  "Adheesh Kabra",
-  "Shilpa Kabra",
-  "Rishi Agarwal",
-  "Aarth AIF / Aarth AIF Growth Fund",
-  "Chintan Shah",
-  "Sanjay Popatlal Jain",
-  "Manoj Kumar Agrawal",
-  "Manoj Agrawal",
-  "Rajasthan Global Securities Private Limited",
-  "Finavenue Capital Trust",
-  "SB Opportunities Fund",
-  "Smart Horizon Opportunity Fund",
-  "Nav Capital Vcc - Nav Capital Emerging",
-  "Invicta Continuum Fund",
-  "HOLANI VENTURE CAPITAL FUND - HOLANI 1. VENTURE CAPITAL FUND 1",
-  "MERU INVESTMENT FUND PCC- CELL 1",
-  "Finavenue Growth Fund",
-  "Anant Aggarwal",
-  "PACE COMMODITY BROKERS PRIVATE LIMITED",
-  "Bharatbhai Prahaladbhai Patel",
-  "ACCOR OPPORTUNITIES TRUST",
-  "V2K Hospitality Private Limited",
-  "Mihir Jain",
-  "Rajesh Kumar Jain",
-  "Vineet Saboo",
-  "Prabhat Investment Services LLP",
-  "Nikhil Shah",
-  "Nevil Savjani",
-  "Yogesh Jain",
-  "Shivin Jain",
-  "Pushpa Kabra",
-  "KIFS Dealer",
-  "Jitendra Agrawal",
-  "Komalay Investrade Private Limited",
-  "Viney Equity Market LLP",
-  "Nitin Patel",
-  "Pooja Kushal Patel",
-  "Gitaben Patel",
-  "Rishi Agarwal HUF",
-  "Sunil Singhania",
-  "Mukul mahavir Agrawal",
-  "Ashish Kacholia",
-  "Lalit Dua",
-  "Utsav shrivastav"
-];
 
-function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
-// Wrap matched investor names with a highlight span
-function highlightInvestors(html: string): string {
-  if (!html) return html;
-  let out = html;
-  for (const name of INVESTOR_NAMES) {
-    const safe = escapeRegExp(name.trim());
-    if (!safe) continue;
-    // Allow matches across word boundaries; keep original casing using $&
-    const re = new RegExp(`(\\b|^)${safe}(?=\\b|$)`, "gi");
-    out = out.replace(re, '<span class="investor-highlight">$&</span>');
-  }
-  return out;
-}
+// Helper function to prepare content for ReactMarkdown
+const prepareContent = (content: string) => {
+  if (!content) return "";
+  // Use our existing cleanSummaryContent to fix newlines (\n -> \n)
+  const cleaned = cleanSummaryContent(content);
+  return linkifyHtml(stripStyleTags(cleaned));
+};
+
 
 export function SummaryPanel({
   isDocumentProcessed,
@@ -597,47 +549,34 @@ export function SummaryPanel({
               <style>
                 body { font-family: sans-serif; margin: 0; padding: 2rem; }
                 .summary-content table {
-                  border-collapse: collapse;
-                  width: 100%;
-                  border: 2px solid #d1d5de;
-                  margin: 16px 0;
-                  font-size: 13px;
-                  background: #f1eada;
-                }
-                .summary-content th, .summary-content td {
-                  border: 1px solid #d1d5de;
-                  padding: 6px 8px;
-                  text-align: left;
-                }
-                .summary-content th {
-                  background: #f1eada;
-                  font-weight: 600;
-                }
-                .summary-content tr:nth-child(even) td {
-                  background: #f1eada;
-                }
-                @media print {
-                  .summary-content table {
-                    border-collapse: collapse !important;
-                    width: 100% !important;
-                    border: 2px solid #d1d5de !important;
-                    background: #f1eada !important;
-                  }
-                  .summary-content th, .summary-content td {
-                    border: 1px solid #d1d5de !important;
-                    padding: 6px 8px !important;
-                    text-align: left !important;
-                    background: #f1eada !important;
-                    color: #222 !important;
-                  }
-                  .summary-content th {
-                    background: #f1eada !important;
-                    font-weight: 600 !important;
-                  }
-                  .summary-content tr:nth-child(even) td {
-                    background: #f1eada !important;
-                  }
-                }
+                border-collapse: collapse;
+                width: 100%;
+                border: 1px solid #d1d5de;
+                font-size: 13px;
+                background: #ECE9E2;
+              }
+              .summary-content th, .summary-content td {
+                border: 1px solid #d1d5de;
+                padding: 6px 8px;
+                text-align: left;
+              }
+              .summary-content th {
+                background: #ECE9E2;
+                font-weight: 600;
+              }
+              .summary-content tr:nth-child(even) td {
+                background: #ECE9E2;
+              }
+              .summary-content h1 { font-size: 22px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h2 { font-size: 20px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h3 { font-size: 18px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h4 { font-size: 16px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h5 { font-size: 14px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content h6 { font-size: 12px; font-weight: 700; color: #1F2937; margin: 10px 0; }
+              .summary-content b, .summary-content strong { font-weight: 700; }
+              .summary-content hr { border: none; border-top: 1px solid #E5E7EB; margin: 12px 0; }
+              .summary-content a { color: #1d4ed8; text-decoration: underline; word-break: break-word; }
+            
               </style>
             </head>
             <body>
@@ -769,8 +708,7 @@ export function SummaryPanel({
               .summary-content table {
                 border-collapse: collapse;
                 width: 100%;
-                border: 2px solid #d1d5de;
-                margin: 16px 0;
+                border: 1px solid #d1d5de;
                 font-size: 13px;
                 background: #ECE9E2;
               }
@@ -814,11 +752,43 @@ export function SummaryPanel({
                   wordBreak: "break-word",
                   overflowWrap: "break-word",
                 }}
-                dangerouslySetInnerHTML={{ __html: highlightInvestors(linkifyHtml(stripStyleTags(summary))) }}
-              />
+              >
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw]}
+                  components={{
+                    table: ({ node, ...props }) => (
+                      <div className="overflow-x-auto rounded-lg border border-[#d1d5de] my-4">
+                        <table className="w-full text-sm text-left border-collapse" {...props} />
+                      </div>
+                    ),
+                    thead: ({ node, ...props }) => <thead className="bg-[#ECE9E2] font-semibold" {...props} />,
+                    tbody: ({ node, ...props }) => <tbody className="bg-[#ECE9E2]" {...props} />,
+                    tr: ({ node, ...props }) => <tr className="border-b border-[#d1d5de] hover:bg-black/5" {...props} />,
+                    th: ({ node, ...props }) => <th className="px-4 py-2 border-r border-[#d1d5de] last:border-r-0" {...props} />,
+                    td: ({ node, ...props }) => <td className="px-4 py-2 border-r border-[#d1d5de] last:border-r-0" {...props} />,
+                    h1: ({ node, ...props }) => <h1 className="text-2xl font-bold my-4 text-[#1F2937]" {...props} />,
+                    h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3 text-[#1F2937]" {...props} />,
+                    h3: ({ node, ...props }) => <h3 className="text-lg font-bold my-2 text-[#1F2937]" {...props} />,
+                    p: ({ node, ...props }) => <p className="mb-4 leading-relaxed" {...props} />,
+                    ul: ({ node, ...props }) => <ul className="list-disc ml-6 mb-4 space-y-1" {...props} />,
+                    ol: ({ node, ...props }) => <ol className="list-decimal ml-6 mb-4 space-y-1" {...props} />,
+                    li: ({ node, ...props }) => <li className="pl-1" {...props} />,
+                    a: ({ node, ...props }) => <a className="text-blue-600 underline hover:text-blue-800" target="_blank" rel="noopener noreferrer" {...props} />,
+                    blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-gray-300 pl-4 italic my-4" {...props} />,
+                    code: ({ node, ...props }) => <code className="bg-black/10 rounded px-1 py-0.5 text-sm font-mono" {...props} />,
+                    pre: ({ node, ...props }) => <pre className="bg-black/90 text-white rounded-lg p-4 overflow-x-auto my-4" {...props} />,
+                  }}
+                >
+                  {prepareContent(summary)}
+                </ReactMarkdown>
+
+              </div>
             </div>
           </div>
         </>
+
+
       ) : (
         // If no summary, show centered create button
         <div className="flex flex-col items-center justify-center h-full text-center">
@@ -849,8 +819,9 @@ export function SummaryPanel({
             )}
           </Button>
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 }
 
