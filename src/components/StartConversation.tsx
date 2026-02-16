@@ -124,6 +124,7 @@ export const StartConversation: React.FC = () => {
   const [selectedDocumentForCompare, setSelectedDocumentForCompare] = useState<any>(null);
   const [availableDocumentsForCompare, setAvailableDocumentsForCompare] = useState<any[]>([]);
   const [compareLoading, setCompareLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useRefreshProtection(
     isUploading,
@@ -632,6 +633,7 @@ export const StartConversation: React.FC = () => {
 
   const confirmDeleteDoc = async () => {
     if (!docToDelete) return;
+    setIsDeleting(true);
     try {
       await documentService.delete(docToDelete.id);
       toast.success("Document deleted successfully");
@@ -639,6 +641,7 @@ export const StartConversation: React.FC = () => {
     } catch (error) {
       toast.error("Failed to delete document");
     } finally {
+      setIsDeleting(false);
       setShowDeleteDialog(false);
       setDocToDelete(null);
     }
@@ -1026,8 +1029,8 @@ export const StartConversation: React.FC = () => {
                   <div className="flex bg-gray-100 rounded-lg p-1">
                     <button
                       className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${documentTypeFilter === "DRHP"
-                          ? "bg-white text-[#4B2A06] shadow-sm"
-                          : "text-gray-600 hover:text-gray-800"
+                        ? "bg-white text-[#4B2A06] shadow-sm"
+                        : "text-gray-600 hover:text-gray-800"
                         }`}
                       onClick={() => setDocumentTypeFilter("DRHP")}
                       type="button"
@@ -1037,8 +1040,8 @@ export const StartConversation: React.FC = () => {
                     </button>
                     <button
                       className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${documentTypeFilter === "RHP"
-                          ? "bg-white text-[#4B2A06] shadow-sm"
-                          : "text-gray-600 hover:text-gray-800"
+                        ? "bg-white text-[#4B2A06] shadow-sm"
+                        : "text-gray-600 hover:text-gray-800"
                         }`}
                       onClick={() => setDocumentTypeFilter("RHP")}
                       type="button"
@@ -1125,8 +1128,8 @@ export const StartConversation: React.FC = () => {
                 <div className="relative mr-[0.5vw]">
                   <button
                     className={`flex items-center gap-[0.5vw] font-semibold px-[1.5vw] py-[0.5vw] rounded-lg text-base transition-colors ${isDateRangeApplied
-                        ? "bg-[#4B2A06] text-white hover:bg-[#3A2004]"
-                        : "bg-[#F3F4F6] text-[#5A6473] hover:bg-[#E5E7EB]"
+                      ? "bg-[#4B2A06] text-white hover:bg-[#3A2004]"
+                      : "bg-[#F3F4F6] text-[#5A6473] hover:bg-[#E5E7EB]"
                       }`}
                     onClick={() => setShowDatePicker((v) => !v)}
                     type="button"
@@ -1220,8 +1223,8 @@ export const StartConversation: React.FC = () => {
                 <div className="flex bg-[#F3F4F6] rounded-lg p-1">
                   <button
                     className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${viewMode === "list"
-                        ? "bg-white text-[#4B2A06] shadow-sm"
-                        : "text-[#5A6473] hover:text-[#4B2A06]"
+                      ? "bg-white text-[#4B2A06] shadow-sm"
+                      : "text-[#5A6473] hover:text-[#4B2A06]"
                       }`}
                     onClick={() => setViewMode("list")}
                     title="List view"
@@ -1231,8 +1234,8 @@ export const StartConversation: React.FC = () => {
                   </button>
                   <button
                     className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${viewMode === "card"
-                        ? "bg-white text-[#4B2A06] shadow-sm"
-                        : "text-[#5A6473] hover:text-[#4B2A06]"
+                      ? "bg-white text-[#4B2A06] shadow-sm"
+                      : "text-[#5A6473] hover:text-[#4B2A06]"
                       }`}
                     onClick={() => setViewMode("card")}
                     title="Card view"
@@ -1698,16 +1701,25 @@ export const StartConversation: React.FC = () => {
                   </p>
                   <div className="flex justify-end gap-[1vw]">
                     <button
-                      className="px-[1vw] py-[0.5vw] rounded bg-gray-200 hover:bg-gray-300"
+                      className="px-[1vw] py-[0.5vw] rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={() => setShowDeleteDialog(false)}
+                      disabled={isDeleting}
                     >
                       Cancel
                     </button>
                     <button
-                      className="px-[1vw] py-[0.5vw] rounded bg-red-600 text-white hover:bg-red-700"
+                      className="px-[1vw] py-[0.5vw] rounded bg-red-600 text-white hover:bg-red-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={confirmDeleteDoc}
+                      disabled={isDeleting}
                     >
-                      Delete
+                      {isDeleting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Deleting...</span>
+                        </>
+                      ) : (
+                        "Delete"
+                      )}
                     </button>
                   </div>
                 </div>
