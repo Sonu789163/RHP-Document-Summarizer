@@ -186,13 +186,13 @@ export const StartConversation: React.FC = () => {
             setLoading(false);
             return;
           }
-        } catch {}
+        } catch { }
         // Fallback to normal listing if resolve fails
         documentService
           .getAll({ directoryId: currentFolder?.id ?? "root" })
           .then((docs) => {
             let filteredDocs = docs || [];
-            
+
             // Apply document type filter only in root folder
             if (!currentFolder) {
               if (documentTypeFilter === "DRHP") {
@@ -201,7 +201,7 @@ export const StartConversation: React.FC = () => {
                 filteredDocs = filteredDocs.filter((d: any) => d?.type === "RHP");
               }
             }
-            
+
             setDocuments(filteredDocs);
             setLoading(false);
           })
@@ -217,7 +217,7 @@ export const StartConversation: React.FC = () => {
       .getAll({ directoryId: currentFolder?.id ?? "root" })
       .then((docs) => {
         let filteredDocs = docs || [];
-        
+
         // Apply document type filter only in root folder
         if (!currentFolder) {
           if (documentTypeFilter === "DRHP") {
@@ -226,7 +226,7 @@ export const StartConversation: React.FC = () => {
             filteredDocs = filteredDocs.filter((d: any) => d?.type === "RHP");
           }
         }
-        
+
         setDocuments(filteredDocs);
         setLoading(false);
       })
@@ -288,7 +288,7 @@ export const StartConversation: React.FC = () => {
     setSelectedDocumentForCompare(document);
     setShowCompareModal(true);
     setCompareLoading(true);
-    
+
     // Fetch available documents in the background
     try {
       const response = await documentService.getAvailableForCompare(document.id);
@@ -305,22 +305,22 @@ export const StartConversation: React.FC = () => {
   const handleDocumentSelection = async (selectedDoc: any, targetDoc: any) => {
     try {
       setCompareLoading(true);
-      
+
       // Determine correct id ordering for API
       const drhpId = selectedDoc.type === "DRHP" ? selectedDoc.id : targetDoc.id;
-      const rhpId  = selectedDoc.type === "RHP"  ? selectedDoc.id : targetDoc.id;
+      const rhpId = selectedDoc.type === "RHP" ? selectedDoc.id : targetDoc.id;
 
       // Link the documents
       await documentService.linkForCompare(drhpId, rhpId);
-      
+
       // Close modal
       setShowCompareModal(false);
       setSelectedDocumentForCompare(null);
       setAvailableDocumentsForCompare([]);
-      
+
       // Navigate to compare page
       navigate(`/compare/${drhpId}`);
-      
+
       toast.success("Documents linked successfully! Redirecting to comparison...");
     } catch (error) {
       console.error("Error linking documents:", error);
@@ -398,10 +398,10 @@ export const StartConversation: React.FC = () => {
       formData.append("namespace", file.name); // Use exact filename with .pdf extension
       formData.append("type", uploadType); // Send document type (DRHP or RHP) to backend
       if (currentFolder?.id) formData.append("directoryId", currentFolder.id);
-      
+
       // Use the regular upload endpoint - backend will handle type based on formData
       const uploadEndpoint = `${import.meta.env.VITE_API_URL}/documents/upload`;
-      
+
       const res = await fetch(uploadEndpoint, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
@@ -463,7 +463,7 @@ export const StartConversation: React.FC = () => {
       console.log("file response:", response);
 
       const uploadedDocument = response.document;
-      
+
       // Update toast to show processing status
       toast.dismiss(toastId);
       toast.loading(
@@ -478,11 +478,11 @@ export const StartConversation: React.FC = () => {
       let pollAttempts = 0;
       const maxPollAttempts = 120; // 10 minutes (5 second intervals)
       const pollInterval = 5000; // 5 seconds
-      
+
       const pollForStatus = async () => {
         try {
           const doc = await documentService.getById(uploadedDocument.id);
-          
+
           // Check if processing is complete
           if (doc.status === "completed" || doc.status === "ready") {
             toast.dismiss(`upload-processing-${uploadedDocument.id}`);
@@ -492,7 +492,7 @@ export const StartConversation: React.FC = () => {
                 <span>{file.name} processed successfully!</span>
               </div>
             );
-            
+
             // Show success modal
             setUploadedDoc(doc);
             setShowSuccessModal(true);
@@ -500,7 +500,7 @@ export const StartConversation: React.FC = () => {
             setIsUploading(false);
             return;
           }
-          
+
           // Check if processing failed
           if (doc.status === "failed" || doc.status === "error") {
             toast.dismiss(`upload-processing-${uploadedDocument.id}`);
@@ -513,7 +513,7 @@ export const StartConversation: React.FC = () => {
             setIsUploading(false);
             return;
           }
-          
+
           // Continue polling if still processing
           pollAttempts++;
           if (pollAttempts < maxPollAttempts) {
@@ -542,7 +542,7 @@ export const StartConversation: React.FC = () => {
           }
         }
       };
-      
+
       // Start polling after a short delay
       setTimeout(pollForStatus, pollInterval);
     } catch (error) {
@@ -615,8 +615,7 @@ export const StartConversation: React.FC = () => {
 
       // Debug logging
       console.log(
-        `Filter: ${timeFilter}, Filter Start: ${filterStart.toLocaleDateString()}, Doc Date: ${docDate.toLocaleDateString()}, Doc Name: ${
-          doc.name
+        `Filter: ${timeFilter}, Filter Start: ${filterStart.toLocaleDateString()}, Doc Date: ${docDate.toLocaleDateString()}, Doc Name: ${doc.name
         }, Pass: ${docDate >= filterStart}`
       );
 
@@ -829,7 +828,7 @@ export const StartConversation: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* Top navbar full width */}
       <Navbar
         showSearch
@@ -855,9 +854,8 @@ export const StartConversation: React.FC = () => {
         <div className="flex-1 flex flex-col min-w-0">
           {/* Sidebar */}
           <div
-            className={`fixed top-0 left-0 h-full z-50 transition-all duration-300 ${
-              sidebarOpen ? "w-[15%] min-w-[200px]" : "w-0 min-w-0 max-w-0"
-            } bg-white shadow-xl`}
+            className={`fixed top-0 left-0 h-full z-50 transition-all duration-300 ${sidebarOpen ? "w-[15%] min-w-[200px]" : "w-0 min-w-0 max-w-0"
+              } bg-white shadow-xl`}
             style={{ overflow: "hidden" }}
             data-sidebar="true"
           >
@@ -914,9 +912,8 @@ export const StartConversation: React.FC = () => {
 
           {/* Main Content */}
           <main
-            className={`flex-1 flex flex-col pt-[1.5vw] pr-[1.5vw] pb-[4vh] relative max-w-[77vw] mx-auto w-full min-h-0 transition-all duration-300 ${
-              sidebarOpen ? "ml-[15%] max-w-[77vw]" : ""
-            }`}
+            className={`flex-1 flex flex-col pt-[1.5vw] pr-[1.5vw] pb-[4vh] relative max-w-[77vw] mx-auto w-full min-h-0 transition-all duration-300 ${sidebarOpen ? "ml-[15%] max-w-[77vw]" : ""
+              }`}
           >
             {/* Header Section with Title and Upload Button */}
             <div className="flex flex-col space-y-[1.5vw] mb-[1.5vw]">
@@ -984,7 +981,7 @@ export const StartConversation: React.FC = () => {
                         </>
                       )}
                     </button>
-                    
+
                     {showUploadDropdown && !isUploading && (
                       <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[200px]" data-upload-dropdown="true">
                         <button
@@ -1028,11 +1025,10 @@ export const StartConversation: React.FC = () => {
                 {!currentFolder && (
                   <div className="flex bg-gray-100 rounded-lg p-1">
                     <button
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                        documentTypeFilter === "DRHP"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${documentTypeFilter === "DRHP"
                           ? "bg-white text-[#4B2A06] shadow-sm"
                           : "text-gray-600 hover:text-gray-800"
-                      }`}
+                        }`}
                       onClick={() => setDocumentTypeFilter("DRHP")}
                       type="button"
                     >
@@ -1040,11 +1036,10 @@ export const StartConversation: React.FC = () => {
                       DRHP
                     </button>
                     <button
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                        documentTypeFilter === "RHP"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${documentTypeFilter === "RHP"
                           ? "bg-white text-[#4B2A06] shadow-sm"
                           : "text-gray-600 hover:text-gray-800"
-                      }`}
+                        }`}
                       onClick={() => setDocumentTypeFilter("RHP")}
                       type="button"
                     >
@@ -1129,11 +1124,10 @@ export const StartConversation: React.FC = () => {
             </div> */}
                 <div className="relative mr-[0.5vw]">
                   <button
-                    className={`flex items-center gap-[0.5vw] font-semibold px-[1.5vw] py-[0.5vw] rounded-lg text-base transition-colors ${
-                      isDateRangeApplied
+                    className={`flex items-center gap-[0.5vw] font-semibold px-[1.5vw] py-[0.5vw] rounded-lg text-base transition-colors ${isDateRangeApplied
                         ? "bg-[#4B2A06] text-white hover:bg-[#3A2004]"
                         : "bg-[#F3F4F6] text-[#5A6473] hover:bg-[#E5E7EB]"
-                    }`}
+                      }`}
                     onClick={() => setShowDatePicker((v) => !v)}
                     type="button"
                   >
@@ -1142,10 +1136,10 @@ export const StartConversation: React.FC = () => {
                         {startDate && endDate
                           ? `${startDate} - ${endDate}`
                           : startDate
-                          ? `From ${startDate}`
-                          : endDate
-                          ? `Until ${endDate}`
-                          : "Date Range"}
+                            ? `From ${startDate}`
+                            : endDate
+                              ? `Until ${endDate}`
+                              : "Date Range"}
                         <X
                           className="h-[0.8vw] w-[0.8vw] min-w-[12px] min-h-[12px] ml-1"
                           onClick={(e) => {
@@ -1225,11 +1219,10 @@ export const StartConversation: React.FC = () => {
               <div className="flex items-center gap-[0.5vw]">
                 <div className="flex bg-[#F3F4F6] rounded-lg p-1">
                   <button
-                    className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
-                      viewMode === "list"
+                    className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${viewMode === "list"
                         ? "bg-white text-[#4B2A06] shadow-sm"
                         : "text-[#5A6473] hover:text-[#4B2A06]"
-                    }`}
+                      }`}
                     onClick={() => setViewMode("list")}
                     title="List view"
                   >
@@ -1237,11 +1230,10 @@ export const StartConversation: React.FC = () => {
                     <span>List</span>
                   </button>
                   <button
-                    className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
-                      viewMode === "card"
+                    className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${viewMode === "card"
                         ? "bg-white text-[#4B2A06] shadow-sm"
                         : "text-[#5A6473] hover:text-[#4B2A06]"
-                    }`}
+                      }`}
                     onClick={() => setViewMode("card")}
                     title="Card view"
                   >
@@ -1254,9 +1246,8 @@ export const StartConversation: React.FC = () => {
             {/* Document Grid - make this area scrollable only */}
             <div className="flex-1 min-h-0">
               <div
-                className={`${
-                  user?.role === "admin" ? "h-[68vh]" : "h-[67vh]"
-                } overflow-y-auto`}
+                className={`${user?.role === "admin" ? "h-[68vh]" : "h-[67vh]"
+                  } overflow-y-auto`}
               >
                 {loading ? (
                   <div className="flex justify-center items-center h-[10vh] text-lg text-muted-foreground">
@@ -1280,16 +1271,14 @@ export const StartConversation: React.FC = () => {
                               key={doc.id}
                               ref={(el) => (docRefs.current[doc.id] = el)}
                               className={`flex flex-col items-start bg-[#F3F4F6] rounded-xl p-[1vw] min-w-[180px] min-h-[110px] w-full cursor-pointer hover:bg-[#ECECEC] transition relative
-                            ${
-                              selectedDoc && selectedDoc.id === doc.id
-                                ? "ring-2 ring-[#4B2A06] bg-[#ECECEC]"
-                                : ""
-                            }
-                            ${
-                              highlightedDocId === doc.id
-                                ? "ring-4 ring-orange-400 bg-yellow-100 animate-pulse"
-                                : ""
-                            }
+                            ${selectedDoc && selectedDoc.id === doc.id
+                                  ? "ring-2 ring-[#4B2A06] bg-[#ECECEC]"
+                                  : ""
+                                }
+                            ${highlightedDocId === doc.id
+                                  ? "ring-4 ring-orange-400 bg-yellow-100 animate-pulse"
+                                  : ""
+                                }
                           `}
                               onClick={() => {
                                 // Store current folder before navigating
@@ -1438,8 +1427,8 @@ export const StartConversation: React.FC = () => {
                                 <span className="text-[#A1A1AA] text-xs">
                                   {doc.uploadedAt
                                     ? new Date(
-                                        doc.uploadedAt
-                                      ).toLocaleDateString()
+                                      doc.uploadedAt
+                                    ).toLocaleDateString()
                                     : ""}
                                 </span>
                                 <div className="flex justify-between items-center ">
@@ -1496,16 +1485,14 @@ export const StartConversation: React.FC = () => {
                               key={doc.id}
                               ref={(el) => (docRefs.current[doc.id] = el)}
                               className={`grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer transition-colors relative
-                            ${
-                              selectedDoc && selectedDoc.id === doc.id
-                                ? "bg-blue-50 border-blue-200"
-                                : ""
-                            }
-                            ${
-                              highlightedDocId === doc.id
-                                ? "bg-yellow-100 border-yellow-300 animate-pulse"
-                                : ""
-                            }
+                            ${selectedDoc && selectedDoc.id === doc.id
+                                  ? "bg-blue-50 border-blue-200"
+                                  : ""
+                                }
+                            ${highlightedDocId === doc.id
+                                  ? "bg-yellow-100 border-yellow-300 animate-pulse"
+                                  : ""
+                                }
                           `}
                               onClick={() => {
                                 // Store current folder before navigating
@@ -1591,8 +1578,8 @@ export const StartConversation: React.FC = () => {
                                 <span className="text-sm text-gray-600">
                                   {doc.uploadedAt
                                     ? new Date(
-                                        doc.uploadedAt
-                                      ).toLocaleDateString()
+                                      doc.uploadedAt
+                                    ).toLocaleDateString()
                                     : ""}
                                 </span>
                               </div>
@@ -1622,11 +1609,11 @@ export const StartConversation: React.FC = () => {
                                   >
                                     {doc.relatedRhpId || doc.relatedDrhpId ? (
                                       // Linked document icon - view icon for linked documents
-                                      <img 
-                                        className="h-4 w-4 object-contain" 
-                                        src="https://img.icons8.com/pastel-glyph/128/document--v1.png" 
+                                      <img
+                                        className="h-4 w-4 object-contain"
+                                        src="https://img.icons8.com/pastel-glyph/128/document--v1.png"
                                         alt="view"
-                                        style={{ display: 'block', maxWidth: '100%', height: 'auto', minWidth: '12px', minHeight: '12px'}}
+                                        style={{ display: 'block', maxWidth: '100%', height: 'auto', minWidth: '12px', minHeight: '12px' }}
                                         onError={(e) => {
                                           console.log('Image failed to load:', e);
                                           e.currentTarget.style.display = 'none';
@@ -1634,11 +1621,11 @@ export const StartConversation: React.FC = () => {
                                       />
                                     ) : (
                                       // Unlinked document icon - original compare icon
-                                      <img 
-                                        className="h-4 w-4 object-contain" 
-                                        src="https://img.icons8.com/ios/50/compare.png" 
+                                      <img
+                                        className="h-4 w-4 object-contain"
+                                        src="https://img.icons8.com/ios/50/compare.png"
                                         alt="compare"
-                                        style={{ display: 'block', maxWidth: '100%', height: 'auto', minWidth: '12px', minHeight: '12px'}}
+                                        style={{ display: 'block', maxWidth: '100%', height: 'auto', minWidth: '12px', minHeight: '12px' }}
                                         onError={(e) => {
                                           console.log('Image failed to load:', e);
                                           e.currentTarget.style.display = 'none';
@@ -1784,23 +1771,23 @@ export const StartConversation: React.FC = () => {
           />
 
           {/* DRHP Upload Modal */}
-        <DrhpUploadModal
-          open={showDrhpUploadModal}
-          onOpenChange={(open) => {
-            if (!isUploading) {
-              setShowDrhpUploadModal(open);
-            }
-          }}
-          setIsUploading={setIsUploading}
-          onUploadSuccess={(file) => {
-            handleUpload(file, "DRHP").finally(() => {
-              // Close modal after upload completes (success or error)
-              setTimeout(() => {
-                setShowDrhpUploadModal(false);
-              }, 500);
-            });
-          }}
-        />
+          <DrhpUploadModal
+            open={showDrhpUploadModal}
+            onOpenChange={(open) => {
+              if (!isUploading) {
+                setShowDrhpUploadModal(open);
+              }
+            }}
+            setIsUploading={setIsUploading}
+            onUploadSuccess={(file) => {
+              return handleUpload(file, "DRHP").finally(() => {
+                // Close modal after upload completes (success or error)
+                setTimeout(() => {
+                  setShowDrhpUploadModal(false);
+                }, 500);
+              });
+            }}
+          />
 
           {/* RHP Upload Modal for Standalone Upload */}
           {showRhpUploadModal && (
@@ -1810,7 +1797,7 @@ export const StartConversation: React.FC = () => {
                 <p className="text-sm text-gray-600 mb-4">
                   Select a Red Herring Prospectus (RHP) document to upload. This will be linked to a DRHP document.
                 </p>
-                
+
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Select RHP File

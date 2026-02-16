@@ -14,7 +14,7 @@ import { Upload, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface DrhpUploadModalProps {
-  onUploadSuccess?: (file: File) => void;
+  onUploadSuccess?: (file: File) => void | Promise<void>;
   setIsUploading?: (val: boolean) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -70,18 +70,21 @@ export const DrhpUploadModal: React.FC<DrhpUploadModalProps> = ({
     try {
       // Call the callback with the selected file
       // The parent component will handle the actual upload
-      onUploadSuccess?.(file);
-      
+      if (onUploadSuccess) {
+        await onUploadSuccess(file);
+      }
+
       // Don't close modal immediately - let parent handle it after upload completes
       // The modal will be closed by the parent component after upload processing
     } catch (error) {
+      console.error("Upload error in modal:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to prepare upload"
       );
+    } finally {
       setUploading(false);
       setIsUploading?.(false);
     }
-    // Note: Don't set uploading to false here - parent component manages the upload state
   };
 
   return (
