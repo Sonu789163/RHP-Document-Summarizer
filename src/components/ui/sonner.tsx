@@ -12,11 +12,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       closeButton={true}
       position="bottom-right"
-      duration={Infinity}
+      duration={10000}
       expand={true}
       richColors={true}
       toastOptions={{
-        duration: Infinity,
+        duration: 10000,
         classNames: {
           toast:
             "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg relative",
