@@ -2,7 +2,7 @@ import axios from "axios";
 import { SessionData } from "./sessionService";
 import { documentService } from "@/services/api";
 
-const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL ;
+const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL;
 
 export interface UploadResponse {
   success: boolean;
@@ -138,8 +138,8 @@ export const uploadService = {
           doc.status === "processing"
             ? "Document is still processing."
             : doc.status === "completed"
-            ? "Document processing completed."
-            : "Document processing failed.",
+              ? "Document processing completed."
+              : "Document processing failed.",
       };
     } catch (error) {
       console.error("Error checking document status from backend:", error);
@@ -209,7 +209,8 @@ export const uploadService = {
           error: "Document already exists",
         };
       }
-      throw new Error("Failed to upload file to backend");
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to upload file to backend");
     }
     return response.json();
   },

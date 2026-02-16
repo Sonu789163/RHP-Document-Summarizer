@@ -149,8 +149,7 @@ export const RhpUploadModal: React.FC<RhpUploadModalProps> = ({
               <div className="text-sm text-blue-800">
                 <p className="font-medium">Note:</p>
                 <p>
-                  This RHP document will be linked to the DRHP document and can
-                  be used for comparison.
+                  Please ensure the PDF file is a valid RHP document. The first page MUST contain "Red Herring Prospectus" (and not "Draft").
                 </p>
               </div>
             </div>

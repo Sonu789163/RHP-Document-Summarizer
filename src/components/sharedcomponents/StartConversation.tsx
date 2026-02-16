@@ -80,7 +80,7 @@ export const StartConversation: React.FC = () => {
   // ============================================================================
   // STATE MANAGEMENT
   // ============================================================================
-  
+
   // Core data state
   const [documents, setDocuments] = useState<any[]>([]); // Documents in current directory
   const [directories, setDirectories] = useState<any[]>([]); // All directories (unfiltered list)
@@ -88,17 +88,17 @@ export const StartConversation: React.FC = () => {
   const [directoriesLoading, setDirectoriesLoading] = useState(false); // Loading state for directories
   const [isUploading, setIsUploading] = useState(false); // Upload in progress flag
   const [error, setError] = useState<string | null>(null); // Error message state
-  
+
   // Document selection and navigation state
   const [selectedDoc, setSelectedDoc] = useState<any>(null); // Currently selected document
   const navigate = useNavigate(); // React Router navigation hook
   const [searchParams] = useSearchParams(); // URL search parameters (for shared links)
   const { user, logout, isAuthenticated } = useAuth(); // Authentication context
-  
+
   // File upload and input management
   const fileInputRef = useRef<HTMLInputElement>(null); // Reference to hidden file input
   const [sessionData] = useState(() => sessionService.initializeSession()); // Session initialization
-  
+
   // Date and search filtering state
   const [showDatePicker, setShowDatePicker] = useState(false); // Date picker visibility
   const [startDate, setStartDate] = useState(""); // Start date for date range filter
@@ -111,7 +111,10 @@ export const StartConversation: React.FC = () => {
   const [showDeleteSummaryDialog, setShowDeleteSummaryDialog] = useState(false); // Delete summary confirmation dialog visibility
   const [reportToDelete, setReportToDelete] = useState<any>(null); // Report pending deletion
   const [showDeleteReportDialog, setShowDeleteReportDialog] = useState(false); // Delete report confirmation dialog visibility
-  
+
+  // Deletion loading states
+  const [isDeletingDocument, setIsDeletingDocument] = useState(false); // Deletion in progress for document
+  const [isDeletingDirectory, setIsDeletingDirectory] = useState(false); // Deletion in progress for directory
   // Document renaming state
   const [renamingDocId, setRenamingDocId] = useState<string | null>(null); // ID of document being renamed
   const [renameValue, setRenameValue] = useState<string>(""); // Temporary rename input value
@@ -119,17 +122,17 @@ export const StartConversation: React.FC = () => {
   const [renameSummaryValue, setRenameSummaryValue] = useState<string>(""); // Temporary rename input value for summary
   const [renamingReportId, setRenamingReportId] = useState<string | null>(null); // ID of report being renamed
   const [renameReportValue, setRenameReportValue] = useState<string>(""); // Temporary rename input value for report
-  
+
   // Upload success and highlighting state
   const [showSuccessModal, setShowSuccessModal] = useState(false); // Upload success modal visibility
   const [uploadedDoc, setUploadedDoc] = useState<any>(null); // Recently uploaded document
   const [highlightedDocId, setHighlightedDocId] = useState<string | null>(null); // Document ID to highlight (for duplicates)
   const docRefs = useRef<{ [key: string]: HTMLDivElement | null }>({}); // Refs for scrolling to documents
-  
+
   // UI state
   const [sidebarOpen, setSidebarOpen] = useState(false); // Chat sidebar visibility
   const [viewMode, setViewMode] = useState<"list" | "card">("list"); // View mode: list or card grid
-  
+
   // Current directory/folder state (persisted in localStorage)
   // Stores the currently open directory to restore navigation state on page reload
   const [currentFolder, setCurrentFolder] = useState<{
@@ -158,10 +161,10 @@ export const StartConversation: React.FC = () => {
       localStorage.removeItem("currentFolder");
     }
   }, [currentFolder]);
-  
+
   // Sharing state
   const [shareDocId, setShareDocId] = useState<string | null>(null); // Document ID to share
-  
+
   // Filtering state
   const [timeFilter, setTimeFilter] = useState<string>("all"); // Document time filter (backward compatibility)
   const [directoryTimeFilter, setDirectoryTimeFilter] = useState<string>("all"); // Directory time filter
@@ -169,36 +172,36 @@ export const StartConversation: React.FC = () => {
   const [showDirectoryTimeFilter, setShowDirectoryTimeFilter] = useState(false); // Directory time filter dropdown visibility
   const [isDateRangeApplied, setIsDateRangeApplied] = useState(false); // Date range filter active flag
   const [directorySortBy, setDirectorySortBy] = useState<"alphabetical" | "lastModified">("lastModified"); // Directory sort option
-  
+
   // Document movement state
   const [movingDocId, setMovingDocId] = useState<string | null>(null); // Document ID being moved
   const [movingDocDirectoryId, setMovingDocDirectoryId] = useState<string | null>(null); // Current directory of document being moved
   const [movingDocToWorkspaceId, setMovingDocToWorkspaceId] = useState<string | null>(null); // Target workspace for document move
   const [movingDocToWorkspaceName, setMovingDocToWorkspaceName] = useState<string>(""); // Target workspace name
-  
+
   // Upload type and modal state
   const [showUploadDropdown, setShowUploadDropdown] = useState(false); // Upload type dropdown visibility
   const [selectedUploadType, setSelectedUploadType] = useState<string>(""); // Selected upload type (DRHP/RHP)
   const [showRhpUploadModal, setShowRhpUploadModal] = useState(false); // RHP upload modal visibility
   const [showDrhpUploadModal, setShowDrhpUploadModal] = useState(false); // DRHP upload modal visibility
   const [rhpFile, setRhpFile] = useState<File | null>(null); // RHP file selected for upload
-  
+
   // Directory document type tracking
   // Tracks which document types (DRHP/RHP) exist in each directory for UI display
   const [hasDrhpInDirectory, setHasDrhpInDirectory] = useState(false); // Current directory has DRHP
   const [hasRhpInDirectory, setHasRhpInDirectory] = useState(false); // Current directory has RHP
   const [directoryDocumentTypes, setDirectoryDocumentTypes] = useState<Record<string, { hasDrhp: boolean; hasRhp: boolean }>>({}); // Map of directory ID to document types
-  
+
   // Directory compare state
   // Tracks which directories have linked documents (for showing view vs compare icon)
   const [directoryLinkedStatus, setDirectoryLinkedStatus] = useState<Record<string, boolean>>({}); // Map of directory ID to linked status
-  
+
   // Compare modal state (for cross-directory comparisons)
   const [showCompareModal, setShowCompareModal] = useState(false); // Compare document selection modal visibility
   const [selectedDocumentForCompare, setSelectedDocumentForCompare] = useState<any>(null); // Document selected for comparison
   const [availableDocumentsForCompare, setAvailableDocumentsForCompare] = useState<any[]>([]); // Available documents for comparison
   const [compareLoading, setCompareLoading] = useState(false); // Compare operation in progress
-  
+
   // Directory actions state
   const [renamingDirectoryId, setRenamingDirectoryId] = useState<string | null>(null);
   const [directoryRenameValue, setDirectoryRenameValue] = useState<string>("");
@@ -208,28 +211,28 @@ export const StartConversation: React.FC = () => {
   const [directoryToDelete, setDirectoryToDelete] = useState<any | null>(null);
   const [showDeleteDirectoryDialog, setShowDeleteDirectoryDialog] = useState(false);
   const [openDirectoryMenuId, setOpenDirectoryMenuId] = useState<string | null>(null);
-  
+
   // Directory selector state (for upload flow)
   const [selectedDirectoryId, setSelectedDirectoryId] = useState<string | null>(null); // Selected directory ID for upload
   const [showDirectorySelector, setShowDirectorySelector] = useState(false); // Directory selector modal visibility
   const [pendingUpload, setPendingUpload] = useState<{ file: File; type: string } | null>(null); // File waiting for directory selection
-  
+
   // Reports and summaries state for directories
   // Tracks available reports (comparison reports) and summaries for each directory
   const [directoryReports, setDirectoryReports] = useState<Record<string, number>>({}); // Map of directory ID to report count
   const [directorySummaries, setDirectorySummaries] = useState<Record<string, number>>({}); // Map of directory ID to summary count
-  
-  
+
+
   // Expandable sections state for current directory
   const [expandedSummariesSection, setExpandedSummariesSection] = useState(true); // Summaries section expanded state (default: expanded)
   const [expandedReportsSection, setExpandedReportsSection] = useState(true); // Reports section expanded state (default: expanded)
-  
+
   // Current directory summaries and reports data
   const [currentDirectorySummaries, setCurrentDirectorySummaries] = useState<any[]>([]); // Summaries for current directory
   const [currentDirectoryReports, setCurrentDirectoryReports] = useState<any[]>([]); // Reports for current directory
   const [summariesLoading, setSummariesLoading] = useState(false); // Loading state for summaries
   const [reportsLoading, setReportsLoading] = useState(false); // Loading state for reports
-  
+
   // Modal state for viewing summaries and reports
   const [selectedSummaryId, setSelectedSummaryId] = useState<string | null>(null); // Selected summary to view
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null); // Selected report to view
@@ -239,7 +242,7 @@ export const StartConversation: React.FC = () => {
   // ============================================================================
   // HOOKS AND EFFECTS
   // ============================================================================
-  
+
   /**
    * Refresh Protection Hook
    * Prevents page refresh during file upload to avoid losing upload progress
@@ -267,7 +270,7 @@ export const StartConversation: React.FC = () => {
       } else if (data.status === "completed") {
         toast.success("Upload completed successfully!");
         fetchDocuments(); // Refresh the document list
-        
+
         // Refresh directory document types if we're viewing a directory
         if (currentFolder?.id) {
           const updatedTypes = await fetchDirectoryDocumentTypes(currentFolder.id);
@@ -275,7 +278,7 @@ export const StartConversation: React.FC = () => {
             ...prev,
             [currentFolder.id]: updatedTypes
           }));
-          
+
           // Refresh documents, summaries, and reports together
           const refreshDirectoryData = async () => {
             try {
@@ -284,14 +287,14 @@ export const StartConversation: React.FC = () => {
                 summaryService.getAll().catch(() => []),
                 reportService.getAll().catch(() => [])
               ]);
-              
+
               // Filter and sort summaries
               const summariesForDirectory = (allSummaries || []).filter((summary: any) =>
                 (docs || []).some((doc: any) => doc.id === summary.documentId)
-              ).sort((a: any, b: any) => 
+              ).sort((a: any, b: any) =>
                 new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
               );
-              
+
               // Filter and sort reports
               const reportsForDirectory = (allReports || []).filter((report: any) => {
                 return (docs || []).some((doc: any) => {
@@ -306,10 +309,10 @@ export const StartConversation: React.FC = () => {
                   }
                   return false;
                 });
-              }).sort((a: any, b: any) => 
+              }).sort((a: any, b: any) =>
                 new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
               );
-              
+
               // Update all state together
               setDocuments(docs || []);
               setCurrentDirectorySummaries(summariesForDirectory);
@@ -318,9 +321,9 @@ export const StartConversation: React.FC = () => {
               console.error("Error refreshing directory data:", err);
             }
           };
-          
+
           refreshDirectoryData();
-          
+
           // Check if both documents are now available and prompt for compare
           if (updatedTypes.hasDrhp && updatedTypes.hasRhp) {
             // Small delay to ensure documents are fully processed
@@ -349,7 +352,7 @@ export const StartConversation: React.FC = () => {
   // ============================================================================
   // UTILITY FUNCTIONS
   // ============================================================================
-  
+
   /**
    * Update Directory Last Modified Time
    * Updates the directory's lastDocumentUpload when documents, summaries, or reports are created/updated
@@ -359,7 +362,7 @@ export const StartConversation: React.FC = () => {
    */
   const updateDirectoryLastModified = (directoryId: string | null | undefined) => {
     if (!directoryId) return;
-    
+
     const now = new Date().toISOString();
     setDirectories((prevDirs) =>
       prevDirs.map((dir) =>
@@ -371,7 +374,7 @@ export const StartConversation: React.FC = () => {
     // Refresh directories from backend to ensure consistency
     fetchAllDirectories();
   };
-  
+
   /**
    * Get User Initials from Email
    * Extracts initials from email address for display purposes
@@ -406,7 +409,7 @@ export const StartConversation: React.FC = () => {
       const docs = await documentService.getAll({ directoryId });
       const hasDrhp = (docs || []).some((doc: any) => doc.type === "DRHP");
       const hasRhp = (docs || []).some((doc: any) => doc.type === "RHP");
-      
+
       // Check if documents are linked
       let isLinked = false;
       if (hasDrhp && hasRhp) {
@@ -414,13 +417,13 @@ export const StartConversation: React.FC = () => {
         const rhpDoc = (docs || []).find((doc: any) => doc.type === "RHP");
         isLinked = !!(drhpDoc?.relatedRhpId === rhpDoc?.id || rhpDoc?.relatedDrhpId === drhpDoc?.id);
       }
-      
+
       // Update linked status
       setDirectoryLinkedStatus(prev => ({
         ...prev,
         [directoryId]: isLinked
       }));
-      
+
       return { hasDrhp, hasRhp };
     } catch (err) {
       console.error(`Error fetching document types for directory ${directoryId}:`, err);
@@ -460,7 +463,7 @@ export const StartConversation: React.FC = () => {
           return [];
         })
       ]);
-      
+
       // Use pre-fetched documents if provided, otherwise fetch all documents
       let docsByDir = documentsByDirectory;
       if (!docsByDir) {
@@ -468,7 +471,7 @@ export const StartConversation: React.FC = () => {
           console.error("Error fetching all documents:", err);
           return [];
         });
-        
+
         docsByDir = {};
         (allDocuments || []).forEach((doc: any) => {
           if (doc.directoryId) {
@@ -479,11 +482,11 @@ export const StartConversation: React.FC = () => {
           }
         });
       }
-      
+
       // Process all directories in parallel (no batching delays needed)
       const reportsMap: Record<string, number> = {};
       const summariesMap: Record<string, number> = {};
-      
+
       await Promise.all(
         directories.map(async (dir: any) => {
           if (!dir.id) {
@@ -491,10 +494,10 @@ export const StartConversation: React.FC = () => {
             summariesMap[dir.id] = 0;
             return;
           }
-          
+
           try {
             const dirDocuments = docsByDir![dir.id] || [];
-            
+
             // Find linked document pairs in this directory
             const linkedPairs: { drhp: any; rhp: any }[] = [];
             dirDocuments.forEach((doc: any) => {
@@ -505,7 +508,7 @@ export const StartConversation: React.FC = () => {
                 }
               }
             });
-            
+
             // Count reports for linked pairs in this directory
             let reportCount = 0;
             linkedPairs.forEach(({ drhp, rhp }) => {
@@ -516,13 +519,13 @@ export const StartConversation: React.FC = () => {
               );
               reportCount += reportsForPair.length;
             });
-            
+
             // Count summaries for documents in this directory
             const summaryCount = dirDocuments.reduce((count: number, doc: any) => {
               const summariesForDoc = allSummaries.filter((s: any) => s.documentId === doc.id);
               return count + summariesForDoc.length;
             }, 0);
-            
+
             reportsMap[dir.id] = reportCount;
             summariesMap[dir.id] = summaryCount;
           } catch (error) {
@@ -532,7 +535,7 @@ export const StartConversation: React.FC = () => {
           }
         })
       );
-      
+
       // Update state with all results at once
       setDirectoryReports((prev) => ({ ...prev, ...reportsMap }));
       setDirectorySummaries((prev) => ({ ...prev, ...summariesMap }));
@@ -563,7 +566,7 @@ export const StartConversation: React.FC = () => {
       let onlyDirs = (data?.items || [])
         .filter((x: { kind: string }) => x.kind === "directory")
         .map((x: { item: any }) => x.item);
-      
+
       // If there are more directories, fetch additional pages
       if (data?.total && data.total > 500) {
         const totalPages = Math.ceil(data.total / 500);
@@ -580,16 +583,16 @@ export const StartConversation: React.FC = () => {
         }
         onlyDirs = [...onlyDirs, ...additionalPages];
       }
-      
+
       // Store all directories (unfiltered) - similar to documents array
       setDirectories(onlyDirs);
-      
+
       // Fetch all documents once to use for both document types and reports/summaries
       const allDocuments = await documentService.getAll().catch((err) => {
         console.error("Error fetching all documents:", err);
         return [];
       });
-      
+
       // Group documents by directoryId for efficient lookup
       const documentsByDirectory: Record<string, any[]> = {};
       (allDocuments || []).forEach((doc: any) => {
@@ -600,21 +603,21 @@ export const StartConversation: React.FC = () => {
           documentsByDirectory[doc.directoryId].push(doc);
         }
       });
-      
+
       // Fetch document types and reports/summaries in parallel for faster loading
       const [typesMap] = await Promise.all([
         // Calculate document types from already-fetched documents
         (async () => {
           const types: Record<string, { hasDrhp: boolean; hasRhp: boolean }> = {};
           const linkedStatus: Record<string, boolean> = {};
-          
+
           onlyDirs.forEach((dir: any) => {
             if (!dir.id) return;
-            
+
             const dirDocuments = documentsByDirectory[dir.id] || [];
             const hasDrhp = dirDocuments.some((doc: any) => doc.type === "DRHP");
             const hasRhp = dirDocuments.some((doc: any) => doc.type === "RHP");
-            
+
             // Check if documents are linked
             let isLinked = false;
             if (hasDrhp && hasRhp) {
@@ -622,14 +625,14 @@ export const StartConversation: React.FC = () => {
               const rhpDoc = dirDocuments.find((doc: any) => doc.type === "RHP");
               isLinked = !!(drhpDoc?.relatedRhpId === rhpDoc?.id || rhpDoc?.relatedDrhpId === drhpDoc?.id);
             }
-            
+
             types[dir.id] = { hasDrhp, hasRhp };
             linkedStatus[dir.id] = isLinked;
           });
-          
+
           // Update linked status
           setDirectoryLinkedStatus((prev) => ({ ...prev, ...linkedStatus }));
-          
+
           return types;
         })(),
         // Fetch reports and summaries for all directories in parallel (using already-fetched documents)
@@ -637,7 +640,7 @@ export const StartConversation: React.FC = () => {
           console.error("Error fetching directory reports/summaries:", err);
         })
       ]);
-      
+
       setDirectoryDocumentTypes(typesMap);
     } catch (err: any) {
       console.error("Error fetching directories:", err);
@@ -677,26 +680,26 @@ export const StartConversation: React.FC = () => {
             setLoading(false);
             return;
           }
-        } catch {}
+        } catch { }
         // Fallback to normal listing if resolve fails
         // If no folder selected, show directories
         if (!currentFolder?.id) {
           fetchAllDirectories();
           return;
         }
-        
+
         documentService
           .getAll({ directoryId: currentFolder.id })
           .then((docs) => {
             // Show all documents (DRHP and RHP) - no type filter
             setDocuments(docs || []);
-            
+
             // Check what document types exist in this directory
             const hasDrhp = (docs || []).some((doc: any) => doc.type === "DRHP");
             const hasRhp = (docs || []).some((doc: any) => doc.type === "RHP");
             setHasDrhpInDirectory(hasDrhp);
             setHasRhpInDirectory(hasRhp);
-            
+
             setLoading(false);
           })
           .catch(() => {
@@ -709,7 +712,7 @@ export const StartConversation: React.FC = () => {
 
     // Clear link token from headers if domain mismatch might occur
     const linkToken = localStorage.getItem("sharedLinkToken");
-    
+
     // If no folder is selected, show directories instead of documents
     if (!currentFolder?.id) {
       fetchAllDirectories();
@@ -721,19 +724,19 @@ export const StartConversation: React.FC = () => {
       .then((docs) => {
         // Show all documents (DRHP and RHP) - no type filter
         setDocuments(docs || []);
-        
+
         // Check what document types exist in this directory
         const hasDrhp = (docs || []).some((doc: any) => doc.type === "DRHP");
         const hasRhp = (docs || []).some((doc: any) => doc.type === "RHP");
         setHasDrhpInDirectory(hasDrhp);
         setHasRhpInDirectory(hasRhp);
-        
+
         setLoading(false);
       })
       .catch((err: any) => {
         // Check for domain mismatch error
-        if (err?.response?.data?.code === "DOMAIN_MISMATCH" || 
-            err?.response?.data?.message?.includes("cannot access documents from other domains")) {
+        if (err?.response?.data?.code === "DOMAIN_MISMATCH" ||
+          err?.response?.data?.message?.includes("cannot access documents from other domains")) {
           // Clear the link token if domain mismatch
           if (linkToken) {
             localStorage.removeItem("sharedLinkToken");
@@ -741,20 +744,20 @@ export const StartConversation: React.FC = () => {
             const newUrl = new URL(window.location.href);
             newUrl.searchParams.delete("linkToken");
             window.history.replaceState({}, "", newUrl.toString());
-            
+
             // Retry without link token
             documentService
               .getAll({ directoryId: currentFolder?.id ?? "root" })
               .then((docs) => {
                 // Show all documents (DRHP and RHP) - no type filter
                 setDocuments(docs || []);
-                
+
                 // Check what document types exist in this directory
                 const hasDrhp = (docs || []).some((doc: any) => doc.type === "DRHP");
                 const hasRhp = (docs || []).some((doc: any) => doc.type === "RHP");
                 setHasDrhpInDirectory(hasDrhp);
                 setHasRhpInDirectory(hasRhp);
-                
+
                 setLoading(false);
                 toast.error("You cannot access documents from other domains. Showing your domain resources instead.");
               })
@@ -765,7 +768,7 @@ export const StartConversation: React.FC = () => {
             return;
           }
         }
-        
+
         setError("Failed to load documents");
         setLoading(false);
       });
@@ -793,18 +796,18 @@ export const StartConversation: React.FC = () => {
     try {
       // Fetch documents in this directory
       const dirDocuments = await documentService.getAll({ directoryId });
-      
+
       // Fetch all summaries and reports
       const [allSummaries, allReports] = await Promise.all([
         summaryService.getAll().catch(() => []),
         reportService.getAll().catch(() => [])
       ]);
-      
+
       // Filter summaries for documents in this directory
       const summariesForDirectory = (allSummaries || []).filter((summary: any) =>
         (dirDocuments || []).some((doc: any) => doc.id === summary.documentId)
       );
-      
+
       // Filter reports for linked document pairs in this directory
       const reportsForDirectory = (allReports || []).filter((report: any) => {
         return (dirDocuments || []).some((doc: any) => {
@@ -820,34 +823,34 @@ export const StartConversation: React.FC = () => {
           return false;
         });
       });
-      
+
       // Sort by updatedAt (newest first)
-      summariesForDirectory.sort((a: any, b: any) => 
+      summariesForDirectory.sort((a: any, b: any) =>
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       );
-      reportsForDirectory.sort((a: any, b: any) => 
+      reportsForDirectory.sort((a: any, b: any) =>
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       );
-      
+
       setCurrentDirectorySummaries(summariesForDirectory);
       setCurrentDirectoryReports(reportsForDirectory);
-      
+
       // Update directory's last modified time if there are new summaries or reports
       if ((summariesForDirectory.length > 0 || reportsForDirectory.length > 0) && directoryId) {
         // Check if there are any recent summaries or reports (created/updated in last minute)
         const now = new Date().getTime();
         const oneMinuteAgo = now - 60 * 1000;
-        
+
         const hasRecentSummary = summariesForDirectory.some((s: any) => {
           const summaryTime = new Date(s.updatedAt || s.createdAt).getTime();
           return summaryTime > oneMinuteAgo;
         });
-        
+
         const hasRecentReport = reportsForDirectory.some((r: any) => {
           const reportTime = new Date(r.updatedAt || r.createdAt).getTime();
           return reportTime > oneMinuteAgo;
         });
-        
+
         if (hasRecentSummary || hasRecentReport) {
           updateDirectoryLastModified(directoryId);
         }
@@ -877,7 +880,7 @@ export const StartConversation: React.FC = () => {
         setLoading(true);
         setSummariesLoading(true);
         setReportsLoading(true);
-        
+
         try {
           // Fetch all data in parallel
           const [docs, allSummaries, allReports] = await Promise.all([
@@ -885,16 +888,16 @@ export const StartConversation: React.FC = () => {
             summaryService.getAll().catch(() => []),
             reportService.getAll().catch(() => [])
           ]);
-          
+
           // Check what document types exist in this directory
           const hasDrhp = (docs || []).some((doc: any) => doc.type === "DRHP");
           const hasRhp = (docs || []).some((doc: any) => doc.type === "RHP");
-          
+
           // Filter summaries for documents in this directory
           const summariesForDirectory = (allSummaries || []).filter((summary: any) =>
             (docs || []).some((doc: any) => doc.id === summary.documentId)
           );
-          
+
           // Filter reports for linked document pairs in this directory
           const reportsForDirectory = (allReports || []).filter((report: any) => {
             return (docs || []).some((doc: any) => {
@@ -910,15 +913,15 @@ export const StartConversation: React.FC = () => {
               return false;
             });
           });
-          
+
           // Sort by updatedAt (newest first)
-          summariesForDirectory.sort((a: any, b: any) => 
+          summariesForDirectory.sort((a: any, b: any) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
           );
-          reportsForDirectory.sort((a: any, b: any) => 
+          reportsForDirectory.sort((a: any, b: any) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
           );
-          
+
           // Update all state together in a single batch to prevent staggered rendering
           // React 18+ automatically batches these synchronous updates, ensuring they
           // all appear in the same render cycle - no need for startTransition
@@ -927,23 +930,23 @@ export const StartConversation: React.FC = () => {
           setHasRhpInDirectory(hasRhp);
           setCurrentDirectorySummaries(summariesForDirectory);
           setCurrentDirectoryReports(reportsForDirectory);
-          
+
           // Update directory's last modified time if there are new summaries or reports
           if ((summariesForDirectory.length > 0 || reportsForDirectory.length > 0) && currentFolder?.id) {
             // Check if there are any recent summaries or reports (created/updated in last minute)
             const now = new Date().getTime();
             const oneMinuteAgo = now - 60 * 1000;
-            
+
             const hasRecentSummary = summariesForDirectory.some((s: any) => {
               const summaryTime = new Date(s.updatedAt || s.createdAt).getTime();
               return summaryTime > oneMinuteAgo;
             });
-            
+
             const hasRecentReport = reportsForDirectory.some((r: any) => {
               const reportTime = new Date(r.updatedAt || r.createdAt).getTime();
               return reportTime > oneMinuteAgo;
             });
-            
+
             if (hasRecentSummary || hasRecentReport) {
               updateDirectoryLastModified(currentFolder.id);
             }
@@ -957,7 +960,7 @@ export const StartConversation: React.FC = () => {
           setReportsLoading(false);
         }
       };
-      
+
       loadDirectoryData();
     } else {
       // Fetch all directories when no folder is selected
@@ -974,7 +977,7 @@ export const StartConversation: React.FC = () => {
   // ============================================================================
   // EVENT LISTENERS FOR SUMMARY AND REPORT CREATION
   // ============================================================================
-  
+
   /**
    * Effect: Listen for Summary and Report Creation Events
    * Updates directory's last modified time when summaries or reports are created
@@ -983,7 +986,7 @@ export const StartConversation: React.FC = () => {
     const handleSummaryCreated = async (event: CustomEvent) => {
       const { documentId } = event.detail || {};
       if (!documentId) return;
-      
+
       try {
         // Get the document to find its directory
         const doc = await documentService.getById(documentId);
@@ -994,11 +997,11 @@ export const StartConversation: React.FC = () => {
         console.error("Error updating directory after summary creation:", error);
       }
     };
-    
+
     const handleReportCreated = async (event: CustomEvent) => {
       const { drhpId, rhpId } = event.detail || {};
       if (!drhpId) return;
-      
+
       try {
         // Get the DRHP document to find its directory
         const doc = await documentService.getById(drhpId);
@@ -1009,17 +1012,17 @@ export const StartConversation: React.FC = () => {
         console.error("Error updating directory after report creation:", error);
       }
     };
-    
+
     // Listen for custom events
     window.addEventListener("summaryCreated", handleSummaryCreated as EventListener);
     window.addEventListener("reportCreated", handleReportCreated as EventListener);
-    
+
     return () => {
       window.removeEventListener("summaryCreated", handleSummaryCreated as EventListener);
       window.removeEventListener("reportCreated", handleReportCreated as EventListener);
     };
   }, []);
-  
+
   /**
    * Effect: Close Upload Dropdown on Outside Click
    * Closes the upload type dropdown when user clicks outside of it
@@ -1034,7 +1037,7 @@ export const StartConversation: React.FC = () => {
         }
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -1055,7 +1058,7 @@ export const StartConversation: React.FC = () => {
         }
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -1107,26 +1110,26 @@ export const StartConversation: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Error resolving link token:", error);
-      
+
       // Check for domain mismatch error
-      if (error?.response?.data?.code === "DOMAIN_MISMATCH" || 
-          error?.response?.data?.message?.includes("cannot access documents from other domains")) {
+      if (error?.response?.data?.code === "DOMAIN_MISMATCH" ||
+        error?.response?.data?.message?.includes("cannot access documents from other domains")) {
         // Clear the link token from localStorage
         localStorage.removeItem("sharedLinkToken");
         // Remove linkToken from URL
         const newUrl = new URL(window.location.href);
         newUrl.searchParams.delete("linkToken");
         window.history.replaceState({}, "", newUrl.toString());
-        
+
         // Show user-friendly error message
         toast.error("You cannot access documents from other domains. Showing your domain resources instead.");
-        
+
         // Load user's own domain resources
         setCurrentFolder(null);
         fetchDocuments();
         return;
       }
-      
+
       toast.error("Invalid or expired share link");
     } finally {
       setLoading(false);
@@ -1146,7 +1149,7 @@ export const StartConversation: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       const uploadType = selectedUploadType || "DRHP";
-      
+
       // If directory is already selected, upload directly
       if (selectedDirectoryId || currentFolder?.id) {
         const directoryId = selectedDirectoryId || currentFolder?.id;
@@ -1156,7 +1159,7 @@ export const StartConversation: React.FC = () => {
         setPendingUpload({ file, type: uploadType });
         setShowDirectorySelector(true);
       }
-      
+
       // Reset file input
       if (e.target) {
         e.target.value = "";
@@ -1178,7 +1181,7 @@ export const StartConversation: React.FC = () => {
    */
   const handleCompareClick = async (document: any) => {
     setCompareLoading(true);
-    
+
     try {
       // If document is already linked, navigate directly to compare page
       if (document.relatedRhpId || document.relatedDrhpId) {
@@ -1191,7 +1194,7 @@ export const StartConversation: React.FC = () => {
       // Directory-based compare: Check if document is in a directory
       if (document.directoryId) {
         const oppositeType = document.type === "DRHP" ? "RHP" : "DRHP";
-        
+
         // First, try to find matching document in the currently loaded documents
         // (works when viewing the same directory)
         let matchingDoc = documents.find(
@@ -1229,12 +1232,12 @@ export const StartConversation: React.FC = () => {
 
           try {
             await documentService.linkForCompare(drhpId, rhpId);
-            
+
             // Refresh documents to show updated link status
             if (currentFolder?.id === document.directoryId) {
               fetchDocuments();
             }
-            
+
             // Navigate to compare page
             navigate(`/compare/${drhpId}`);
             toast.success("Documents linked successfully! Opening comparison...");
@@ -1247,8 +1250,8 @@ export const StartConversation: React.FC = () => {
           }
         } else {
           // No matching document in directory - show helpful message
-          const directoryName = currentFolder?.id === document.directoryId 
-            ? currentFolder.name 
+          const directoryName = currentFolder?.id === document.directoryId
+            ? currentFolder.name
             : "this directory";
           toast.info(
             `No ${oppositeType} document found in "${directoryName}". Please select from other directories.`
@@ -1259,7 +1262,7 @@ export const StartConversation: React.FC = () => {
       // Fallback: Show modal for document selection (from other directories or if no directory)
       setSelectedDocumentForCompare(document);
       setShowCompareModal(true);
-      
+
       // Fetch available documents in the background
       try {
         const response = await documentService.getAvailableForCompare(document.id);
@@ -1287,22 +1290,22 @@ export const StartConversation: React.FC = () => {
   const handleDocumentSelection = async (selectedDoc: any, targetDoc: any) => {
     try {
       setCompareLoading(true);
-      
+
       // Determine correct id ordering for API
       const drhpId = selectedDoc.type === "DRHP" ? selectedDoc.id : targetDoc.id;
-      const rhpId  = selectedDoc.type === "RHP"  ? selectedDoc.id : targetDoc.id;
+      const rhpId = selectedDoc.type === "RHP" ? selectedDoc.id : targetDoc.id;
 
       // Link the documents
       await documentService.linkForCompare(drhpId, rhpId);
-      
+
       // Close modal
       setShowCompareModal(false);
       setSelectedDocumentForCompare(null);
       setAvailableDocumentsForCompare([]);
-      
+
       // Navigate to compare page
       navigate(`/compare/${drhpId}`);
-      
+
       toast.success("Documents linked successfully! Redirecting to comparison...");
     } catch (error) {
       console.error("Error linking documents:", error);
@@ -1331,7 +1334,7 @@ export const StartConversation: React.FC = () => {
   const handleDirectoryCompareClick = async (directory: any) => {
     try {
       setCompareLoading(true);
-      
+
       // Check document types in this directory
       const types = directoryDocumentTypes[directory.id] || await fetchDirectoryDocumentTypes(directory.id);
       const hasDrhp = types.hasDrhp;
@@ -1341,7 +1344,7 @@ export const StartConversation: React.FC = () => {
       if (hasDrhp && hasRhp) {
         // Fetch documents from this directory
         const dirDocuments = await documentService.getAll({ directoryId: directory.id });
-        
+
         // Find DRHP and RHP documents
         const drhpDoc = dirDocuments.find((doc: any) => doc.type === "DRHP" && doc.directoryId === directory.id);
         const rhpDoc = dirDocuments.find((doc: any) => doc.type === "RHP" && doc.directoryId === directory.id);
@@ -1358,20 +1361,20 @@ export const StartConversation: React.FC = () => {
           // Link the documents if not already linked
           try {
             await documentService.linkForCompare(drhpDoc.id, rhpDoc.id);
-            
+
             // Update linked status
             setDirectoryLinkedStatus(prev => ({
               ...prev,
               [directory.id]: true
             }));
-            
+
             // Refresh directory document types
             const updatedTypes = await fetchDirectoryDocumentTypes(directory.id);
             setDirectoryDocumentTypes(prev => ({
               ...prev,
               [directory.id]: updatedTypes
             }));
-            
+
             // Navigate to compare page
             navigate(`/compare/${drhpDoc.id}`);
             toast.success("Documents linked successfully! Opening comparison...");
@@ -1520,10 +1523,10 @@ export const StartConversation: React.FC = () => {
       formData.append("namespace", file.name); // Use exact filename with .pdf extension
       formData.append("type", uploadType); // Send document type (DRHP or RHP) to backend
       formData.append("directoryId", directoryId); // Required - directory-first approach
-      
+
       // Use the regular upload endpoint - backend will handle type based on formData
       const uploadEndpoint = `${import.meta.env.VITE_API_URL}/documents/upload`;
-      
+
       const res = await fetch(uploadEndpoint, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
@@ -1585,7 +1588,7 @@ export const StartConversation: React.FC = () => {
       console.log("file response:", response);
 
       const uploadedDocument = response.document;
-      
+
       // Update toast to show processing status
       toast.dismiss(toastId);
       toast.loading(
@@ -1600,11 +1603,11 @@ export const StartConversation: React.FC = () => {
       let pollAttempts = 0;
       const maxPollAttempts = 120; // 10 minutes (5 second intervals)
       const pollInterval = 5000; // 5 seconds
-      
+
       const pollForStatus = async () => {
         try {
           const doc = await documentService.getById(uploadedDocument.id);
-          
+
           // Check if processing is complete
           if (doc.status === "completed" || doc.status === "ready") {
             toast.dismiss(`upload-processing-${uploadedDocument.id}`);
@@ -1614,7 +1617,7 @@ export const StartConversation: React.FC = () => {
                 <span>{file.name} processed successfully!</span>
               </div>
             );
-            
+
             // Show success modal
             setUploadedDoc(doc);
             setShowSuccessModal(true);
@@ -1632,7 +1635,7 @@ export const StartConversation: React.FC = () => {
             setIsUploading(false);
             return;
           }
-          
+
           // Check if processing failed
           if (doc.status === "failed" || doc.status === "error") {
             toast.dismiss(`upload-processing-${uploadedDocument.id}`);
@@ -1645,7 +1648,7 @@ export const StartConversation: React.FC = () => {
             setIsUploading(false);
             return;
           }
-          
+
           // Continue polling if still processing
           pollAttempts++;
           if (pollAttempts < maxPollAttempts) {
@@ -1674,7 +1677,7 @@ export const StartConversation: React.FC = () => {
           }
         }
       };
-      
+
       // Start polling after a short delay
       setTimeout(pollForStatus, pollInterval);
     } catch (error) {
@@ -1711,23 +1714,23 @@ export const StartConversation: React.FC = () => {
    */
   const getDirectoryMostRecentActivity = (dir: any): Date | null => {
     const dates: Date[] = [];
-    
+
     // Collect all valid dates
     if (dir.lastDocumentUpload) {
       const date = new Date(dir.lastDocumentUpload);
       if (!isNaN(date.getTime())) dates.push(date);
     }
-    
+
     if (dir.updatedAt) {
       const date = new Date(dir.updatedAt);
       if (!isNaN(date.getTime())) dates.push(date);
     }
-    
+
     if (dir.createdAt) {
       const date = new Date(dir.createdAt);
       if (!isNaN(date.getTime())) dates.push(date);
     }
-    
+
     // Return the most recent date, or null if no valid dates
     if (dates.length === 0) return null;
     return new Date(Math.max(...dates.map(d => d.getTime())));
@@ -1753,10 +1756,10 @@ export const StartConversation: React.FC = () => {
       if (dir.isShared) {
         return true;
       }
-      
+
       // Get the most recent activity date (document upload, summary/report creation, or directory update)
       const mostRecentActivity = getDirectoryMostRecentActivity(dir);
-      
+
       // If directory has no activity date, exclude it from filtered results
       if (!mostRecentActivity) {
         return false;
@@ -1795,7 +1798,7 @@ export const StartConversation: React.FC = () => {
         // Reset hours for activity date to compare dates only
         const activityDateOnly = new Date(mostRecentActivity);
         activityDateOnly.setHours(0, 0, 0, 0);
-        
+
         if (activityDateOnly < filterStart) return false;
       } catch (error) {
         console.error("Error filtering directory by date:", error, dir);
@@ -1816,10 +1819,10 @@ export const StartConversation: React.FC = () => {
       // This considers document uploads, summary/report creation, and directory updates
       const dateA = getDirectoryMostRecentActivity(a);
       const dateB = getDirectoryMostRecentActivity(b);
-      
+
       const timeA = dateA ? dateA.getTime() : 0;
       const timeB = dateB ? dateB.getTime() : 0;
-      
+
       return timeB - timeA; // Descending (newest first)
     }
     return 0;
@@ -1884,8 +1887,7 @@ export const StartConversation: React.FC = () => {
 
       // Debug logging
       console.log(
-        `Filter: ${timeFilter}, Filter Start: ${filterStart.toLocaleDateString()}, Doc Date: ${docDate.toLocaleDateString()}, Doc Name: ${
-          doc.name
+        `Filter: ${timeFilter}, Filter Start: ${filterStart.toLocaleDateString()}, Doc Date: ${docDate.toLocaleDateString()}, Doc Name: ${doc.name
         }, Pass: ${docDate >= filterStart}`
       );
 
@@ -1915,6 +1917,7 @@ export const StartConversation: React.FC = () => {
    */
   const confirmDeleteDoc = async () => {
     if (!docToDelete) return;
+    setIsDeletingDocument(true);
     const directoryId = docToDelete.directoryId;
     try {
       await documentService.delete(docToDelete.id);
@@ -1928,11 +1931,12 @@ export const StartConversation: React.FC = () => {
           [directoryId]: types
         }));
       }
+      setShowDeleteDialog(false);
+      setDocToDelete(null);
     } catch (error) {
       toast.error("Failed to delete document");
     } finally {
-      setShowDeleteDialog(false);
-      setDocToDelete(null);
+      setIsDeletingDocument(false);
     }
   };
 
@@ -2015,7 +2019,7 @@ export const StartConversation: React.FC = () => {
   // ============================================================================
   // SUMMARY ACTION HANDLERS
   // ============================================================================
-  
+
   /**
    * Handle Summary Delete Click
    * Shows confirmation dialog for summary deletion
@@ -2099,7 +2103,7 @@ export const StartConversation: React.FC = () => {
   // ============================================================================
   // REPORT ACTION HANDLERS
   // ============================================================================
-  
+
   /**
    * Handle Report Delete Click
    * Shows confirmation dialog for report deletion
@@ -2183,7 +2187,7 @@ export const StartConversation: React.FC = () => {
   // ============================================================================
   // DIRECTORY ACTION HANDLERS
   // ============================================================================
-  
+
   /**
    * Handle Directory Rename Click
    * Initiates inline rename for a directory
@@ -2280,6 +2284,7 @@ export const StartConversation: React.FC = () => {
    */
   const confirmDeleteDirectory = async () => {
     if (!directoryToDelete) return;
+    setIsDeletingDirectory(true);
     try {
       await directoryService.delete(directoryToDelete.id);
       // Remove directory from recent directories if it exists there
@@ -2296,11 +2301,12 @@ export const StartConversation: React.FC = () => {
       if (currentFolder?.id === directoryToDelete.id) {
         setCurrentFolder(null);
       }
+      setShowDeleteDirectoryDialog(false);
+      setDirectoryToDelete(null);
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "Failed to delete directory");
     } finally {
-      setShowDeleteDirectoryDialog(false);
-      setDirectoryToDelete(null);
+      setIsDeletingDirectory(false);
     }
   };
 
@@ -2333,7 +2339,7 @@ export const StartConversation: React.FC = () => {
     setDirectories((prevDirs) =>
       prevDirs.map((dir) =>
         (movingDoc?.directoryId && dir.id === movingDoc.directoryId) ||
-        (destDirectoryId && dir.id === destDirectoryId)
+          (destDirectoryId && dir.id === destDirectoryId)
           ? { ...dir, lastDocumentUpload: now }
           : dir
       )
@@ -2367,7 +2373,7 @@ export const StartConversation: React.FC = () => {
   // ============================================================================
   // SIDEBAR HANDLERS
   // ============================================================================
-  
+
   /**
    * Handle Sidebar Back Navigation
    * Navigates back to dashboard when back button is clicked in sidebar
@@ -2499,7 +2505,7 @@ export const StartConversation: React.FC = () => {
   // ============================================================================
   // RENDER
   // ============================================================================
-  
+
   return (
     <div
       className="min-h-screen bg-white flex flex-col font-sans relative"
@@ -2534,7 +2540,7 @@ export const StartConversation: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* 
         Top Navigation Bar
         Provides search functionality and navigation controls
@@ -2571,9 +2577,8 @@ export const StartConversation: React.FC = () => {
             Opens from the left side when hamburger menu is clicked
           */}
           <div
-            className={`fixed top-0 left-0 h-full z-50 transition-all duration-300 ${
-              sidebarOpen ? "w-[15%] min-w-[200px]" : "w-0 min-w-0 max-w-0"
-            } bg-white shadow-xl`}
+            className={`fixed top-0 left-0 h-full z-50 transition-all duration-300 ${sidebarOpen ? "w-[15%] min-w-[200px]" : "w-0 min-w-0 max-w-0"
+              } bg-white shadow-xl`}
             style={{ overflow: "hidden" }}
             data-sidebar="true"
           >
@@ -2634,9 +2639,8 @@ export const StartConversation: React.FC = () => {
             Adjusts width when sidebar is open
           */}
           <main
-            className={`flex-1 flex flex-col pt-[1.5vw] pr-[1.5vw] pb-[4vh] relative max-w-[77vw] mx-auto w-full min-h-0 transition-all duration-300 ${
-              sidebarOpen ? "ml-[15%] max-w-[77vw]" : ""
-            }`}
+            className={`flex-1 flex flex-col pt-[1.5vw] pr-[1.5vw] pb-[4vh] relative max-w-[77vw] mx-auto w-full min-h-0 transition-all duration-300 ${sidebarOpen ? "ml-[15%] max-w-[77vw]" : ""
+              }`}
           >
             {/* 
               Header Section
@@ -2697,122 +2701,122 @@ export const StartConversation: React.FC = () => {
                     disabled={isUploading}
                   />
                   {currentFolder?.id ? (
-                      // Inside a directory - show upload buttons based on what's available
-                      <div className="flex items-center gap-2">
-                        {hasDrhpInDirectory && hasRhpInDirectory ? (
-                          // Both DRHP and RHP exist - disable the button
-                          <button
-                            className="flex items-center gap-[0.5vw] bg-gray-400 text-white font-semibold px-4 py-2 rounded-lg shadow-lg text-lg cursor-not-allowed opacity-60"
-                            disabled={true}
-                            title="Both DRHP and RHP documents already exist in this directory"
-                          >
-                            <Upload className="h-4 w-4" />
-                            Upload Document
-                            <ChevronDown className="h-4 w-4" />
-                          </button>
-                        ) : hasDrhpInDirectory && !hasRhpInDirectory ? (
-                          // Only DRHP exists - show direct Upload RHP button
-                          <button
-                            className="flex items-center gap-[0.5vw] bg-[#4B2A06] text-white font-semibold px-4 py-2 rounded-lg shadow-lg text-lg transition hover:bg-[#3A2004] focus:outline-none"
-                            onClick={() => {
-                              setSelectedUploadType("RHP");
-                              fileInputRef.current?.click();
-                            }}
-                            disabled={isUploading}
-                            title="Upload RHP document"
-                          >
-                            {isUploading ? (
-                              <>
-                                <Loader2 className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px] animate-spin" />
-                                Processing...
-                              </>
-                            ) : (
-                              <>
-                                <Upload className="h-4 w-4" />
-                                Upload RHP
-                              </>
-                            )}
-                          </button>
-                        ) : hasRhpInDirectory && !hasDrhpInDirectory ? (
-                          // Only RHP exists - show direct Upload DRHP button
-                          <button
-                            className="flex items-center gap-[0.5vw] bg-[#4B2A06] text-white font-semibold px-4 py-2 rounded-lg shadow-lg text-lg transition hover:bg-[#3A2004] focus:outline-none"
-                            onClick={() => {
-                              setSelectedUploadType("DRHP");
-                              fileInputRef.current?.click();
-                            }}
-                            disabled={isUploading}
-                            title="Upload DRHP document"
-                          >
-                            {isUploading ? (
-                              <>
-                                <Loader2 className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px] animate-spin" />
-                                Processing...
-                              </>
-                            ) : (
-                              <>
-                                <Upload className="h-4 w-4" />
-                                Upload DRHP
-                              </>
-                            )}
-                          </button>
-                        ) : (
-                          // Neither exists - show dropdown with both options
-                          <div className="relative upload-dropdown-container">
-                    <button
-                      className="flex items-center gap-[0.5vw] bg-[#4B2A06] text-white font-semibold px-4 py-2 rounded-lg shadow-lg text-lg transition hover:bg-[#3A2004] focus:outline-none"
-                      onClick={() => setShowUploadDropdown(!showUploadDropdown)}
-                      disabled={isUploading}
-                              title="Upload document"
-                    >
-                      {isUploading ? (
-                        <>
-                          <Loader2 className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px] animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                                  <Upload className="h-4 w-4" />
+                    // Inside a directory - show upload buttons based on what's available
+                    <div className="flex items-center gap-2">
+                      {hasDrhpInDirectory && hasRhpInDirectory ? (
+                        // Both DRHP and RHP exist - disable the button
+                        <button
+                          className="flex items-center gap-[0.5vw] bg-gray-400 text-white font-semibold px-4 py-2 rounded-lg shadow-lg text-lg cursor-not-allowed opacity-60"
+                          disabled={true}
+                          title="Both DRHP and RHP documents already exist in this directory"
+                        >
+                          <Upload className="h-4 w-4" />
                           Upload Document
                           <ChevronDown className="h-4 w-4" />
-                        </>
-                      )}
-                    </button>
-                            {showUploadDropdown && (
-                              <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[180px]">
-                        <button
-                                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
-                          onClick={() => {
-                            setSelectedUploadType("DRHP");
-                            setShowUploadDropdown(false);
-                                    fileInputRef.current?.click();
-                                  }}
-                                >
-                                  <FileText className="h-4 w-4" />
-                                  Upload DRHP
                         </button>
+                      ) : hasDrhpInDirectory && !hasRhpInDirectory ? (
+                        // Only DRHP exists - show direct Upload RHP button
                         <button
-                                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                          className="flex items-center gap-[0.5vw] bg-[#4B2A06] text-white font-semibold px-4 py-2 rounded-lg shadow-lg text-lg transition hover:bg-[#3A2004] focus:outline-none"
                           onClick={() => {
                             setSelectedUploadType("RHP");
-                            setShowUploadDropdown(false);
-                                    fileInputRef.current?.click();
-                                  }}
-                                >
-                                  <FileText className="h-4 w-4" />
-                                  Upload RHP
+                            fileInputRef.current?.click();
+                          }}
+                          disabled={isUploading}
+                          title="Upload RHP document"
+                        >
+                          {isUploading ? (
+                            <>
+                              <Loader2 className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px] animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4" />
+                              Upload RHP
+                            </>
+                          )}
                         </button>
-                      </div>
-                    )}
-                  </div>
-                        )}
-                </div>
-                    ) : (
+                      ) : hasRhpInDirectory && !hasDrhpInDirectory ? (
+                        // Only RHP exists - show direct Upload DRHP button
+                        <button
+                          className="flex items-center gap-[0.5vw] bg-[#4B2A06] text-white font-semibold px-4 py-2 rounded-lg shadow-lg text-lg transition hover:bg-[#3A2004] focus:outline-none"
+                          onClick={() => {
+                            setSelectedUploadType("DRHP");
+                            fileInputRef.current?.click();
+                          }}
+                          disabled={isUploading}
+                          title="Upload DRHP document"
+                        >
+                          {isUploading ? (
+                            <>
+                              <Loader2 className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px] animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4" />
+                              Upload DRHP
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        // Neither exists - show dropdown with both options
+                        <div className="relative upload-dropdown-container">
+                          <button
+                            className="flex items-center gap-[0.5vw] bg-[#4B2A06] text-white font-semibold px-4 py-2 rounded-lg shadow-lg text-lg transition hover:bg-[#3A2004] focus:outline-none"
+                            onClick={() => setShowUploadDropdown(!showUploadDropdown)}
+                            disabled={isUploading}
+                            title="Upload document"
+                          >
+                            {isUploading ? (
+                              <>
+                                <Loader2 className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px] animate-spin" />
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4" />
+                                Upload Document
+                                <ChevronDown className="h-4 w-4" />
+                              </>
+                            )}
+                          </button>
+                          {showUploadDropdown && (
+                            <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[180px]">
+                              <button
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                                onClick={() => {
+                                  setSelectedUploadType("DRHP");
+                                  setShowUploadDropdown(false);
+                                  fileInputRef.current?.click();
+                                }}
+                              >
+                                <FileText className="h-4 w-4" />
+                                Upload DRHP
+                              </button>
+                              <button
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                                onClick={() => {
+                                  setSelectedUploadType("RHP");
+                                  setShowUploadDropdown(false);
+                                  fileInputRef.current?.click();
+                                }}
+                              >
+                                <FileText className="h-4 w-4" />
+                                Upload RHP
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
                     // Not in a directory - show Create New Folder button
                     <div className="relative">
-                    <button
+                      <button
                         className="flex items-center gap-[0.5vw] bg-[#4B2A06] text-white font-semibold px-4 py-2 rounded-lg shadow-lg text-lg transition hover:bg-[#3A2004] focus:outline-none"
-                    onClick={() => {
+                        onClick={() => {
                           // Show Create New Folder popup with directory selector
                           setShowDirectorySelector(true);
                           setPendingUpload(null);
@@ -2824,20 +2828,20 @@ export const StartConversation: React.FC = () => {
                           <>
                             <Loader2 className="h-[1.5vw] w-[1.5vw] min-w-[24px] min-h-[24px] animate-spin" />
                             Processing...
-                      </>
-                    ) : (
-                      <>
-                            
-                            Create New 
+                          </>
+                        ) : (
+                          <>
+
+                            Create New
                             <Plus className="h-4 w-4" />
-                      </>
-                    )}
-                  </button>
-                      </div>
-                  )}
-                      </div>
-                      </div>
+                          </>
+                        )}
+                      </button>
                     </div>
+                  )}
+                </div>
+              </div>
+            </div>
             {/* 
               Filters and View Controls
               Left: Back button (in directory) or time filter (directory list)
@@ -2882,7 +2886,7 @@ export const StartConversation: React.FC = () => {
                           { value: "last60", label: "Last 60 days" }
                         ];
                         const selectedOption = filterOptions.find(opt => opt.value === directoryTimeFilter) || filterOptions[0];
-                        
+
                         return (
                           <>
                             <button
@@ -2890,11 +2894,10 @@ export const StartConversation: React.FC = () => {
                               onClick={() => {
                                 setShowDirectoryTimeFilter(!showDirectoryTimeFilter);
                               }}
-                              className={`flex items-center gap-[0.5vw] font-semibold px-[1.5vw] py-[0.5vw] rounded-lg text-[#5A6473] transition-colors cursor-pointer relative ${
-                                directoryTimeFilter === 'all' 
-                                  ? 'bg-[#F3F4F6] text-[#5A6473] hover:bg-[#E5E7EB]' 
-                                  : 'bg-[#F3F4F6] text-[#5A6473] hover:bg-[#E5E7EB]'
-                              }`}
+                              className={`flex items-center gap-[0.5vw] font-semibold px-[1.5vw] py-[0.5vw] rounded-lg text-[#5A6473] transition-colors cursor-pointer relative ${directoryTimeFilter === 'all'
+                                ? 'bg-[#F3F4F6] text-[#5A6473] hover:bg-[#E5E7EB]'
+                                : 'bg-[#F3F4F6] text-[#5A6473] hover:bg-[#E5E7EB]'
+                                }`}
                               style={{
                                 paddingRight: '2.5rem',
                               }}
@@ -2906,7 +2909,7 @@ export const StartConversation: React.FC = () => {
                                 <ChevronDown className="h-4 w-4 absolute right-2" />
                               )}
                             </button>
-                            
+
                             {/* Dropdown Menu */}
                             {showDirectoryTimeFilter && (
                               <>
@@ -2928,13 +2931,11 @@ export const StartConversation: React.FC = () => {
                                         setDirectoryTimeFilter(option.value);
                                         setShowDirectoryTimeFilter(false);
                                       }}
-                                      className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${
-                                        directoryTimeFilter === option.value
-                                          ? 'bg-[#F3F4F6] text-[#4B2A06]'
-                                          : 'text-[#5A6473] hover:bg-[#F3F4F6]'
-                                      } ${option.value === filterOptions[0].value ? 'rounded-t-lg' : ''} ${
-                                        option.value === filterOptions[filterOptions.length - 1].value ? 'rounded-b-lg' : ''
-                                      }`}
+                                      className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${directoryTimeFilter === option.value
+                                        ? 'bg-[#F3F4F6] text-[#4B2A06]'
+                                        : 'text-[#5A6473] hover:bg-[#F3F4F6]'
+                                        } ${option.value === filterOptions[0].value ? 'rounded-t-lg' : ''} ${option.value === filterOptions[filterOptions.length - 1].value ? 'rounded-b-lg' : ''
+                                        }`}
                                     >
                                       {option.label}
                                     </button>
@@ -2959,11 +2960,10 @@ export const StartConversation: React.FC = () => {
               <div className="flex items-center gap-[0.5vw]">
                 <div className="flex bg-[#F3F4F6] rounded-lg p-1">
                   <button
-                    className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
-                      viewMode === "list"
-                        ? "bg-white text-[#4B2A06] shadow-sm"
-                        : "text-[#5A6473] hover:text-[#4B2A06]"
-                    }`}
+                    className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${viewMode === "list"
+                      ? "bg-white text-[#4B2A06] shadow-sm"
+                      : "text-[#5A6473] hover:text-[#4B2A06]"
+                      }`}
                     onClick={() => setViewMode("list")}
                     title="List view"
                   >
@@ -2971,11 +2971,10 @@ export const StartConversation: React.FC = () => {
                     <span>List</span>
                   </button>
                   <button
-                    className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
-                      viewMode === "card"
-                        ? "bg-white text-[#4B2A06] shadow-sm"
-                        : "text-[#5A6473] hover:text-[#4B2A06]"
-                    }`}
+                    className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${viewMode === "card"
+                      ? "bg-white text-[#4B2A06] shadow-sm"
+                      : "text-[#5A6473] hover:text-[#4B2A06]"
+                      }`}
                     onClick={() => setViewMode("card")}
                     title="Card view"
                   >
@@ -2992,9 +2991,8 @@ export const StartConversation: React.FC = () => {
             */}
             <div className="flex-1 min-h-0">
               <div
-                className={`${
-                  user?.role === "admin" ? "h-[68vh]" : "h-[67vh]"
-                } overflow-y-auto`}
+                className={`${user?.role === "admin" ? "h-[68vh]" : "h-[67vh]"
+                  } overflow-y-auto`}
               >
                 {(currentFolder?.id ? loading : directoriesLoading) ? (
                   <div className="flex justify-center items-center h-[10vh] text-lg text-muted-foreground">
@@ -3042,9 +3040,8 @@ export const StartConversation: React.FC = () => {
                                   <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                                     {/* Compare button - show different icons for linked vs unlinked */}
                                     <button
-                                      className={`text-[#4B2A06] hover:text-[#3A2004] p-1 flex items-center justify-center ${
-                                        compareLoading ? 'opacity-50 cursor-not-allowed' : ''
-                                      }`}
+                                      className={`text-[#4B2A06] hover:text-[#3A2004] p-1 flex items-center justify-center ${compareLoading ? 'opacity-50 cursor-not-allowed' : ''
+                                        }`}
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         if (!compareLoading) {
@@ -3056,9 +3053,9 @@ export const StartConversation: React.FC = () => {
                                     >
                                       {directoryLinkedStatus[dir.id] ? (
                                         // Linked documents icon - view icon for linked documents
-                                        <img 
-                                          className="h-3 w-3 object-contain" 
-                                          src="https://img.icons8.com/pastel-glyph/128/document--v1.png" 
+                                        <img
+                                          className="h-3 w-3 object-contain"
+                                          src="https://img.icons8.com/pastel-glyph/128/document--v1.png"
                                           alt="view"
                                           style={{ display: 'block', maxWidth: '100%', height: 'auto', minWidth: '12px', minHeight: '12px' }}
                                           onError={(e) => {
@@ -3068,9 +3065,9 @@ export const StartConversation: React.FC = () => {
                                         />
                                       ) : (
                                         // Unlinked documents icon - original compare icon
-                                        <img 
-                                          className="h-3 w-3 object-contain" 
-                                          src="https://img.icons8.com/ios/50/compare.png" 
+                                        <img
+                                          className="h-3 w-3 object-contain"
+                                          src="https://img.icons8.com/ios/50/compare.png"
                                           alt="compare"
                                           style={{ display: 'block', maxWidth: '100%', height: 'auto', minWidth: '12px', minHeight: '12px' }}
                                           onError={(e) => {
@@ -3175,7 +3172,7 @@ export const StartConversation: React.FC = () => {
                                     )}
                                     {/* Show reports count if available */}
                                     {directoryReports[dir.id] > 0 && (
-                                      <span 
+                                      <span
                                         className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 flex items-center gap-1 cursor-pointer hover:bg-blue-200"
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -3195,7 +3192,7 @@ export const StartConversation: React.FC = () => {
                                     )}
                                     {/* Show summaries count if available */}
                                     {directorySummaries[dir.id] > 0 && (
-                                      <span 
+                                      <span
                                         className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 flex items-center gap-1"
                                         title={`${directorySummaries[dir.id]} summar${directorySummaries[dir.id] > 1 ? 'ies' : 'y'} available`}
                                       >
@@ -3236,19 +3233,17 @@ export const StartConversation: React.FC = () => {
                                     {directorySortBy === "lastModified" ? "Last modified" : "Sort: A-Z"}
                                   </span>
                                   <div className="flex flex-col items-center justify-center gap-0">
-                                    <ChevronUp 
-                                      className={`h-3 w-3  font-bold transition-colors ${
-                                        directorySortBy === "lastModified" 
-                                          ? 'text-[#4B2A06]' 
-                                          : 'text-gray-400'
-                                      }`}
+                                    <ChevronUp
+                                      className={`h-3 w-3  font-bold transition-colors ${directorySortBy === "lastModified"
+                                        ? 'text-[#4B2A06]'
+                                        : 'text-gray-400'
+                                        }`}
                                     />
-                                    <ChevronDown 
-                                      className={`h-3 w-3 font-bold transition-colors -mt-0.5 ${
-                                        directorySortBy === "alphabetical" 
-                                          ? 'text-[#4B2A06]' 
-                                          : 'text-gray-400'
-                                      }`}
+                                    <ChevronDown
+                                      className={`h-3 w-3 font-bold transition-colors -mt-0.5 ${directorySortBy === "alphabetical"
+                                        ? 'text-[#4B2A06]'
+                                        : 'text-gray-400'
+                                        }`}
                                     />
                                   </div>
                                 </button>
@@ -3332,7 +3327,7 @@ export const StartConversation: React.FC = () => {
                                         )}
                                         {/* Show reports count if available */}
                                         {directoryReports[dir.id] > 0 && (
-                                          <span 
+                                          <span
                                             className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 flex items-center gap-1 cursor-pointer hover:bg-blue-200"
                                             onClick={(e) => {
                                               e.stopPropagation();
@@ -3352,7 +3347,7 @@ export const StartConversation: React.FC = () => {
                                         )}
                                         {/* Show summaries count if available */}
                                         {directorySummaries[dir.id] > 0 && (
-                                          <span 
+                                          <span
                                             className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 flex items-center gap-1"
                                             title={`${directorySummaries[dir.id]} summar${directorySummaries[dir.id] > 1 ? 'ies' : 'y'} available`}
                                           >
@@ -3374,9 +3369,8 @@ export const StartConversation: React.FC = () => {
                                   <div className="col-span-1 flex items-center justify-end gap-1 relative">
                                     {/* Compare button - show different icons for linked vs unlinked */}
                                     <button
-                                      className={`text-[#4B2A06] hover:text-[#3A2004] p-1 flex items-center justify-center ${
-                                        compareLoading ? 'opacity-50 cursor-not-allowed' : ''
-                                      }`}
+                                      className={`text-[#4B2A06] hover:text-[#3A2004] p-1 flex items-center justify-center ${compareLoading ? 'opacity-50 cursor-not-allowed' : ''
+                                        }`}
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         if (!compareLoading) {
@@ -3388,9 +3382,9 @@ export const StartConversation: React.FC = () => {
                                     >
                                       {directoryLinkedStatus[dir.id] ? (
                                         // Linked documents icon - view icon for linked documents
-                                        <img 
-                                          className="h-4 w-4 object-contain" 
-                                          src="https://img.icons8.com/pastel-glyph/128/document--v1.png" 
+                                        <img
+                                          className="h-4 w-4 object-contain"
+                                          src="https://img.icons8.com/pastel-glyph/128/document--v1.png"
                                           alt="view"
                                           style={{ display: 'block', maxWidth: '100%', height: 'auto', minWidth: '12px', minHeight: '12px' }}
                                           onError={(e) => {
@@ -3400,9 +3394,9 @@ export const StartConversation: React.FC = () => {
                                         />
                                       ) : (
                                         // Unlinked documents icon - original compare icon
-                                        <img 
-                                          className="h-4 w-4 object-contain" 
-                                          src="https://img.icons8.com/ios/50/compare.png" 
+                                        <img
+                                          className="h-4 w-4 object-contain"
+                                          src="https://img.icons8.com/ios/50/compare.png"
                                           alt="compare"
                                           style={{ display: 'block', maxWidth: '100%', height: 'auto', minWidth: '12px', minHeight: '12px' }}
                                           onError={(e) => {
@@ -3413,8 +3407,8 @@ export const StartConversation: React.FC = () => {
                                       )}
                                     </button>
 
-                                     {/* Delete button - always visible */}
-                                     <button
+                                    {/* Delete button - always visible */}
+                                    <button
                                       className="text-[#4B2A06] hover:text-red-600 p-1"
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -3424,7 +3418,7 @@ export const StartConversation: React.FC = () => {
                                     >
                                       <Trash2 className="h-3 w-3" />
                                     </button>
-                                    
+
                                     {/* 3-dot menu button */}
                                     <div className="relative directory-menu-container">
                                       <button
@@ -3437,10 +3431,10 @@ export const StartConversation: React.FC = () => {
                                       >
                                         <MoreVertical className="h-4 w-4" />
                                       </button>
-                                      
+
                                       {/* Dropdown menu */}
                                       {openDirectoryMenuId === dir.id && (
-                                        <div 
+                                        <div
                                           className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50"
                                           onClick={(e) => e.stopPropagation()}
                                         >
@@ -3485,8 +3479,8 @@ export const StartConversation: React.FC = () => {
                                         </div>
                                       )}
                                     </div>
-                                    
-                                   
+
+
                                   </div>
                                 </div>
                               ))
@@ -3503,388 +3497,103 @@ export const StartConversation: React.FC = () => {
                       */
                       <>
                         {viewMode === "card" ? (
-                        // Card View for Documents, Summaries, and Reports
-                      <div className="grid grid-cols-4 gap-[1.5vw] mb-[1vw]">
-                        {/* Combine documents, summaries, and reports into one array for display */}
-                        {(() => {
-                          // Create items array with type indicator
-                          const allItems: any[] = [
-                            ...(filteredDocs || []).map((doc: any) => ({ ...doc, itemType: 'document' })),
-                            ...(currentDirectorySummaries || []).map((summary: any) => ({ ...summary, itemType: 'summary' })),
-                            ...(currentDirectoryReports || []).map((report: any) => ({ ...report, itemType: 'report' }))
-                          ];
-                          
-                          // Sort by date (newest first)
-                          allItems.sort((a: any, b: any) => {
-                            const dateA = new Date(a.updatedAt || a.uploadedAt || 0).getTime();
-                            const dateB = new Date(b.updatedAt || b.uploadedAt || 0).getTime();
-                            return dateB - dateA;
-                          });
-                          
-                          if (allItems.length === 0) {
-                            return (
-                              <div className="col-span-4 text-center text-muted-foreground">
-                                No items found.
-                              </div>
-                            );
-                          }
-                          
-                          return allItems.map((item) => {
-                            // Render document
-                            if (item.itemType === 'document') {
-                              const doc = item;
-                              return (
-                                <div
-                                  key={doc.id}
-                                  ref={(el) => (docRefs.current[doc.id] = el)}
-                                  className={`flex flex-col items-start bg-[#F3F4F6] rounded-xl p-[1vw] min-w-[180px] min-h-[110px] w-full cursor-pointer hover:bg-[#ECECEC] transition relative
-                                    ${
-                                      selectedDoc && selectedDoc.id === doc.id
-                                        ? "ring-2 ring-[#4B2A06] bg-[#ECECEC]"
-                                        : ""
-                                    }
-                                    ${
-                                      highlightedDocId === doc.id
-                                        ? "ring-4 ring-orange-400 bg-yellow-100 animate-pulse"
-                                        : ""
-                                    }
-                                  `}
-                                  onClick={() => {
-                                    if (currentFolder) {
-                                      localStorage.setItem("currentFolder", JSON.stringify(currentFolder));
-                                    }
-                                    navigate(`/doc/${doc.id || doc.namespace}`);
-                                  }}
-                                  onAnimationEnd={() => {
-                                    if (highlightedDocId === doc.id)
-                                      setHighlightedDocId(null);
-                                  }}
-                                >
-                                  <div className="flex w-full justify-between items-start">
-                                    <div className="flex-1 min-w-0">
-                                      <FileText className="h-3 w-3 text-[#4B2A06] mb-[1vw]" />
-                                    </div>
-                                    <div className="flex">
-                                      <button
-                                        className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleRenameClick(doc);
-                                        }}
-                                        title="Rename document"
-                                      >
-                                        <Pencil className="h-3 w-3" />
-                                      </button>
-                                      <button
-                                        className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          openMoveDialog(doc);
-                                        }}
-                                        title="Move to folder"
-                                      >
-                                        <FolderUpIcon className="h-3 w-3" />
-                                      </button>
-                                      <button
-                                        className="text-muted-foreground hover:text-destructive p-[0.3vw]"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDeleteDoc(doc);
-                                        }}
-                                        title="Delete document"
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </button>
-                                    </div>
+                          // Card View for Documents, Summaries, and Reports
+                          <div className="grid grid-cols-4 gap-[1.5vw] mb-[1vw]">
+                            {/* Combine documents, summaries, and reports into one array for display */}
+                            {(() => {
+                              // Create items array with type indicator
+                              const allItems: any[] = [
+                                ...(filteredDocs || []).map((doc: any) => ({ ...doc, itemType: 'document' })),
+                                ...(currentDirectorySummaries || []).map((summary: any) => ({ ...summary, itemType: 'summary' })),
+                                ...(currentDirectoryReports || []).map((report: any) => ({ ...report, itemType: 'report' }))
+                              ];
+
+                              // Sort by date (newest first)
+                              allItems.sort((a: any, b: any) => {
+                                const dateA = new Date(a.updatedAt || a.uploadedAt || 0).getTime();
+                                const dateB = new Date(b.updatedAt || b.uploadedAt || 0).getTime();
+                                return dateB - dateA;
+                              });
+
+                              if (allItems.length === 0) {
+                                return (
+                                  <div className="col-span-4 text-center text-muted-foreground">
+                                    No items found.
                                   </div>
-                                  {renamingDocId === doc.id ? (
-                                    <div className="flex items-center w-full mt-[0.5vw] mb-[0.5vw]">
-                                      <input
-                                        className="font-semibold text-[#232323] mb-1 max-w-full truncate block border border-gray-300 rounded px-[0.5vw] py-[0.3vw] outline-none focus:outline-none focus:ring-0 focus:border-gray-300"
-                                        style={{ maxWidth: "120px" }}
-                                        value={renameValue}
-                                        autoFocus
-                                        onClick={(e) => e.stopPropagation()}
-                                        onFocus={(e) => e.stopPropagation()}
-                                        onChange={handleRenameChange}
-                                        onBlur={() => handleRenameSubmit(doc)}
-                                        onKeyDown={(e) => handleRenameKeyDown(e, doc)}
-                                      />
-                                      <button
-                                        className="ml-[0.5vw] text-muted-foreground hover:text-destructive"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setRenamingDocId(null);
-                                        }}
-                                        title="Cancel rename"
-                                      >
-                                        <X className="h-[0.8vw] w-[0.8vw] min-w-[12px] min-h-[12px]" />
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <span
-                                      className="font-semibold text-[#232323] mb-1 max-w-full truncate block"
-                                      style={{
-                                        maxWidth: "180px",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap",
+                                );
+                              }
+
+                              return allItems.map((item) => {
+                                // Render document
+                                if (item.itemType === 'document') {
+                                  const doc = item;
+                                  return (
+                                    <div
+                                      key={doc.id}
+                                      ref={(el) => (docRefs.current[doc.id] = el)}
+                                      className={`flex flex-col items-start bg-[#F3F4F6] rounded-xl p-[1vw] min-w-[180px] min-h-[110px] w-full cursor-pointer hover:bg-[#ECECEC] transition relative
+                                    ${selectedDoc && selectedDoc.id === doc.id
+                                          ? "ring-2 ring-[#4B2A06] bg-[#ECECEC]"
+                                          : ""
+                                        }
+                                    ${highlightedDocId === doc.id
+                                          ? "ring-4 ring-orange-400 bg-yellow-100 animate-pulse"
+                                          : ""
+                                        }
+                                  `}
+                                      onClick={() => {
+                                        if (currentFolder) {
+                                          localStorage.setItem("currentFolder", JSON.stringify(currentFolder));
+                                        }
+                                        navigate(`/doc/${doc.id || doc.namespace}`);
+                                      }}
+                                      onAnimationEnd={() => {
+                                        if (highlightedDocId === doc.id)
+                                          setHighlightedDocId(null);
                                       }}
                                     >
-                                      {doc.name}
-                                    </span>
-                                  )}
-                                  <span className="text-[#A1A1AA] text-sm">
-                                    {doc.size || (doc.fileSize ? `${Math.round(doc.fileSize / 1024)} KB` : "")}
-                                  </span>
-                                  <div className="flex items-center justify-between w-full mt-[0.5vw]">
-                                    <span className="text-[#A1A1AA] text-xs">
-                                      {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : ""}
-                                    </span>
-                                    <div className="flex justify-between items-center">
-                                      <span className="text-xs px-2 py-1 mx-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">{doc.type}</span>
-                                      {(doc.relatedRhpId || doc.relatedDrhpId) && (
-                                        <span 
-                                          className="text-sm p-1.5 rounded-full bg-green-800 text-white flex items-center gap-1 cursor-pointer"
-                                          title={doc.type === "DRHP" ? "Linked with RHP" : "Linked with DRHP"}
-                                        >
-                                          <CheckCircle className="h-3 w-3 " />
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            }
-                            
-                            // Render summary
-                            if (item.itemType === 'summary') {
-                              const summary = item;
-                              const doc = documents.find((d: any) => d.id === summary.documentId);
-                              return (
-                                <div
-                                  key={`summary-${summary.id}`}
-                                  className="flex flex-col items-start bg-[#F3F4F6] rounded-xl p-[1vw] min-w-[180px] min-h-[110px] w-full cursor-pointer hover:bg-[#ECECEC] transition relative border-l-4 border-l-green-500"
-                                  onClick={() => {
-                                    setSelectedSummaryId(summary.id);
-                                    setShowSummaryModal(true);
-                                  }}
-                                >
-                                  <div className="flex w-full justify-between items-start">
-                                    <div className="flex-1 min-w-0">
-                                      <FileText className="h-3 w-3 text-green-600 mb-[1vw]" />
-                                    </div>
-                                    <div className="flex" onClick={(e) => e.stopPropagation()}>
-                                      <button
-                                        className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleRenameSummaryClick(summary);
-                                        }}
-                                        title="Rename summary"
-                                      >
-                                        <Pencil className="h-3 w-3" />
-                                      </button>
-                                      <button
-                                        className="text-muted-foreground hover:text-red-600 p-[0.3vw]"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDeleteSummary(summary);
-                                        }}
-                                        title="Delete summary"
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                  {renamingSummaryId === summary.id ? (
-                                    <input
-                                      type="text"
-                                      value={renameSummaryValue}
-                                      onChange={(e) => setRenameSummaryValue(e.target.value)}
-                                      onBlur={() => handleRenameSummarySubmit(summary)}
-                                      onKeyDown={(e) => handleRenameSummaryKeyDown(e, summary)}
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="w-full px-2 py-1 text-sm font-semibold border border-[#4B2A06] rounded mb-1"
-                                      autoFocus
-                                    />
-                                  ) : (
-                                    <span className="font-semibold text-[#232323] mb-1 max-w-full truncate block" style={{ maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                      {summary.title || 'Untitled Summary'}
-                                    </span>
-                                  )}
-                                  {doc && (
-                                    <span className="text-xs text-gray-500 truncate block mb-1">
-                                      {doc.name}
-                                    </span>
-                                  )}
-                                  <div className="flex items-center justify-between w-full mt-[0.5vw]">
-                                    <span className="text-[#A1A1AA] text-xs">
-                                      {summary.updatedAt ? new Date(summary.updatedAt).toLocaleDateString() : ""}
-                                    </span>
-                                    <div className="flex justify-between items-center">
-                                      <span className="text-xs px-2 py-1 mx-1 rounded-full bg-green-100 text-green-700">Summary</span>
-                                      {doc && doc.type && (
-                                        <span className="text-xs px-2 py-1 mx-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">{doc.type}</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            }
-                            
-                            // Render report
-                            if (item.itemType === 'report') {
-                              const report = item;
-                              const drhpDoc = documents.find((d: any) => d.namespace === report.drhpNamespace || d.id === report.drhpId);
-                              const rhpDoc = documents.find((d: any) => d.rhpNamespace === report.rhpNamespace || d.id === report.rhpId);
-                              return (
-                                <div
-                                  key={`report-${report.id}`}
-                                  className="flex flex-col items-start bg-[#F3F4F6] rounded-xl p-[1vw] min-w-[180px] min-h-[110px] w-full cursor-pointer hover:bg-[#ECECEC] transition relative border-l-4 border-l-blue-500"
-                                  onClick={() => {
-                                    setSelectedReportId(report.id);
-                                    setShowReportModal(true);
-                                  }}
-                                >
-                                  <div className="flex w-full justify-between items-start">
-                                    <div className="flex-1 min-w-0">
-                                      <BarChart3 className="h-3 w-3 text-blue-600 mb-[1vw]" />
-                                    </div>
-                                    <div className="flex" onClick={(e) => e.stopPropagation()}>
-                                      <button
-                                        className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleRenameReportClick(report);
-                                        }}
-                                        title="Rename report"
-                                      >
-                                        <Pencil className="h-3 w-3" />
-                                      </button>
-                                      <button
-                                        className="text-muted-foreground hover:text-red-600 p-[0.3vw]"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDeleteReport(report);
-                                        }}
-                                        title="Delete report"
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                  {renamingReportId === report.id ? (
-                                    <input
-                                      type="text"
-                                      value={renameReportValue}
-                                      onChange={(e) => setRenameReportValue(e.target.value)}
-                                      onBlur={() => handleRenameReportSubmit(report)}
-                                      onKeyDown={(e) => handleRenameReportKeyDown(e, report)}
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="w-full px-2 py-1 text-sm font-semibold border border-[#4B2A06] rounded mb-1"
-                                      autoFocus
-                                    />
-                                  ) : (
-                                    <span className="font-semibold text-[#232323] mb-1 max-w-full truncate block" style={{ maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                      {report.title || 'Untitled Report'}
-                                    </span>
-                                  )}
-                                  <div className="text-xs text-gray-500 truncate block mb-1">
-                                    {drhpDoc?.name || 'DRHP'} {drhpDoc && rhpDoc ? 'vs' : ''} {rhpDoc?.name || 'RHP'}
-                                  </div>
-                                  <div className="flex items-center justify-between w-full mt-[0.5vw]">
-                                    <span className="text-[#A1A1AA] text-xs">
-                                      {report.updatedAt ? new Date(report.updatedAt).toLocaleDateString() : ""}
-                                    </span>
-                                    <div className="flex justify-between items-center gap-1">
-                                      <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">Report</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            }
-                            
-                            return null;
-                          });
-                        })()}
-                      </div>
-                    ) : (
-                      // List View for Documents
-                      <div className="bg-white overflow-hidden">
-                        {/* 
-                          Sticky Table Header for Documents
-                          Shows column headers: Name, Doc type, Last modified, Actions
-                        */}
-                        <div className="bg-gray-50 border-b border-gray-200 rounded-lg px-6 py-3">
-                          <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-600 ">
-                            <div className="col-span-7">Name</div>
-                            <div className="col-span-2">Doc type</div>
-                            <div className="col-span-2">Last modified</div>
-                            <div className="col-span-1 text-right">Actions</div>
-                          </div>
-                        </div>
-
-                        {/* List Items - Combine documents, summaries, and reports */}
-                        {(() => {
-                          const allItems: any[] = [
-                            ...(filteredDocs || []).map((doc: any) => ({ ...doc, itemType: 'document' })),
-                            ...(currentDirectorySummaries || []).map((summary: any) => ({ ...summary, itemType: 'summary' })),
-                            ...(currentDirectoryReports || []).map((report: any) => ({ ...report, itemType: 'report' }))
-                          ];
-                          
-                          allItems.sort((a: any, b: any) => {
-                            const dateA = new Date(a.updatedAt || a.uploadedAt || 0).getTime();
-                            const dateB = new Date(b.updatedAt || b.uploadedAt || 0).getTime();
-                            return dateB - dateA;
-                          });
-                          
-                          if (allItems.length === 0) {
-                            return (
-                              <div className="text-center text-muted-foreground py-8">
-                                No items found.
-                              </div>
-                            );
-                          }
-                          
-                          return allItems.map((item) => {
-                            // Render document
-                            if (item.itemType === 'document') {
-                              const doc = item;
-                              return (
-                                <div
-                                  key={doc.id}
-                                  ref={(el) => (docRefs.current[doc.id] = el)}
-                                  className={`grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer transition-colors relative
-                                    ${
-                                      selectedDoc && selectedDoc.id === doc.id
-                                        ? "bg-blue-50 border-blue-200"
-                                        : ""
-                                    }
-                                    ${
-                                      highlightedDocId === doc.id
-                                        ? "bg-yellow-100 border-yellow-300 animate-pulse"
-                                        : ""
-                                    }
-                                  `}
-                                  onClick={() => {
-                                    if (currentFolder) {
-                                      localStorage.setItem("currentFolder", JSON.stringify(currentFolder));
-                                    }
-                                    navigate(`/doc/${doc.id || doc.namespace}`);
-                                  }}
-                                  onAnimationEnd={() => {
-                                    if (highlightedDocId === doc.id)
-                                      setHighlightedDocId(null);
-                                  }}
-                                >
-                                  <div className="col-span-7 flex items-center gap-3">
-                                    <FileText className="h-3 w-3 text-[#4B2A06] flex-shrink-0" />
-                                    <div className="flex-1 min-w-0">
+                                      <div className="flex w-full justify-between items-start">
+                                        <div className="flex-1 min-w-0">
+                                          <FileText className="h-3 w-3 text-[#4B2A06] mb-[1vw]" />
+                                        </div>
+                                        <div className="flex">
+                                          <button
+                                            className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleRenameClick(doc);
+                                            }}
+                                            title="Rename document"
+                                          >
+                                            <Pencil className="h-3 w-3" />
+                                          </button>
+                                          <button
+                                            className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              openMoveDialog(doc);
+                                            }}
+                                            title="Move to folder"
+                                          >
+                                            <FolderUpIcon className="h-3 w-3" />
+                                          </button>
+                                          <button
+                                            className="text-muted-foreground hover:text-destructive p-[0.3vw]"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteDoc(doc);
+                                            }}
+                                            title="Delete document"
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      </div>
                                       {renamingDocId === doc.id ? (
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center w-full mt-[0.5vw] mb-[0.5vw]">
                                           <input
-                                            className="font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:outline-none focus:ring-0 focus:border-gray-300"
+                                            className="font-semibold text-[#232323] mb-1 max-w-full truncate block border border-gray-300 rounded px-[0.5vw] py-[0.3vw] outline-none focus:outline-none focus:ring-0 focus:border-gray-300"
+                                            style={{ maxWidth: "120px" }}
                                             value={renameValue}
                                             autoFocus
                                             onClick={(e) => e.stopPropagation()}
@@ -3894,176 +3603,169 @@ export const StartConversation: React.FC = () => {
                                             onKeyDown={(e) => handleRenameKeyDown(e, doc)}
                                           />
                                           <button
-                                            className="text-gray-400 hover:text-red-500"
+                                            className="ml-[0.5vw] text-muted-foreground hover:text-destructive"
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               setRenamingDocId(null);
                                             }}
                                             title="Cancel rename"
                                           >
-                                            <X className="h-4 w-4" />
+                                            <X className="h-[0.8vw] w-[0.8vw] min-w-[12px] min-h-[12px]" />
                                           </button>
                                         </div>
                                       ) : (
-                                        <span className="font-medium text-gray-900 truncate">
-                                          {doc.name}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="col-span-2 flex items-center">
-                                    <div className="flex gap-1">
-                                    {(doc.relatedRhpId || doc.relatedDrhpId) && (
-                                        <span 
-                                          className="text-sm p-1.5 rounded-full bg-green-800 text-white flex items-center gap-1 cursor-pointer"
-                                          title={doc.type === "DRHP" ? "Linked with RHP" : "Linked with DRHP"}
+                                        <span
+                                          className="font-semibold text-[#232323] mb-1 max-w-full truncate block"
+                                          style={{
+                                            maxWidth: "180px",
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            whiteSpace: "nowrap",
+                                          }}
                                         >
-                                          <CheckCircle className="h-3 w-3 " />
-                                        </span>
-                                    )}
-                                      <span className="text-xs px-2 py-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">{doc.type}</span>
-                                     
-                                    </div>
-                                  </div>
-                                  <div className="col-span-2 flex items-center">
-                                    <span className="text-sm text-gray-600">
-                                      {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : ""}
-                                    </span>
-                                  </div>
-                                  <div className="col-span-1 flex items-center justify-end">
-                                    <div className="flex items-center gap-1">
-                                      <button
-                                        className="text-[#4B2A06] hover:text-[#4B2A06] p-1"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleRenameClick(doc);
-                                        }}
-                                        title="Rename document"
-                                      >
-                                        <Pencil className="h-3 w-3" />
-                                      </button>
-                                      <button
-                                        className="text-[#4B2A06] hover:text-[#4B2A06] p-1"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          openMoveDialog(doc);
-                                        }}
-                                        title="Move to folder"
-                                      >
-                                        <FolderUpIcon className="h-3 w-3" />
-                                      </button>
-                                      <button
-                                        className="text-[#4B2A06] hover:text-red-600 p-1"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDeleteDoc(doc);
-                                        }}
-                                        title="Delete document"
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            }
-                            
-                            // Render summary
-                            if (item.itemType === 'summary') {
-                              const summary = item;
-                              const doc = documents.find((d: any) => d.id === summary.documentId);
-                              return (
-                                <div
-                                  key={`summary-${summary.id}`}
-                                  className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer transition-colors relative border-l-4 border-l-green-500"
-                                  onClick={() => {
-                                    setSelectedSummaryId(summary.id);
-                                    setShowSummaryModal(true);
-                                  }}
-                                >
-                                  <div className="col-span-7 flex items-center gap-3">
-                                    <FileText className="h-3 w-3 text-green-600 flex-shrink-0" />
-                                    <div className="flex-1 min-w-0">
-                                      <span className="font-medium text-gray-900 truncate">
-                                        {summary.title || 'Untitled Summary'}
-                                      </span>
-                                      {doc && (
-                                        <span className="text-xs text-gray-500 truncate block">
                                           {doc.name}
                                         </span>
                                       )}
+                                      <span className="text-[#A1A1AA] text-sm">
+                                        {doc.size || (doc.fileSize ? `${Math.round(doc.fileSize / 1024)} KB` : "")}
+                                      </span>
+                                      <div className="flex items-center justify-between w-full mt-[0.5vw]">
+                                        <span className="text-[#A1A1AA] text-xs">
+                                          {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : ""}
+                                        </span>
+                                        <div className="flex justify-between items-center">
+                                          <span className="text-xs px-2 py-1 mx-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">{doc.type}</span>
+                                          {(doc.relatedRhpId || doc.relatedDrhpId) && (
+                                            <span
+                                              className="text-sm p-1.5 rounded-full bg-green-800 text-white flex items-center gap-1 cursor-pointer"
+                                              title={doc.type === "DRHP" ? "Linked with RHP" : "Linked with DRHP"}
+                                            >
+                                              <CheckCircle className="h-3 w-3 " />
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
                                     </div>
-                                  </div>
-                                  <div className="col-span-2 flex items-center">
-                                    <div className="flex gap-1">
-                                      <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">Summary</span>
-                                      {doc && doc.type && (
-                                        <span className="text-xs px-2 py-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">{doc.type}</span>
+                                  );
+                                }
+
+                                // Render summary
+                                if (item.itemType === 'summary') {
+                                  const summary = item;
+                                  const doc = documents.find((d: any) => d.id === summary.documentId);
+                                  return (
+                                    <div
+                                      key={`summary-${summary.id}`}
+                                      className="flex flex-col items-start bg-[#F3F4F6] rounded-xl p-[1vw] min-w-[180px] min-h-[110px] w-full cursor-pointer hover:bg-[#ECECEC] transition relative border-l-4 border-l-green-500"
+                                      onClick={() => {
+                                        setSelectedSummaryId(summary.id);
+                                        setShowSummaryModal(true);
+                                      }}
+                                    >
+                                      <div className="flex w-full justify-between items-start">
+                                        <div className="flex-1 min-w-0">
+                                          <FileText className="h-3 w-3 text-green-600 mb-[1vw]" />
+                                        </div>
+                                        <div className="flex" onClick={(e) => e.stopPropagation()}>
+                                          <button
+                                            className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleRenameSummaryClick(summary);
+                                            }}
+                                            title="Rename summary"
+                                          >
+                                            <Pencil className="h-3 w-3" />
+                                          </button>
+                                          <button
+                                            className="text-muted-foreground hover:text-red-600 p-[0.3vw]"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteSummary(summary);
+                                            }}
+                                            title="Delete summary"
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                      {renamingSummaryId === summary.id ? (
+                                        <input
+                                          type="text"
+                                          value={renameSummaryValue}
+                                          onChange={(e) => setRenameSummaryValue(e.target.value)}
+                                          onBlur={() => handleRenameSummarySubmit(summary)}
+                                          onKeyDown={(e) => handleRenameSummaryKeyDown(e, summary)}
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="w-full px-2 py-1 text-sm font-semibold border border-[#4B2A06] rounded mb-1"
+                                          autoFocus
+                                        />
+                                      ) : (
+                                        <span className="font-semibold text-[#232323] mb-1 max-w-full truncate block" style={{ maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                          {summary.title || 'Untitled Summary'}
+                                        </span>
                                       )}
+                                      {doc && (
+                                        <span className="text-xs text-gray-500 truncate block mb-1">
+                                          {doc.name}
+                                        </span>
+                                      )}
+                                      <div className="flex items-center justify-between w-full mt-[0.5vw]">
+                                        <span className="text-[#A1A1AA] text-xs">
+                                          {summary.updatedAt ? new Date(summary.updatedAt).toLocaleDateString() : ""}
+                                        </span>
+                                        <div className="flex justify-between items-center">
+                                          <span className="text-xs px-2 py-1 mx-1 rounded-full bg-green-100 text-green-700">Summary</span>
+                                          {doc && doc.type && (
+                                            <span className="text-xs px-2 py-1 mx-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">{doc.type}</span>
+                                          )}
+                                        </div>
+                                      </div>
                                     </div>
-                                  </div>
-                                  <div className="col-span-2 flex items-center">
-                                    <span className="text-sm text-gray-600">
-                                      {summary.updatedAt ? new Date(summary.updatedAt).toLocaleDateString() : ""}
-                                    </span>
-                                  </div>
-                                  <div className="col-span-1 flex items-center justify-end">
-                                    <div className="flex items-center gap-1">
-                                      <button
-                                        className="text-[#4B2A06] hover:text-[#4B2A06] p-1"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleRenameSummaryClick(summary);
-                                        }}
-                                        title="Rename summary"
-                                      >
-                                        <Pencil className="h-3 w-3" />
-                                      </button>
-                                      
-                                      <button
-                                        className="text-[#4B2A06] hover:text-[#4B2A06] p-1"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setSelectedSummaryId(summary.id);
-                                          setShowSummaryModal(true);
-                                        }}
-                                        title="View summary"
-                                      >
-                                        <FileText className="h-3 w-3" />
-                                      </button>
-                                      <button
-                                        className="text-[#4B2A06] hover:text-red-600 p-1"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDeleteSummary(summary);
-                                        }}
-                                        title="Delete summary"
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            }
-                            
-                            // Render report
-                            if (item.itemType === 'report') {
-                              const report = item;
-                              const drhpDoc = documents.find((d: any) => d.namespace === report.drhpNamespace || d.id === report.drhpId);
-                              const rhpDoc = documents.find((d: any) => d.rhpNamespace === report.rhpNamespace || d.id === report.rhpId);
-                              return (
-                                <div
-                                  key={`report-${report.id}`}
-                                  className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer transition-colors relative border-l-4 border-l-blue-500"
-                                  onClick={() => {
-                                    setSelectedReportId(report.id);
-                                    setShowReportModal(true);
-                                  }}
-                                >
-                                  <div className="col-span-7 flex items-center gap-3">
-                                    <BarChart3 className="h-3 w-3 text-blue-600 flex-shrink-0" />
-                                    <div className="flex-1 min-w-0">
+                                  );
+                                }
+
+                                // Render report
+                                if (item.itemType === 'report') {
+                                  const report = item;
+                                  const drhpDoc = documents.find((d: any) => d.namespace === report.drhpNamespace || d.id === report.drhpId);
+                                  const rhpDoc = documents.find((d: any) => d.rhpNamespace === report.rhpNamespace || d.id === report.rhpId);
+                                  return (
+                                    <div
+                                      key={`report-${report.id}`}
+                                      className="flex flex-col items-start bg-[#F3F4F6] rounded-xl p-[1vw] min-w-[180px] min-h-[110px] w-full cursor-pointer hover:bg-[#ECECEC] transition relative border-l-4 border-l-blue-500"
+                                      onClick={() => {
+                                        setSelectedReportId(report.id);
+                                        setShowReportModal(true);
+                                      }}
+                                    >
+                                      <div className="flex w-full justify-between items-start">
+                                        <div className="flex-1 min-w-0">
+                                          <BarChart3 className="h-3 w-3 text-blue-600 mb-[1vw]" />
+                                        </div>
+                                        <div className="flex" onClick={(e) => e.stopPropagation()}>
+                                          <button
+                                            className="text-muted-foreground hover:text-[#4B2A06] p-[0.3vw]"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleRenameReportClick(report);
+                                            }}
+                                            title="Rename report"
+                                          >
+                                            <Pencil className="h-3 w-3" />
+                                          </button>
+                                          <button
+                                            className="text-muted-foreground hover:text-red-600 p-[0.3vw]"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteReport(report);
+                                            }}
+                                            title="Delete report"
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      </div>
                                       {renamingReportId === report.id ? (
                                         <input
                                           type="text"
@@ -4072,83 +3774,371 @@ export const StartConversation: React.FC = () => {
                                           onBlur={() => handleRenameReportSubmit(report)}
                                           onKeyDown={(e) => handleRenameReportKeyDown(e, report)}
                                           onClick={(e) => e.stopPropagation()}
-                                          className="w-full px-2 py-1 text-sm font-medium border border-[#4B2A06] rounded"
+                                          className="w-full px-2 py-1 text-sm font-semibold border border-[#4B2A06] rounded mb-1"
                                           autoFocus
                                         />
                                       ) : (
-                                        <span className="font-medium text-gray-900 truncate">
+                                        <span className="font-semibold text-[#232323] mb-1 max-w-full truncate block" style={{ maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                           {report.title || 'Untitled Report'}
                                         </span>
                                       )}
-                                      <span className="text-xs text-gray-500 truncate block">
+                                      <div className="text-xs text-gray-500 truncate block mb-1">
                                         {drhpDoc?.name || 'DRHP'} {drhpDoc && rhpDoc ? 'vs' : ''} {rhpDoc?.name || 'RHP'}
-                                      </span>
+                                      </div>
+                                      <div className="flex items-center justify-between w-full mt-[0.5vw]">
+                                        <span className="text-[#A1A1AA] text-xs">
+                                          {report.updatedAt ? new Date(report.updatedAt).toLocaleDateString() : ""}
+                                        </span>
+                                        <div className="flex justify-between items-center gap-1">
+                                          <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">Report</span>
+                                        </div>
+                                      </div>
                                     </div>
+                                  );
+                                }
+
+                                return null;
+                              });
+                            })()}
+                          </div>
+                        ) : (
+                          // List View for Documents
+                          <div className="bg-white overflow-hidden">
+                            {/* 
+                          Sticky Table Header for Documents
+                          Shows column headers: Name, Doc type, Last modified, Actions
+                        */}
+                            <div className="bg-gray-50 border-b border-gray-200 rounded-lg px-6 py-3">
+                              <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-600 ">
+                                <div className="col-span-7">Name</div>
+                                <div className="col-span-2">Doc type</div>
+                                <div className="col-span-2">Last modified</div>
+                                <div className="col-span-1 text-right">Actions</div>
+                              </div>
+                            </div>
+
+                            {/* List Items - Combine documents, summaries, and reports */}
+                            {(() => {
+                              const allItems: any[] = [
+                                ...(filteredDocs || []).map((doc: any) => ({ ...doc, itemType: 'document' })),
+                                ...(currentDirectorySummaries || []).map((summary: any) => ({ ...summary, itemType: 'summary' })),
+                                ...(currentDirectoryReports || []).map((report: any) => ({ ...report, itemType: 'report' }))
+                              ];
+
+                              allItems.sort((a: any, b: any) => {
+                                const dateA = new Date(a.updatedAt || a.uploadedAt || 0).getTime();
+                                const dateB = new Date(b.updatedAt || b.uploadedAt || 0).getTime();
+                                return dateB - dateA;
+                              });
+
+                              if (allItems.length === 0) {
+                                return (
+                                  <div className="text-center text-muted-foreground py-8">
+                                    No items found.
                                   </div>
-                                  <div className="col-span-2 flex items-center">
-                                    <div className="flex gap-1">
-                                      <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">Report</span>
+                                );
+                              }
+
+                              return allItems.map((item) => {
+                                // Render document
+                                if (item.itemType === 'document') {
+                                  const doc = item;
+                                  return (
+                                    <div
+                                      key={doc.id}
+                                      ref={(el) => (docRefs.current[doc.id] = el)}
+                                      className={`grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer transition-colors relative
+                                    ${selectedDoc && selectedDoc.id === doc.id
+                                          ? "bg-blue-50 border-blue-200"
+                                          : ""
+                                        }
+                                    ${highlightedDocId === doc.id
+                                          ? "bg-yellow-100 border-yellow-300 animate-pulse"
+                                          : ""
+                                        }
+                                  `}
+                                      onClick={() => {
+                                        if (currentFolder) {
+                                          localStorage.setItem("currentFolder", JSON.stringify(currentFolder));
+                                        }
+                                        navigate(`/doc/${doc.id || doc.namespace}`);
+                                      }}
+                                      onAnimationEnd={() => {
+                                        if (highlightedDocId === doc.id)
+                                          setHighlightedDocId(null);
+                                      }}
+                                    >
+                                      <div className="col-span-7 flex items-center gap-3">
+                                        <FileText className="h-3 w-3 text-[#4B2A06] flex-shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                          {renamingDocId === doc.id ? (
+                                            <div className="flex items-center gap-2">
+                                              <input
+                                                className="font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:outline-none focus:ring-0 focus:border-gray-300"
+                                                value={renameValue}
+                                                autoFocus
+                                                onClick={(e) => e.stopPropagation()}
+                                                onFocus={(e) => e.stopPropagation()}
+                                                onChange={handleRenameChange}
+                                                onBlur={() => handleRenameSubmit(doc)}
+                                                onKeyDown={(e) => handleRenameKeyDown(e, doc)}
+                                              />
+                                              <button
+                                                className="text-gray-400 hover:text-red-500"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setRenamingDocId(null);
+                                                }}
+                                                title="Cancel rename"
+                                              >
+                                                <X className="h-4 w-4" />
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <span className="font-medium text-gray-900 truncate">
+                                              {doc.name}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="col-span-2 flex items-center">
+                                        <div className="flex gap-1">
+                                          {(doc.relatedRhpId || doc.relatedDrhpId) && (
+                                            <span
+                                              className="text-sm p-1.5 rounded-full bg-green-800 text-white flex items-center gap-1 cursor-pointer"
+                                              title={doc.type === "DRHP" ? "Linked with RHP" : "Linked with DRHP"}
+                                            >
+                                              <CheckCircle className="h-3 w-3 " />
+                                            </span>
+                                          )}
+                                          <span className="text-xs px-2 py-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">{doc.type}</span>
+
+                                        </div>
+                                      </div>
+                                      <div className="col-span-2 flex items-center">
+                                        <span className="text-sm text-gray-600">
+                                          {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : ""}
+                                        </span>
+                                      </div>
+                                      <div className="col-span-1 flex items-center justify-end">
+                                        <div className="flex items-center gap-1">
+                                          <button
+                                            className="text-[#4B2A06] hover:text-[#4B2A06] p-1"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleRenameClick(doc);
+                                            }}
+                                            title="Rename document"
+                                          >
+                                            <Pencil className="h-3 w-3" />
+                                          </button>
+                                          <button
+                                            className="text-[#4B2A06] hover:text-[#4B2A06] p-1"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              openMoveDialog(doc);
+                                            }}
+                                            title="Move to folder"
+                                          >
+                                            <FolderUpIcon className="h-3 w-3" />
+                                          </button>
+                                          <button
+                                            className="text-[#4B2A06] hover:text-red-600 p-1"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteDoc(doc);
+                                            }}
+                                            title="Delete document"
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      </div>
                                     </div>
-                                  </div>
-                                  <div className="col-span-2 flex items-center">
-                                    <span className="text-sm text-gray-600">
-                                      {report.updatedAt ? new Date(report.updatedAt).toLocaleDateString() : ""}
-                                    </span>
-                                  </div>
-                                  <div className="col-span-1 flex items-center justify-end">
-                                    <div className="flex items-center gap-1">
-                                      <button
-                                        className="text-[#4B2A06] hover:text-[#4B2A06] p-1"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleRenameReportClick(report);
-                                        }}
-                                        title="Rename report"
-                                      >
-                                        <Pencil className="h-3 w-3" />
-                                      </button>
-                                     
-                                      <button
-                                        className="text-[#4B2A06] hover:text-[#4B2A06] p-1"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setSelectedReportId(report.id);
-                                          setShowReportModal(true);
-                                        }}
-                                        title="View report"
-                                      >
-                                         <img 
-                                          className="h-3 w-3 object-contain" 
-                                          src="https://img.icons8.com/pastel-glyph/128/document--v1.png" 
-                                          alt="view"
-                                          style={{ display: 'block', maxWidth: '100%', height: 'auto', minWidth: '12px', minHeight: '12px' }}
-                                          onError={(e) => {
-                                            console.log('Image failed to load:', e);
-                                            e.currentTarget.style.display = 'none';
-                                          }}
-                                        />
-                                      </button>
-                                      <button
-                                        className="text-[#4B2A06] hover:text-red-600 p-1"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDeleteReport(report);
-                                        }}
-                                        title="Delete report"
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </button>
+                                  );
+                                }
+
+                                // Render summary
+                                if (item.itemType === 'summary') {
+                                  const summary = item;
+                                  const doc = documents.find((d: any) => d.id === summary.documentId);
+                                  return (
+                                    <div
+                                      key={`summary-${summary.id}`}
+                                      className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer transition-colors relative border-l-4 border-l-green-500"
+                                      onClick={() => {
+                                        setSelectedSummaryId(summary.id);
+                                        setShowSummaryModal(true);
+                                      }}
+                                    >
+                                      <div className="col-span-7 flex items-center gap-3">
+                                        <FileText className="h-3 w-3 text-green-600 flex-shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                          <span className="font-medium text-gray-900 truncate">
+                                            {summary.title || 'Untitled Summary'}
+                                          </span>
+                                          {doc && (
+                                            <span className="text-xs text-gray-500 truncate block">
+                                              {doc.name}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="col-span-2 flex items-center">
+                                        <div className="flex gap-1">
+                                          <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">Summary</span>
+                                          {doc && doc.type && (
+                                            <span className="text-xs px-2 py-1 rounded-full bg-[#ECE9E2] text-[#4B2A06]">{doc.type}</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="col-span-2 flex items-center">
+                                        <span className="text-sm text-gray-600">
+                                          {summary.updatedAt ? new Date(summary.updatedAt).toLocaleDateString() : ""}
+                                        </span>
+                                      </div>
+                                      <div className="col-span-1 flex items-center justify-end">
+                                        <div className="flex items-center gap-1">
+                                          <button
+                                            className="text-[#4B2A06] hover:text-[#4B2A06] p-1"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleRenameSummaryClick(summary);
+                                            }}
+                                            title="Rename summary"
+                                          >
+                                            <Pencil className="h-3 w-3" />
+                                          </button>
+
+                                          <button
+                                            className="text-[#4B2A06] hover:text-[#4B2A06] p-1"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedSummaryId(summary.id);
+                                              setShowSummaryModal(true);
+                                            }}
+                                            title="View summary"
+                                          >
+                                            <FileText className="h-3 w-3" />
+                                          </button>
+                                          <button
+                                            className="text-[#4B2A06] hover:text-red-600 p-1"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteSummary(summary);
+                                            }}
+                                            title="Delete summary"
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      </div>
                                     </div>
-                                  </div>
-                                </div>
-                              );
-                            }
-                            
-                            return null;
-                          });
-                        })()}
-                      </div>
-                    )}
+                                  );
+                                }
+
+                                // Render report
+                                if (item.itemType === 'report') {
+                                  const report = item;
+                                  const drhpDoc = documents.find((d: any) => d.namespace === report.drhpNamespace || d.id === report.drhpId);
+                                  const rhpDoc = documents.find((d: any) => d.rhpNamespace === report.rhpNamespace || d.id === report.rhpId);
+                                  return (
+                                    <div
+                                      key={`report-${report.id}`}
+                                      className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer transition-colors relative border-l-4 border-l-blue-500"
+                                      onClick={() => {
+                                        setSelectedReportId(report.id);
+                                        setShowReportModal(true);
+                                      }}
+                                    >
+                                      <div className="col-span-7 flex items-center gap-3">
+                                        <BarChart3 className="h-3 w-3 text-blue-600 flex-shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                          {renamingReportId === report.id ? (
+                                            <input
+                                              type="text"
+                                              value={renameReportValue}
+                                              onChange={(e) => setRenameReportValue(e.target.value)}
+                                              onBlur={() => handleRenameReportSubmit(report)}
+                                              onKeyDown={(e) => handleRenameReportKeyDown(e, report)}
+                                              onClick={(e) => e.stopPropagation()}
+                                              className="w-full px-2 py-1 text-sm font-medium border border-[#4B2A06] rounded"
+                                              autoFocus
+                                            />
+                                          ) : (
+                                            <span className="font-medium text-gray-900 truncate">
+                                              {report.title || 'Untitled Report'}
+                                            </span>
+                                          )}
+                                          <span className="text-xs text-gray-500 truncate block">
+                                            {drhpDoc?.name || 'DRHP'} {drhpDoc && rhpDoc ? 'vs' : ''} {rhpDoc?.name || 'RHP'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="col-span-2 flex items-center">
+                                        <div className="flex gap-1">
+                                          <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">Report</span>
+                                        </div>
+                                      </div>
+                                      <div className="col-span-2 flex items-center">
+                                        <span className="text-sm text-gray-600">
+                                          {report.updatedAt ? new Date(report.updatedAt).toLocaleDateString() : ""}
+                                        </span>
+                                      </div>
+                                      <div className="col-span-1 flex items-center justify-end">
+                                        <div className="flex items-center gap-1">
+                                          <button
+                                            className="text-[#4B2A06] hover:text-[#4B2A06] p-1"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleRenameReportClick(report);
+                                            }}
+                                            title="Rename report"
+                                          >
+                                            <Pencil className="h-3 w-3" />
+                                          </button>
+
+                                          <button
+                                            className="text-[#4B2A06] hover:text-[#4B2A06] p-1"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedReportId(report.id);
+                                              setShowReportModal(true);
+                                            }}
+                                            title="View report"
+                                          >
+                                            <img
+                                              className="h-3 w-3 object-contain"
+                                              src="https://img.icons8.com/pastel-glyph/128/document--v1.png"
+                                              alt="view"
+                                              style={{ display: 'block', maxWidth: '100%', height: 'auto', minWidth: '12px', minHeight: '12px' }}
+                                              onError={(e) => {
+                                                console.log('Image failed to load:', e);
+                                                e.currentTarget.style.display = 'none';
+                                              }}
+                                            />
+                                          </button>
+                                          <button
+                                            className="text-[#4B2A06] hover:text-red-600 p-1"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteReport(report);
+                                            }}
+                                            title="Delete report"
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+
+                                return null;
+                              });
+                            })()}
+                          </div>
+                        )}
                       </>
                     )}
                   </>
@@ -4172,15 +4162,18 @@ export const StartConversation: React.FC = () => {
                   </p>
                   <div className="flex justify-end gap-[1vw]">
                     <button
-                      className="px-[1vw] py-[0.5vw] rounded bg-gray-200 hover:bg-gray-300"
+                      className="px-[1vw] py-[0.5vw] rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={() => setShowDeleteDialog(false)}
+                      disabled={isDeletingDocument}
                     >
                       Cancel
                     </button>
                     <button
-                      className="px-[1vw] py-[0.5vw] rounded bg-red-600 text-white hover:bg-red-700"
+                      className="px-[1vw] py-[0.5vw] rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       onClick={confirmDeleteDoc}
+                      disabled={isDeletingDocument}
                     >
+                      {isDeletingDocument && <Loader2 className="h-4 w-4 animate-spin" />}
                       Delete
                     </button>
                   </div>
@@ -4224,7 +4217,7 @@ export const StartConversation: React.FC = () => {
             open={!!shareDocId}
             onOpenChange={(o) => !o && setShareDocId(null)}
           />
-          
+
           {/* 
             Share Dialog for Directories
             Modal for sharing entire directories with other users
@@ -4273,7 +4266,7 @@ export const StartConversation: React.FC = () => {
               fetchDocuments();
             }}
           />
-          
+
           {/* 
             Move Directory to Workspace Dialog
             Modal for moving entire directories to different workspaces (admin only)
@@ -4297,7 +4290,7 @@ export const StartConversation: React.FC = () => {
               }}
             />
           )}
-          
+
           {/* 
             Delete Directory Confirmation Dialog
             Modal that appears when user clicks delete on a directory
@@ -4315,15 +4308,18 @@ export const StartConversation: React.FC = () => {
                 </p>
                 <div className="flex justify-end gap-[1vw]">
                   <button
-                    className="px-[1vw] py-[0.5vw] rounded bg-gray-200 hover:bg-gray-300"
+                    className="px-[1vw] py-[0.5vw] rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => setShowDeleteDirectoryDialog(false)}
+                    disabled={isDeletingDirectory}
                   >
                     Cancel
                   </button>
                   <button
-                    className="px-[1vw] py-[0.5vw] rounded bg-red-600 text-white hover:bg-red-700"
+                    className="px-[1vw] py-[0.5vw] rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     onClick={confirmDeleteDirectory}
+                    disabled={isDeletingDirectory}
                   >
+                    {isDeletingDirectory && <Loader2 className="h-4 w-4 animate-spin" />}
                     Delete
                   </button>
                 </div>
@@ -4336,23 +4332,23 @@ export const StartConversation: React.FC = () => {
             Modal for uploading DRHP documents
             Provides file selection and upload progress
           */}
-        <DrhpUploadModal
-          open={showDrhpUploadModal}
-          onOpenChange={(open) => {
-            if (!isUploading) {
-              setShowDrhpUploadModal(open);
-            }
-          }}
-          setIsUploading={setIsUploading}
-          onUploadSuccess={(file) => {
-            handleUpload(file, "DRHP").finally(() => {
-              // Close modal after upload completes (success or error)
-              setTimeout(() => {
-                setShowDrhpUploadModal(false);
-              }, 500);
-            });
-          }}
-        />
+          <DrhpUploadModal
+            open={showDrhpUploadModal}
+            onOpenChange={(open) => {
+              if (!isUploading) {
+                setShowDrhpUploadModal(open);
+              }
+            }}
+            setIsUploading={setIsUploading}
+            onUploadSuccess={(file) => {
+              handleUpload(file, "DRHP").finally(() => {
+                // Close modal after upload completes (success or error)
+                setTimeout(() => {
+                  setShowDrhpUploadModal(false);
+                }, 500);
+              });
+            }}
+          />
 
           {/* 
             RHP Upload Modal
@@ -4364,9 +4360,9 @@ export const StartConversation: React.FC = () => {
               <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload RHP Document</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  Select a Red Herring Prospectus (RHP) document to upload. This will be linked to a DRHP document.
+                  Select a Red Herring Prospectus (RHP) document. The file MUST be a valid RHP (first page containing "Red Herring Prospectus" and not "Draft").
                 </p>
-                
+
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Select RHP File
@@ -4376,7 +4372,13 @@ export const StartConversation: React.FC = () => {
                     accept=".pdf"
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
-                        setRhpFile(e.target.files[0]);
+                        const file = e.target.files[0];
+                        if (file.type !== "application/pdf") {
+                          toast.error("Please select a PDF file");
+                          e.target.value = "";
+                          return;
+                        }
+                        setRhpFile(file);
                       }
                     }}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
@@ -4431,7 +4433,7 @@ export const StartConversation: React.FC = () => {
             onDocumentSelect={handleDocumentSelection}
             loading={compareLoading}
           />
-          
+
           {/* 
             View Summary Modal
             Modal for viewing full summary content
@@ -4445,7 +4447,7 @@ export const StartConversation: React.FC = () => {
             }}
             title={currentDirectorySummaries.find((s: any) => s.id === selectedSummaryId)?.title || "Summary"}
           />
-          
+
           {/* 
             View Report Modal
             Modal for viewing full report content
@@ -4492,7 +4494,7 @@ export const StartConversation: React.FC = () => {
               });
               setSelectedDirectoryId(directoryId);
               setShowDirectorySelector(false);
-              
+
               // If there's a pending upload, proceed with it
               if (pendingUpload) {
                 handleUpload(pendingUpload.file, pendingUpload.type);
@@ -4510,7 +4512,7 @@ export const StartConversation: React.FC = () => {
               // Refresh documents for this directory
               fetchDocuments();
               setShowDirectorySelector(false);
-              
+
               // If there's a pending upload, proceed with it
               if (pendingUpload) {
                 handleUpload(pendingUpload.file, pendingUpload.type);
