@@ -42,6 +42,8 @@ export const reportN8nService = {
             return undefined;
           }
         })(),
+        documentId: drhpDocumentId, // Use DRHP ID as primary document ID
+        documentType: "Comparison", // Set document type explicitly for comparison
       };
 
       // Add domainId and workspaceId if available - ALWAYS try to include domainId
@@ -56,7 +58,7 @@ export const reportN8nService = {
             console.warn("domainId not found in JWT token for report request");
           }
         }
-        
+
         const currentWorkspace = localStorage.getItem("currentWorkspace");
         if (currentWorkspace) {
           payload.workspaceId = currentWorkspace;

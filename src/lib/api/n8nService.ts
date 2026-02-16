@@ -24,7 +24,9 @@ export const n8nService = {
     sessionData: SessionData,
     conversationHistory: ConversationMemory[] = [],
     namespace?: string,
+    documentId?: string,
     documentType?: "DRHP" | "RHP",
+    jobId?: string,
     signal?: AbortSignal
   ): Promise<N8nResponse> {
     try {
@@ -49,6 +51,10 @@ export const n8nService = {
         action: "chat", // Add action to identify chat request
       });
 
+      if (jobId) {
+        params.append("jobId", jobId);
+      }
+
       // Always include namespace in the request
       if (namespace) {
         params.append("namespace", namespace);
@@ -57,6 +63,10 @@ export const n8nService = {
       // Include document type in the request
       if (documentType) {
         params.append("document_type", documentType);
+      }
+
+      if (documentId) {
+        params.append("documentId", documentId);
       }
 
       // Attach domain, domainId, and workspaceId from JWT/localStorage if present
@@ -70,7 +80,7 @@ export const n8nService = {
             if (parts.length === 2) domain = parts[1].toLowerCase();
           }
           if (domain) params.append("domain", domain);
-          
+
           // Add domainId if available in JWT - ALWAYS try to include it
           const domainId = payload?.domainId;
           if (domainId) {
@@ -79,7 +89,7 @@ export const n8nService = {
             console.warn("domainId not found in JWT token for chat request");
           }
         }
-        
+
         // Add workspaceId from localStorage
         const currentWorkspace = localStorage.getItem("currentWorkspace");
         if (currentWorkspace) {

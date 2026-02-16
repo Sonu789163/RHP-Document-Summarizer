@@ -58,11 +58,15 @@ export const summaryN8nService = {
         params.append("documentId", documentId);
       }
 
+      if (type) {
+        params.append("documentType", type);
+      }
+
       // Attach domain, domainId, and workspaceId from JWT/localStorage/document if present
       try {
         const token = localStorage.getItem("accessToken");
         let domainId: string | undefined;
-        
+
         if (token) {
           const payload = JSON.parse(atob(token.split(".")[1]));
           let domain: string | undefined = payload?.domain;
@@ -71,11 +75,11 @@ export const summaryN8nService = {
             if (parts.length === 2) domain = parts[1].toLowerCase();
           }
           if (domain) params.append("domain", domain);
-          
+
           // Try to get domainId from JWT first
           domainId = payload?.domainId;
         }
-        
+
         // Fallback: If domainId not in JWT and we have documentId, try to get it from document
         if (!domainId && documentId) {
           try {
@@ -89,14 +93,14 @@ export const summaryN8nService = {
             console.warn("Could not fetch document to get domainId:", docError);
           }
         }
-        
+
         // Add domainId to params if we have it
         if (domainId) {
           params.append("domainId", domainId);
         } else {
           console.warn("domainId not found in JWT token or document for summary request");
         }
-        
+
         // Add workspaceId from localStorage
         const currentWorkspace = localStorage.getItem("currentWorkspace");
         if (currentWorkspace) {

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
+import { io as socketIOClient } from "socket.io-client";
 import { Send, User, Loader2, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -140,6 +141,11 @@ export function ChatPanel({
   const abortControllerRef = useRef<AbortController | null>(null);
   const [lastDocumentId, setLastDocumentId] = useState<string | null>(null);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastHandledChatRef = useRef<{
+    jobId: string | null;
+    status: string | null;
+    timestamp: number;
+  }>({ jobId: null, status: null, timestamp: 0 });
 
   // Quick prompt chips for funds-related agencies
   const quickPrompts = [
@@ -247,7 +253,7 @@ export function ChatPanel({
             return;
           }
         }
-        
+
         // If session expired (based on last user activity) OR we just reset session on init, show a fresh greeting
         if (sessionService.isSessionExpired(sessionData) || sessionData.resetOnInit) {
           setMessages([
@@ -262,7 +268,7 @@ export function ChatPanel({
           setCurrentChatId(null);
           return;
         }
-        
+
         // Default: show a transient greeting in UI without loading previous chats
         setMessages([
           {
@@ -283,6 +289,68 @@ export function ChatPanel({
 
     loadChat();
   }, [currentDocument, chatId]);
+
+  useEffect(() => {
+    // Socket connection for chat errors
+    const socket = socketIOClient(
+      process.env.NODE_ENV === "production"
+        ? "https://smart-rhtp-backend-2.onrender.com"
+        : "http://localhost:5000",
+      { transports: ["websocket"] }
+    );
+
+    socket.on("chat_status", (data: any) => {
+      const { jobId, status, error } = data;
+      const cleanStatus = status?.trim().toLowerCase();
+
+      // Deduplicate events: if same jobId and status within 2 seconds, skip
+      if (
+        lastHandledChatRef.current.jobId === jobId &&
+        lastHandledChatRef.current.status === cleanStatus &&
+        Date.now() - lastHandledChatRef.current.timestamp < 2000
+      ) {
+        return;
+      }
+
+      // We identify the message by jobId (which we set to message.id)
+      if (cleanStatus === "failed" && error) {
+        lastHandledChatRef.current = { jobId, status: cleanStatus, timestamp: Date.now() };
+        toast.error(`Chat error: ${error.message || error}`);
+
+        // Also update the UI to show error for the specific message if possible
+        setMessages((prev) => {
+          // If we find a message that looks like it's waiting (maybe via ID?), we could update it.
+          // But since we optimistically added the USER message, we might want to add a BOT error message.
+          // However, handleSendMessage already adds an error message on catch.
+          // This socket event is for when n8n fails ASYNC or independently.
+
+          // Check if we already have an error message for this job? No easy way.
+          // Just add a new error message from bot.
+
+          // Prevent duplicate errors if possible (simple check: is last message an error with same content?)
+          const lastMsg = prev[prev.length - 1];
+          if (lastMsg && !lastMsg.isUser && lastMsg.content === (error.message || error)) {
+            return prev;
+          }
+
+          const errorMessage: Message = {
+            id: Date.now().toString(), // New ID
+            content: `Error: ${error.message || error}`,
+            isUser: false,
+            timestamp: new Date(),
+          };
+          return [...prev, errorMessage];
+        });
+
+        setIsTyping(false);
+        onProcessingChange?.(false);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [onProcessingChange]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -408,7 +476,9 @@ export function ChatPanel({
         sessionData,
         conversationMemory,
         currentDocument.namespace,
+        currentDocument.id,
         (currentDocument.type || "DRHP") as "DRHP" | "RHP",
+        userMessage.id, // Pass message ID as jobId
         abortControllerRef.current.signal
       );
 
@@ -527,10 +597,9 @@ export function ChatPanel({
     const token = localStorage.getItem("accessToken");
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/documents/download/${
-          currentDocument?.id
+        `${import.meta.env.VITE_API_URL}/documents/download/${currentDocument?.id
         } ` ||
-          `http://localhost:5000/api/documents/download/${currentDocument?.id}`,
+        `http://localhost:5000/api/documents/download/${currentDocument?.id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -555,7 +624,7 @@ export function ChatPanel({
   return (
     <div
       className="flex flex-col flex-1 min-h-0"
-      // style={{ background: customStyles.containerBg || undefined }}
+    // style={{ background: customStyles.containerBg || undefined }}
     >
       {/* Download PDF Button */}
       {currentDocument && (
@@ -597,7 +666,7 @@ export function ChatPanel({
       <ScrollArea
         ref={scrollAreaRef}
         className="flex-1"
-        // style={{ background: customStyles.containerBg || undefined }}
+      // style={{ background: customStyles.containerBg || undefined }}
       >
         <div className="p-4 space-y-4">
           {messages.map((message) => (
@@ -870,8 +939,7 @@ export function DocumentPopover({
     const token = localStorage.getItem("accessToken");
     try {
       const response = await axios.get(
-        `${
-          import.meta.env.VITE_API_URL
+        `${import.meta.env.VITE_API_URL
         }/documents/download/${documentId}?inline=1`,
         {
           headers: { Authorization: `Bearer ${token}` },
