@@ -408,7 +408,18 @@ export const StartConversation: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-      let response = await res.json();
+      let response;
+      try {
+        const text = await res.text();
+        try {
+          response = JSON.parse(text);
+        } catch (e) {
+          console.error("Failed to parse upload response as JSON:", text);
+          throw new Error(`Server returned invalid response (${res.status})`);
+        }
+      } catch (e) {
+        throw e;
+      }
       if (!res.ok) {
         if (res.status === 409) {
           // Backend duplicate safety
