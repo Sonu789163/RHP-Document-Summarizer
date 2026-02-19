@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { io as socketIOClient } from "socket.io-client";
 
-interface ComparePageProps {}
+interface ComparePageProps { }
 
 export const ComparePage: React.FC<ComparePageProps> = () => {
   const { drhpId } = useParams<{ drhpId: string }>();
@@ -86,16 +86,16 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
   const drhpRef = useRef(drhp);
   const rhpRef = useRef(rhp);
   const selectedReportRef = useRef(selectedReport);
-  
+
   // Update refs when values change
   useEffect(() => {
     drhpRef.current = drhp;
   }, [drhp]);
-  
+
   useEffect(() => {
     rhpRef.current = rhp;
   }, [rhp]);
-  
+
   useEffect(() => {
     selectedReportRef.current = selectedReport;
   }, [selectedReport]);
@@ -241,12 +241,11 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
   }, [reports, comparing, drhpId]);
 
   useEffect(() => {
-    const socket = socketIOClient(
-      process.env.NODE_ENV === "production"
-        ? "https://smart-rhtp-backend-2.onrender.com"
-        : "https://smart-rhtp-backend-2.onrender.com",
-      { transports: ["websocket"] }
-    );
+    // Determine socket URL from API URL (remove /api suffix)
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+    const socketUrl = apiUrl.endsWith("/api") ? apiUrl.slice(0, -4) : apiUrl;
+
+    const socket = socketIOClient(socketUrl, { transports: ["websocket"] });
 
     socket.on(
       "compare_status",
@@ -278,12 +277,12 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
             try {
               // Wait a bit for backend to process the report
               await new Promise((resolve) => setTimeout(resolve, delay));
-              
+
               // Get fresh reports list
               const allReports = await reportService.getAll();
               const currentDrhp = drhpRef.current;
               const currentRhp = rhpRef.current;
-              
+
               if (!currentDrhp || !currentRhp) {
                 if (retries > 0) {
                   console.log(`Documents not ready, retrying... (${retries} retries left)`);
@@ -291,27 +290,27 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                 }
                 return;
               }
-              
+
               const filteredReports = allReports.filter(
                 (r) =>
                   r.drhpNamespace === currentDrhp.namespace ||
                   (currentRhp && r.rhpNamespace === currentRhp.rhpNamespace)
               );
-              
+
               if (filteredReports.length > 0) {
                 // Sort reports by updatedAt to get the latest first
                 const sortedReports = filteredReports.sort(
                   (a, b) =>
                     new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
                 );
-                
+
                 const latestReport = sortedReports[0];
                 console.log('✅ Selecting latest report after completion:', latestReport.id, 'Title:', latestReport.title, 'Updated:', latestReport.updatedAt);
-                
+
                 // Always update to latest report (same as SummaryPanel pattern)
                 setReports(sortedReports);
                 setSelectedReport(latestReport);
-                
+
                 // If we have a specific reportId, verify it matches
                 if (reportId && reportId !== latestReport.id) {
                   const reportById = allReports.find((r) => r.id === reportId);
@@ -334,7 +333,7 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
               }
             }
           };
-          
+
           // Start fetching with retries (same pattern as SummaryPanel)
           fetchLatestReport();
         } else if (cleanStatus === "failed") {
@@ -422,8 +421,8 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       // RHP uses 'rhpNamespace' field (or 'namespace' if rhpNamespace is not available)
       const drhpNamespace = drhp.namespace;
       const rhpNamespace = rhp.rhpNamespace || rhp.namespace; // Fallback to namespace if rhpNamespace not set
-      
-      await reportN8nService.createComparison(
+
+      const response = await reportN8nService.createComparison(
         drhpNamespace,
         rhpNamespace,
         prompt,
@@ -431,6 +430,14 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
         drhp.id,
         rhp.id
       );
+
+      if (response.error) {
+        toast.error(`Failed to initiate comparison: ${response.error}`);
+        setComparing(false);
+        if (drhpId) localStorage.removeItem(`report_processing_${drhpId}`);
+      } else {
+        toast.success("Comparison job started successfully!");
+      }
     } catch (error) {
       console.error("Error creating comparison report:", error);
       toast.error("Failed to initiate comparison report");
@@ -735,9 +742,8 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
       <div className="h-[90vh] flex mt-[10vh]">
         {/* Left Sidebar - ChatGPT Style */}
         <div
-          className={`transition-all duration-300 ease-in-out ${
-            sidebarOpen ? "w-80" : "w-16"
-          } fixed top-[10vh] left-0 bg-white border-r border-gray-200 h-[90vh] px-5 flex flex-col overflow-hidden`}
+          className={`transition-all duration-300 ease-in-out ${sidebarOpen ? "w-80" : "w-16"
+            } fixed top-[10vh] left-0 bg-white border-r border-gray-200 h-[90vh] px-5 flex flex-col overflow-hidden`}
         >
           {sidebarOpen && (
             <>
@@ -906,9 +912,8 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
 
         {/* Main Content Area */}
         <div
-          className={`flex-1 flex h-full transition-all duration-300 ease-in-out mr-10 mt-5 ${
-            sidebarOpen ? "ml-80" : "ml-16"
-          }`}
+          className={`flex-1 flex h-full transition-all duration-300 ease-in-out mr-10 mt-5 ${sidebarOpen ? "ml-80" : "ml-16"
+            }`}
         >
           {/* Comparison Report - Full Width */}
           <div className="flex-1 flex flex-col bg-gray-50  mx-auto">

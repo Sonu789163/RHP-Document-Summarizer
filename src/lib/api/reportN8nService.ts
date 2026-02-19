@@ -25,6 +25,8 @@ export const reportN8nService = {
         drhpNamespace: drhpNamespace, // DRHP namespace - ensure it's explicitly included
         rhpNamespace: rhpNamespace, // RHP namespace - ensure it's explicitly included
         prompt,
+        drhpId: drhpDocumentId,
+        rhpId: rhpDocumentId,
         drhpDocumentId,
         rhpDocumentId,
         sessionId: sessionData.id,

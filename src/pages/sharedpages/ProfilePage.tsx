@@ -14,6 +14,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -30,7 +32,15 @@ import {
   FileText,
   Eye,
   EyeOff,
+  Settings,
+  Plus,
+  X,
+  Info,
+  Save,
 } from "lucide-react";
+import { domainService, DomainConfig } from "@/services/domainService";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -72,7 +82,7 @@ export default function ProfilePage() {
   const { user: currentUser } = useAuth();
   const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    "profile" | "summary" | "security"
+    "profile" | "summary" | "security" | "fund-config"
   >("profile");
 
   // Helper for initials
@@ -114,6 +124,15 @@ export default function ProfilePage() {
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Check URL params for initial tab
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    if (tab === "fund-config" && currentUser?.role === "admin") {
+      setActiveTab("fund-config");
+    }
+  }, [currentUser]);
 
   // Forms
   const profileForm = useForm<z.infer<typeof profileSchema>>({
@@ -265,7 +284,7 @@ export default function ProfilePage() {
         title="Settings"
         showSearch={true}
         searchValue=""
-        onSearchChange={() => {}}
+        onSearchChange={() => { }}
       />
       <div className="fixed w-[100vw] mx-auto h-[100vh] ">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 ">
@@ -274,11 +293,10 @@ export default function ProfilePage() {
             <h1 className="text-3xl font-bold mb-4">Settings</h1>
             <button
               onClick={() => setActiveTab("profile")}
-              className={`w-full text-left px-4 py-8 flex flex-col gap-1 ${
-                activeTab === "profile"
-                  ? "bg-[#ECE9E2] text-[#4B2A06] border-r-[4px] border-r-[#4B2A06]"
-                  : "bg-white hover:bg-gray-50"
-              }`}
+              className={`w-full text-left px-4 py-8 flex flex-col gap-1 ${activeTab === "profile"
+                ? "bg-[#ECE9E2] text-[#4B2A06] border-r-[4px] border-r-[#4B2A06]"
+                : "bg-white hover:bg-gray-50"
+                }`}
             >
               <div className="flex items-center gap-2 text-base font-semibold">
                 <UserIcon className="h-4 w-4" /> Profile
@@ -289,11 +307,10 @@ export default function ProfilePage() {
             </button>
             <button
               onClick={() => setActiveTab("summary")}
-              className={`w-full text-left px-4 py-8  flex flex-col gap-1 ${
-                activeTab === "summary"
-                  ? "bg-[#ECE9E2] text-[#4B2A06] border-r-[4px] border-r-[#4B2A06]"
-                  : "bg-white hover:bg-gray-50"
-              }`}
+              className={`w-full text-left px-4 py-8  flex flex-col gap-1 ${activeTab === "summary"
+                ? "bg-[#ECE9E2] text-[#4B2A06] border-r-[4px] border-r-[#4B2A06]"
+                : "bg-white hover:bg-gray-50"
+                }`}
             >
               <div className="flex items-center gap-2 text-base font-semibold">
                 <FileText className="h-4 w-4" />
@@ -305,11 +322,10 @@ export default function ProfilePage() {
             </button>
             <button
               onClick={() => setActiveTab("security")}
-              className={`w-full text-left px-4 py-8 flex flex-col gap-1 ${
-                activeTab === "security"
-                  ? "bg-[#ECE9E2] text-[#4B2A06] border-r-[4px] border-r-[#4B2A06]"
-                  : "bg-white hover:bg-gray-50"
-              }`}
+              className={`w-full text-left px-4 py-8 flex flex-col gap-1 ${activeTab === "security"
+                ? "bg-[#ECE9E2] text-[#4B2A06] border-r-[4px] border-r-[#4B2A06]"
+                : "bg-white hover:bg-gray-50"
+                }`}
             >
               <div className="flex items-center gap-2 text-base font-semibold">
                 <Shield className="h-4 w-4" /> Security
@@ -318,17 +334,33 @@ export default function ProfilePage() {
                 All settings related to security and password
               </div>
             </button>
+            {currentUser?.role === "admin" && (
+              <button
+                onClick={() => setActiveTab("fund-config")}
+                className={`w-full text-left px-4 py-8 flex flex-col gap-1 ${activeTab === "fund-config"
+                  ? "bg-[#ECE9E2] text-[#4B2A06] border-r-[4px] border-r-[#4B2A06]"
+                  : "bg-white hover:bg-gray-50"
+                  }`}
+              >
+                <div className="flex items-center gap-2 text-base font-semibold">
+                  <Settings className="h-4 w-4" /> Fund Configuration
+                </div>
+                <div className="text-xs leading-snug">
+                  Manage AI analysis settings, SOPs, and target investors
+                </div>
+              </button>
+            )}
           </aside>
 
           {/* Content */}
           <section className=" w-[70vw] lg:col-span-3 space-y-6 max-h-[calc(100vh-100px)]  overflow-y-auto p-6 scrollbar-hide">
-            
+
             {activeTab === "profile" && (
               <>
                 {/* Profile Details */}
                 <h1 className="text-3xl font-bold mb-4 mt-2">Profile Settings</h1>
                 <div className=" shadow-md border-t  border-gray-200 rounded-xl">
-                
+
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-gray-500">
                       <UserIcon className="h-5 w-5 text-gray-500" />
@@ -366,11 +398,10 @@ export default function ProfilePage() {
                         </label>
                         <div className="flex items-center gap-2 p-3 rounded-md bg-white/60 border border-gray-200">
                           <span
-                            className={`inline-block h-2.5 w-2.5 rounded-full ${
-                              profile.status === "active"
-                                ? "bg-green-500"
-                                : "bg-red-500"
-                            }`}
+                            className={`inline-block h-2.5 w-2.5 rounded-full ${profile.status === "active"
+                              ? "bg-green-500"
+                              : "bg-red-500"
+                              }`}
                           />
                           <span className="px-2 py-0.5 rounded-full bg-white/80 border border-gray-200 text-sm capitalize">
                             {profile.status}
@@ -548,7 +579,7 @@ export default function ProfilePage() {
                     >
                       <LogOut className="h-4 w-4" /> Log out
                     </Button>
-                    
+
                   </CardContent>
                 </div>
               </>
@@ -556,7 +587,7 @@ export default function ProfilePage() {
 
             {activeTab === "security" && (
               <>
-              <h1 className="text-3xl font-bold mb-4 mt-2">Security Settings</h1>
+                <h1 className="text-3xl font-bold mb-4 mt-2">Security Settings</h1>
                 <div className="shadow-md border-t w-full border-gray-200 rounded-xl">
                   <CardHeader>
                     <CardTitle className="text-gray-500">
@@ -708,9 +739,9 @@ export default function ProfilePage() {
 
             {activeTab === "summary" && (
               <>
-              <h1 className="text-3xl font-bold mb-4 mt-2">Account Summary</h1>
+                <h1 className="text-3xl font-bold mb-4 mt-2">Account Summary</h1>
                 <div className="shadow-md border-t  border-gray-200 rounded-xl">
-                  
+
                   <CardContent className=" mt-4 space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-500">
@@ -735,7 +766,7 @@ export default function ProfilePage() {
                         variant={
                           profile.status === "active"
                             ? "default"
-                            : "destructive"
+                            : "secondary"
                         }
                       >
                         {profile.status === "active" ? "Active" : "Suspended"}
@@ -752,9 +783,224 @@ export default function ProfilePage() {
                 </div>
               </>
             )}
+
+            {activeTab === "fund-config" && currentUser?.role === "admin" && (
+              <FundConfigSection />
+            )}
           </section>
         </div>
       </div>
     </div>
+  );
+}
+
+// Sub-component for Fund Configuration to keep main component clean
+function FundConfigSection() {
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [config, setConfig] = useState<DomainConfig | null>(null);
+  const [newInvestor, setNewInvestor] = useState("");
+
+  useEffect(() => {
+    fetchConfig();
+  }, []);
+
+  const fetchConfig = async () => {
+    setLoading(true);
+    try {
+      const data = await domainService.getConfig();
+      setConfig(data);
+    } catch (error) {
+      console.error("Failed to fetch domain config:", error);
+      toast.error("Failed to load fund settings");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!config) return;
+    setSaving(true);
+    try {
+      await domainService.updateConfig(config);
+      toast.success("Fund settings updated successfully");
+    } catch (error) {
+      console.error("Failed to update config:", error);
+      toast.error("Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddInvestor = () => {
+    if (!newInvestor.trim() || !config) return;
+    if (config.target_investors.includes(newInvestor.trim())) return;
+
+    setConfig({
+      ...config,
+      target_investors: [...config.target_investors, newInvestor.trim()]
+    });
+    setNewInvestor("");
+  };
+
+  const handleRemoveInvestor = (investor: string) => {
+    if (!config) return;
+    setConfig({
+      ...config,
+      target_investors: config.target_investors.filter(i => i !== investor)
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-4 mt-2">
+        <h1 className="text-3xl font-bold">Fund Configuration</h1>
+        <Button onClick={handleSave} disabled={saving} className="gap-2 bg-[#4B2A06] text-white hover:bg-[#3a2004]">
+          <Save className="h-4 w-4" />
+          {saving ? "Saving..." : "Save Changes"}
+        </Button>
+      </div>
+
+      <div className="shadow-md border border-gray-200 rounded-xl bg-white mb-6">
+        <CardHeader>
+          <CardTitle className="text-xl">AI Features</CardTitle>
+          <div className="text-sm text-muted-foreground">Customize how the AI analyzes documents for your fund.</div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Toggle 1 */}
+            <div className="flex flex-col space-y-3 p-4 border rounded-xl bg-gray-50/50">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="investor-match" className="font-semibold">Investor Matching</Label>
+                <Switch
+                  id="investor-match"
+                  checked={config?.investor_match_only ?? true}
+                  onCheckedChange={(checked) => setConfig(prev => prev ? ({ ...prev, investor_match_only: checked }) : null)}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Identify and extract shareholders from your target list automatically.
+              </p>
+            </div>
+
+            {/* Toggle 2 */}
+            <div className="flex flex-col space-y-3 p-4 border rounded-xl bg-gray-50/50">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="valuation-match" className="font-semibold">Valuation Analysis</Label>
+                <Switch
+                  id="valuation-match"
+                  checked={config?.valuation_matching ?? true}
+                  onCheckedChange={(checked) => setConfig(prev => prev ? ({ ...prev, valuation_matching: checked }) : null)}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Extract share capital history and calculate premium round valuations.
+              </p>
+            </div>
+
+            {/* Toggle 3 */}
+            <div className="flex flex-col space-y-3 p-4 border rounded-xl bg-gray-50/50">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="adverse-finding" className="font-semibold">Adverse Findings</Label>
+                <Switch
+                  id="adverse-finding"
+                  checked={config?.adverse_finding ?? true}
+                  onCheckedChange={(checked) => setConfig(prev => prev ? ({ ...prev, adverse_finding: checked }) : null)}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Run external OSINT checks for red flags and reputational risks.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </div>
+
+      <div className="shadow-md border border-gray-200 rounded-xl bg-white mb-6">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-xl">Target Investors List</CardTitle>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs">List specific investors (Funds, Family Offices, Individuals) you want to track.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2 max-w-md">
+            <Input
+              placeholder="Add investor name..."
+              value={newInvestor}
+              onChange={(e) => setNewInvestor(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddInvestor()}
+              className="border-gray-200 bg-white"
+            />
+            <Button variant="secondary" size="icon" onClick={handleAddInvestor} className="shrink-0">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap gap-2 p-4 border rounded-xl bg-gray-50/50 min-h-[100px]">
+            {config?.target_investors?.length === 0 && (
+              <span className="text-sm text-muted-foreground italic self-center">No target investors added yet.</span>
+            )}
+            {config?.target_investors?.map((investor, idx) => (
+              <Badge key={idx} variant="secondary" className="pl-3 pr-2 py-1.5 gap-2 text-sm font-normal bg-white border border-gray-200 shadow-sm">
+                {investor}
+                <button
+                  onClick={() => handleRemoveInvestor(investor)}
+                  className="text-gray-400 hover:text-red-500 transition-colors focus:outline-none"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+      </div>
+
+      <div className="shadow-md border border-gray-200 rounded-xl bg-white mb-20">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-xl">Custom Fund SOP Template</CardTitle>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs">Define your custom summary structure. Overrides global default.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Define exactly how you want your summaries formatted (sections, tone, extraction rules).
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            className="min-h-[400px] font-mono text-sm leading-relaxed border-gray-200 bg-gray-50/30 p-4 rounded-xl focus:ring-1 focus:ring-[#4B2A06]"
+            placeholder="## Section 1: Executive Summary&#10;- Focus on use of proceeds...&#10;&#10;## Section 2: Key Risks&#10;- Highlight any pending litigation..."
+            value={config?.custom_summary_sop || ""}
+            onChange={(e) => setConfig(prev => prev ? ({ ...prev, custom_summary_sop: e.target.value }) : null)}
+          />
+        </CardContent>
+      </div>
+    </>
   );
 }
