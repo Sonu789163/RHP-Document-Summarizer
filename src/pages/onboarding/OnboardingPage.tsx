@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Upload, FileType, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Upload, CheckCircle, AlertCircle, RefreshCw, Shield, Brain, Search } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from 'react-router-dom';
+import { domainService, OnboardingStatus } from '@/services/domainService';
 
 const OnboardingPage = () => {
     const { user } = useAuth();
@@ -18,8 +19,11 @@ const OnboardingPage = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [sopFile, setSopFile] = useState<File | null>(null);
+    const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
+    const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+    const [isReOnboarding, setIsReOnboarding] = useState(false);
 
-    const { control, handleSubmit, register, formState: { errors } } = useForm({
+    const { control, handleSubmit, register, setValue, formState: { errors } } = useForm({
         defaultValues: {
             investor_match_only: false,
             valuation_matching: false,
@@ -27,6 +31,36 @@ const OnboardingPage = () => {
             target_investors: "",
         }
     });
+
+    // Fetch existing onboarding status on mount
+    useEffect(() => {
+        const fetchStatus = async () => {
+            try {
+                const status = await domainService.getOnboardingStatus();
+                setOnboardingStatus(status);
+
+                // Pre-fill form with existing toggles
+                if (status.toggles) {
+                    setValue("investor_match_only", status.toggles.investor_match_only);
+                    setValue("valuation_matching", status.toggles.valuation_matching);
+                    setValue("adverse_finding", status.toggles.adverse_finding);
+                }
+                if (status.target_investors?.length) {
+                    setValue("target_investors", status.target_investors.join(", "));
+                }
+
+                // If already completed, show re-onboarding mode
+                if (status.onboarding_status === "completed" || status.onboarding_status === "completed_no_sop") {
+                    setIsReOnboarding(true);
+                }
+            } catch (err) {
+                console.error("Failed to fetch onboarding status:", err);
+            } finally {
+                setIsLoadingStatus(false);
+            }
+        };
+        fetchStatus();
+    }, [setValue]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -44,74 +78,50 @@ const OnboardingPage = () => {
     };
 
     const onSubmit = async (data: any) => {
-        if (!user?.domainId) {
-            toast({
-                title: "Error",
-                description: "Domain ID not found for the current user.",
-                variant: "destructive"
-            });
-            return;
-        }
-
         setIsLoading(true);
 
         try {
-            const formData = new FormData();
-            formData.append("domainId", user.domainId);
-
-            if (sopFile) {
-                formData.append("file", sopFile);
-            }
-
             const config = {
                 toggles: {
                     investor_match_only: data.investor_match_only,
                     valuation_matching: data.valuation_matching,
                     adverse_finding: data.adverse_finding
                 },
-                targetInvestors: data.target_investors ? data.target_investors.split(',').map((s: string) => s.trim()) : []
+                targetInvestors: data.target_investors ? data.target_investors.split(',').map((s: string) => s.trim()).filter(Boolean) : []
             };
 
-            formData.append("config", JSON.stringify(config));
-
-            // Call Python AI Platform directly or via Node proxy
-            // Assuming direct call for this demo or update URL to match your environment
-            // Using a relative path assuming proxy is set up in vite.config or backend handles it
-            // Update: We'll target the Python API directly if exposed or via Node
-            // Let's assume there's a proxy; typical pattern in this project seems to be direct or proxied.
-            // Adjust URL as needed. For now assuming "/api/v1/onboarding/setup" if proxy or full URL
-
-            // To be safe, usually frontend talks to Node backend. 
-            // We should use the API service. But for now, fetch to localhost:8000 for AI platform directly if dev
-            // Or use the provided API base URL.
-
-            // NOTE: Replace with actual AI Platform URL if known, e.g., http://localhost:8000
-            const API_URL = import.meta.env.VITE_AI_PLATFORM_URL || "http://localhost:8000";
-
-            const response = await fetch(`${API_URL}/onboarding/setup`, {
-                method: "POST",
-                body: formData, // FormData automatically sets multipart/form-data
-            });
-
-            if (!response.ok) {
-                throw new Error("Failed to submit onboarding data");
+            if (isReOnboarding) {
+                // Re-onboarding requires a file
+                if (!sopFile) {
+                    toast({
+                        title: "SOP File Required",
+                        description: "Please upload an updated SOP file for re-onboarding.",
+                        variant: "destructive"
+                    });
+                    setIsLoading(false);
+                    return;
+                }
+                await domainService.reOnboard({ config, file: sopFile });
+            } else {
+                // Initial onboarding (file is optional)
+                await domainService.submitOnboarding({ config, file: sopFile || undefined });
             }
 
             toast({
-                title: "Onboarding Started",
-                description: "Your configurations are being processed by our AI agents. This may take a few minutes.",
+                title: isReOnboarding ? "Re-Onboarding Started" : "Onboarding Started",
+                description: "Our AI agents are analyzing your SOP and configuring the pipeline. This may take a few minutes.",
             });
 
-            // Redirect to Dashboard
+            // Redirect to Dashboard after short delay
             setTimeout(() => {
                 navigate('/dashboard');
-            }, 2000);
+            }, 2500);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
             toast({
                 title: "Submission Failed",
-                description: "There was an error submitting your details. Please try again.",
+                description: error?.response?.data?.error || "There was an error submitting your details. Please try again.",
                 variant: "destructive"
             });
         } finally {
@@ -119,12 +129,78 @@ const OnboardingPage = () => {
         }
     };
 
+    if (isLoadingStatus) {
+        return (
+            <div className="container mx-auto py-10 max-w-3xl flex items-center justify-center min-h-[60vh]">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
     return (
         <div className="container mx-auto py-10 max-w-3xl">
+            {/* Onboarding Status Banner */}
+            {onboardingStatus && onboardingStatus.onboarding_status !== "pending" && (
+                <Card className="mb-6 border-primary/20">
+                    <CardContent className="pt-6">
+                        <div className="flex items-start space-x-4">
+                            <div className={`p-2 rounded-full ${
+                                onboardingStatus.onboarding_status === "completed" ? "bg-green-100 text-green-600" :
+                                onboardingStatus.onboarding_status === "processing" ? "bg-yellow-100 text-yellow-600" :
+                                onboardingStatus.onboarding_status === "failed" ? "bg-red-100 text-red-600" :
+                                "bg-gray-100 text-gray-600"
+                            }`}>
+                                {onboardingStatus.onboarding_status === "completed" ? <CheckCircle className="h-5 w-5" /> :
+                                 onboardingStatus.onboarding_status === "processing" ? <Loader2 className="h-5 w-5 animate-spin" /> :
+                                 <AlertCircle className="h-5 w-5" />}
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="font-semibold text-lg">
+                                    {onboardingStatus.onboarding_status === "completed" ? "Onboarding Complete" :
+                                     onboardingStatus.onboarding_status === "processing" ? "Onboarding In Progress" :
+                                     onboardingStatus.onboarding_status === "completed_no_sop" ? "Basic Config Active" :
+                                     "Onboarding Status"}
+                                </h3>
+                                {onboardingStatus.last_onboarded && (
+                                    <p className="text-sm text-muted-foreground">
+                                        Last configured: {new Date(onboardingStatus.last_onboarded).toLocaleString()}
+                                    </p>
+                                )}
+
+                                {/* Config Summary */}
+                                {(onboardingStatus.onboarding_status === "completed") && (
+                                    <div className="mt-3 grid grid-cols-3 gap-3">
+                                        <div className="flex items-center space-x-2 text-sm">
+                                            <Search className="h-4 w-4 text-primary" />
+                                            <span>{onboardingStatus.custom_subqueries_count} Subqueries</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2 text-sm">
+                                            <Brain className="h-4 w-4 text-primary" />
+                                            <span>Agent 3: {onboardingStatus.has_agent3_prompt ? "Custom" : "Default"}</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2 text-sm">
+                                            <Shield className="h-4 w-4 text-primary" />
+                                            <span>Agent 4: {onboardingStatus.has_agent4_prompt ? "Custom" : "Default"}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             <Card className="w-full shadow-lg">
                 <CardHeader className="text-center border-b bg-muted/20">
-                    <CardTitle className="text-2xl font-bold text-primary">Welcome to Smart DRHP Platform</CardTitle>
-                    <CardDescription>Let's tailor the AI experience for your fund's specific requirements.</CardDescription>
+                    <CardTitle className="text-2xl font-bold text-primary">
+                        {isReOnboarding ? "Update SOP & Re-Configure" : "Welcome to Smart DRHP Platform"}
+                    </CardTitle>
+                    <CardDescription>
+                        {isReOnboarding 
+                            ? "Upload an updated SOP to re-configure your AI pipeline. All custom prompts and subqueries will be regenerated."
+                            : "Let's tailor the AI experience for your fund's specific requirements."
+                        }
+                    </CardDescription>
                 </CardHeader>
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <CardContent className="space-y-8 pt-6">
@@ -133,7 +209,12 @@ const OnboardingPage = () => {
                         <div className="space-y-4">
                             <div className="flex items-center space-x-2">
                                 <FileTextIcon className="h-5 w-5 text-primary" />
-                                <h3 className="text-lg font-semibold">Fund SOP & Template</h3>
+                                <h3 className="text-lg font-semibold">
+                                    {isReOnboarding ? "Upload Updated SOP" : "Fund SOP & Template"}
+                                </h3>
+                                {isReOnboarding && (
+                                    <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Required</span>
+                                )}
                             </div>
                             <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-muted/50 transition-colors cursor-pointer bg-muted/10 relative">
                                 <Input
@@ -157,8 +238,36 @@ const OnboardingPage = () => {
                                 )}
                             </div>
                             <p className="text-sm text-muted-foreground">
-                                Our Onboarding Agent will analyze your SOP document to customize the summary generation structure and validation rules automatically.
+                                {isReOnboarding 
+                                    ? "The Onboarding Agent will re-analyze your SOP, refactor subqueries, and regenerate custom prompts for Agents 3 & 4."
+                                    : "Our Onboarding Agent will analyze your SOP document to customize the summary generation structure and validation rules automatically."
+                                }
                             </p>
+
+                            {/* What happens during onboarding */}
+                            {sopFile && (
+                                <div className="bg-muted/30 border rounded-lg p-4 space-y-2">
+                                    <p className="text-sm font-medium text-primary">AI Onboarding Pipeline:</p>
+                                    <div className="space-y-1.5 text-sm text-muted-foreground">
+                                        <div className="flex items-center space-x-2">
+                                            <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">1</span>
+                                            <span>Analyze SOP & extract section requirements</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">2</span>
+                                            <span>Refactor subqueries for your domain ({isReOnboarding ? "re-" : ""}compare vs 10 defaults)</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">3</span>
+                                            <span>Customize Summarization Agent (Agent 3) prompt</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">4</span>
+                                            <span>Customize Validation Agent (Agent 4) prompt</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <hr />
@@ -231,12 +340,26 @@ const OnboardingPage = () => {
                         </div>
 
                     </CardContent>
-                    <CardFooter className="bg-muted/10 p-6 flex justify-end">
+                    <CardFooter className="bg-muted/10 p-6 flex justify-end gap-3">
+                        {isReOnboarding && (
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                onClick={() => navigate('/dashboard')}
+                            >
+                                Cancel
+                            </Button>
+                        )}
                         <Button type="submit" size="lg" disabled={isLoading} className="w-full md:w-auto">
                             {isLoading ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Configuring Tenant AI...
+                                    {isReOnboarding ? "Re-Configuring AI Pipeline..." : "Configuring Tenant AI..."}
+                                </>
+                            ) : isReOnboarding ? (
+                                <>
+                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                    Update & Re-Onboard
                                 </>
                             ) : (
                                 "Complete Onboarding"
