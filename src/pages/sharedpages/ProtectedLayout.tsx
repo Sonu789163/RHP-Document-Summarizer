@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useNavigate } from "react-router-dom";
+import { Navigate, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -21,6 +21,7 @@ export interface ProtectedLayoutContext {
 const ProtectedLayout = () => {
   const { isAuthenticated, loading, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // State lifted up for MainLayout and its children
   const [recentDocuments, setRecentDocuments] = useState(() => {
@@ -29,7 +30,7 @@ const ProtectedLayout = () => {
   });
   const [currentDocument, setCurrentDocument] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  
+
   // First-login workspace creation
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
   const [checkingFirstLogin, setCheckingFirstLogin] = useState(true);
@@ -41,14 +42,20 @@ const ProtectedLayout = () => {
     }
   }, [isAuthenticated, loading, navigate]);
 
-  // Check if admin needs to create workspace (first-login)
+  // Check if admin needs to create workspace AND/OR complete onboarding (first-login)
   useEffect(() => {
     const checkFirstLogin = async () => {
       if (!loading && isAuthenticated && user) {
         try {
           const result = await workspaceService.checkFirstLogin();
+
           if (result.needsWorkspace && result.isAdmin) {
+            // Step 1: Admin needs to create workspace first
             setShowWorkspaceModal(true);
+          } else if (result.isAdmin && result.needsOnboarding && location.pathname !== "/onboarding") {
+            // Step 2: Admin has workspace but hasn't completed onboarding — redirect
+            console.log("🔄 Admin has not completed onboarding — redirecting to /onboarding");
+            navigate("/onboarding", { replace: true });
           }
         } catch (error) {
           console.error("Error checking first login:", error);
@@ -114,7 +121,9 @@ const ProtectedLayout = () => {
         isFirstLogin={true}
         onCreated={() => {
           setShowWorkspaceModal(false);
-          window.location.reload();
+          // After creating workspace on first login, redirect to onboarding
+          // so admin can upload SOP and configure AI pipeline
+          navigate("/onboarding", { replace: true });
         }}
       />
       <Outlet context={context satisfies ProtectedLayoutContext} />

@@ -973,31 +973,62 @@ function FundConfigSection() {
         </CardContent>
       </div>
 
-      <div className="shadow-md border border-gray-200 rounded-xl bg-white mb-20">
+      {/* Task 0: Base SOP Text */}
+      <div className="shadow-md border border-gray-200 rounded-xl bg-white mb-6">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <CardTitle className="text-xl">Custom Fund SOP Template</CardTitle>
+            <CardTitle className="text-xl">Fund SOP (Base Document)</CardTitle>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger>
                   <Info className="h-4 w-4 text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="max-w-xs">Define your custom summary structure. Overrides global default.</p>
+                  <p className="max-w-xs">The raw Standard Operating Procedure (SOP) text analyzed by the AI to build your custom pipeline.</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
           <div className="text-sm text-muted-foreground">
-            Define exactly how you want your summaries formatted (sections, tone, extraction rules).
+            View the base text used for pipeline configuration.
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            className="min-h-[200px] font-mono text-sm leading-relaxed border-gray-200 bg-gray-50/30 p-4 rounded-xl focus:ring-1 focus:ring-[#4B2A06]"
+            placeholder="No SOP text available. Upload an SOP via onboarding to populate this."
+            value={config?.sop_text || ""}
+            onChange={(e) => setConfig(prev => prev ? ({ ...prev, sop_text: e.target.value }) : null)}
+          />
+        </CardContent>
+      </div>
+
+      {/* Task 0: Base SOP Text */}
+      <div className="shadow-md border border-gray-200 rounded-xl bg-white mb-20">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-xl">Fund SOP (Base Document)</CardTitle>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs">The raw Standard Operating Procedure (SOP) text analyzed by the AI to build your custom pipeline.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            View or edit the base text used for pipeline configuration.
           </div>
         </CardHeader>
         <CardContent>
           <Textarea
             className="min-h-[400px] font-mono text-sm leading-relaxed border-gray-200 bg-gray-50/30 p-4 rounded-xl focus:ring-1 focus:ring-[#4B2A06]"
-            placeholder="## Section 1: Executive Summary&#10;- Focus on use of proceeds...&#10;&#10;## Section 2: Key Risks&#10;- Highlight any pending litigation..."
-            value={config?.custom_summary_sop || ""}
-            onChange={(e) => setConfig(prev => prev ? ({ ...prev, custom_summary_sop: e.target.value }) : null)}
+            placeholder="No SOP text available. Upload an SOP via onboarding to populate this."
+            value={config?.sop_text || ""}
+            onChange={(e) => setConfig(prev => prev ? ({ ...prev, sop_text: e.target.value }) : null)}
           />
         </CardContent>
       </div>

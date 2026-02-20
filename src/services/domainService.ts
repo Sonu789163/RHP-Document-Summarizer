@@ -10,9 +10,10 @@ export interface DomainConfig {
     valuation_matching: boolean;
     adverse_finding: boolean;
     target_investors: string[];
-    // SOP
-    custom_summary_sop: string;
-    has_sop: boolean;
+    // SOP & Prompts
+    sop_text: string;
+    agent3_prompt: string;
+    agent4_prompt: string;
     // Onboarding status
     onboarding_status: "pending" | "processing" | "completed" | "completed_no_sop" | "failed";
     last_onboarded: string | null;
@@ -91,7 +92,7 @@ export const domainService = {
         const token = localStorage.getItem("accessToken");
         const formData = new FormData();
         formData.append("config", JSON.stringify(data.config));
-        
+
         if (data.file) {
             formData.append("file", data.file);
         }

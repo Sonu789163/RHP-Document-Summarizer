@@ -21,7 +21,7 @@ export const workspaceService = {
     return res.data;
   },
 
-  async checkFirstLogin(): Promise<{ needsWorkspace: boolean; isAdmin: boolean; isNewDomain: boolean }> {
+  async checkFirstLogin(): Promise<{ needsWorkspace: boolean; isAdmin: boolean; isNewDomain: boolean; needsOnboarding: boolean }> {
     const token = localStorage.getItem("accessToken");
     const res = await axios.get(`${API_URL}/workspaces/check-first-login`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -37,15 +37,17 @@ export const workspaceService = {
     return res.data;
   },
 
-  async getMyWorkspaces(): Promise<{ workspaces: Array<{
-    workspaceId: string;
-    name: string;
-    slug: string;
-    description?: string;
-    domain: string;
-    role: string;
-    joinedAt?: string;
-  }> }> {
+  async getMyWorkspaces(): Promise<{
+    workspaces: Array<{
+      workspaceId: string;
+      name: string;
+      slug: string;
+      description?: string;
+      domain: string;
+      role: string;
+      joinedAt?: string;
+    }>
+  }> {
     const token = localStorage.getItem("accessToken");
     const res = await axios.get(`${API_URL}/workspaces/my-workspaces`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -53,13 +55,15 @@ export const workspaceService = {
     return res.data;
   },
 
-  async getAvailableWorkspaces(): Promise<{ workspaces: Array<{
-    workspaceId: string;
-    name: string;
-    slug: string;
-    description?: string;
-    hasPendingRequest: boolean;
-  }> }> {
+  async getAvailableWorkspaces(): Promise<{
+    workspaces: Array<{
+      workspaceId: string;
+      name: string;
+      slug: string;
+      description?: string;
+      hasPendingRequest: boolean;
+    }>
+  }> {
     const token = localStorage.getItem("accessToken");
     const res = await axios.get(`${API_URL}/workspace-requests/available`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -77,15 +81,17 @@ export const workspaceService = {
     return res.data;
   },
 
-  async getMyRequests(): Promise<{ requests: Array<{
-    id: string;
-    workspaceId: string;
-    workspace: { workspaceId: string; name: string } | null;
-    status: string;
-    requestedAt: string;
-    reviewedAt?: string;
-    rejectionReason?: string;
-  }> }> {
+  async getMyRequests(): Promise<{
+    requests: Array<{
+      id: string;
+      workspaceId: string;
+      workspace: { workspaceId: string; name: string } | null;
+      status: string;
+      requestedAt: string;
+      reviewedAt?: string;
+      rejectionReason?: string;
+    }>
+  }> {
     const token = localStorage.getItem("accessToken");
     const res = await axios.get(`${API_URL}/workspace-requests/my-requests`, {
       headers: { Authorization: `Bearer ${token}` },
