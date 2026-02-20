@@ -12,7 +12,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   LogOut,
-  Settings,
   MessageSquare,
   Home,
   Upload,
@@ -435,10 +434,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuItem
-                  onSelect={() => navigate("/profile")}
+                  onSelect={() => navigate("/settings")}
                   className="cursor-pointer hover:bg-gray-100 focus:bg-gray-100 "
                 >
-
                   <SettingsIcon className="mr-2 h-4 w-4" /> Settings
                 </DropdownMenuItem>
                 {user?.role === "admin" && (

@@ -53,31 +53,31 @@ export function CreateWorkspaceModal({
     }
     try {
       setBusy(true);
-      
+
       // Create workspace
-      const payload = { 
-        name: trimmed, 
+      const payload = {
+        name: trimmed,
         slug: slug ? toSlug(slug) : undefined,
         description: desc.trim() || undefined,
       };
       const result = await workspaceService.createWorkspace(payload);
       const workspaceId = result.workspace.workspaceId;
-      
+
       // Set workspace in localStorage for subsequent requests
       localStorage.setItem("currentWorkspace", workspaceId);
-      
+
       // If file provided, upload and summarize
       if (file) {
         setUploading(true);
         toast.info(`Uploading ${file.name}...`);
-        
+
         try {
           // Upload file with workspace header
           const token = localStorage.getItem("accessToken");
           const formData = new FormData();
           formData.append("file", file);
           formData.append("namespace", file.name);
-          
+
           const uploadResponse = await fetch(
             `${import.meta.env.VITE_API_URL}/documents/upload`,
             {
@@ -89,21 +89,21 @@ export function CreateWorkspaceModal({
               body: formData,
             }
           );
-          
+
           if (!uploadResponse.ok) {
             throw new Error("Upload failed");
           }
-          
+
           const uploadResult = await uploadResponse.json();
-          
+
           if (uploadResult?.document) {
             toast.success("Document uploaded successfully!");
-            
+
             // Trigger summarize
             try {
               toast.info("Generating summary...");
               const session = sessionService.initializeSession();
-              
+
               await summaryN8nService.createSummary(
                 "Generate DRHP Doc Summary",
                 session,
@@ -113,7 +113,7 @@ export function CreateWorkspaceModal({
                 undefined,
                 "DRHP"
               );
-              
+
               toast.success("Summary generation started!");
             } catch (summaryError: any) {
               console.error("Summary generation error:", summaryError);
@@ -127,7 +127,7 @@ export function CreateWorkspaceModal({
           setUploading(false);
         }
       }
-      
+
       toast.success("Workspace created successfully!");
       setName("");
       setSlug("");
@@ -138,9 +138,11 @@ export function CreateWorkspaceModal({
       }
       onOpenChange(false);
       onCreated?.();
-      
-      // Reload page to refresh workspace context
-      window.location.reload();
+
+      // Only reload if no onCreated callback handles navigation (e.g., first-login redirects to /onboarding)
+      if (!onCreated) {
+        window.location.reload();
+      }
     } catch (e: any) {
       toast.error(e?.response?.data?.message || "Failed to create workspace");
     } finally {
@@ -164,15 +166,15 @@ export function CreateWorkspaceModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-white">
         <DialogHeader>
-              <DialogTitle className="text-[#4B2A06]">
-                {isFirstLogin ? "Create Your First Workspace" : "Create Workspace"}
-              </DialogTitle>
-              {isFirstLogin && (
-                <p className="text-sm text-gray-600 mt-2">
-                  Welcome! As the first admin of this domain, you need to create your first workspace to get started.
-                  You can optionally upload a document to summarize.
-                </p>
-              )}
+          <DialogTitle className="text-[#4B2A06]">
+            {isFirstLogin ? "Create Your First Workspace" : "Create Workspace"}
+          </DialogTitle>
+          {isFirstLogin && (
+            <p className="text-sm text-gray-600 mt-2">
+              Welcome! As the first admin of this domain, you need to create your first workspace to get started.
+              You can optionally upload a document to summarize.
+            </p>
+          )}
         </DialogHeader>
         <div className="space-y-4">
           <div>

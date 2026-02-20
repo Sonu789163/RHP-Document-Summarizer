@@ -71,7 +71,7 @@ export const DrhpUploadModal: React.FC<DrhpUploadModalProps> = ({
       // Call the callback with the selected file
       // The parent component will handle the actual upload
       onUploadSuccess?.(file);
-      
+
       // Don't close modal immediately - let parent handle it after upload completes
       // The modal will be closed by the parent component after upload processing
     } catch (error) {
@@ -123,7 +123,7 @@ export const DrhpUploadModal: React.FC<DrhpUploadModalProps> = ({
               <div className="text-sm text-blue-800">
                 <p className="font-medium">Note:</p>
                 <p>
-                  Please ensure the PDF file is a valid DRHP document. The document will be processed and made available for summarization.
+                  Please ensure the PDF file is a valid DRHP document. The first page MUST contain "Draft Red Herring Prospectus".
                 </p>
               </div>
             </div>

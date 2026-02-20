@@ -8,7 +8,6 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import ChatSummaryLayout from "./pages/documentpages/ChatSummaryLayout";
 import NotFound from "./pages/sharedpages/NotFound";
 import ChatHistoryPage from "./pages/chatpages/ChatHistoryPage";
-import SettingsPage from "./pages/sharedpages/SettingsPage";
 import LandingPage from "./pages/sharedpages/LandingPage";
 import AuthPage from "./pages/authpages/AuthPage";
 import AuthCallbackPage from "./pages/authpages/AuthCallbackPage";
@@ -29,6 +28,7 @@ import { useAuthProtection } from "./hooks/useAuthProtection";
 import NotificationsPage from "./pages/sharedpages/NotificationsPage";
 import TrashPage from "./pages/sharedpages/TrashPage";
 import NewsArticles from "./pages/newsmonitor/NewsArticles";
+import OnboardingPage from "./pages/onboarding/OnboardingPage";
 
 const queryClient = new QueryClient();
 
@@ -112,12 +112,13 @@ const AppRoutes = () => {
             <Route path="/admin" element={<AdminDashboardPage />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/workspaces" element={<AdminWorkspaceManagement />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
             {/* Domain Config removed */}
 
             <Route element={<MainLayout />}>
               <Route path="/doc/:namespace" element={<ChatSummaryLayout />} />
               <Route path="/chat-history" element={<ChatHistoryPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/settings" element={<ProfilePage />} />
             </Route>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>

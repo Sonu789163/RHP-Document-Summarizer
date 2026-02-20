@@ -21,6 +21,7 @@ interface User {
   role?: string; // User role (admin or user)
   phoneNumber?: string;
   gender?: "male" | "female" | "other" | "prefer-not-to-say";
+  domainId?: string;
   exp?: number; // JWT expiration timestamp
 }
 
