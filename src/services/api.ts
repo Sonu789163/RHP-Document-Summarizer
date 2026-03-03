@@ -63,6 +63,19 @@ axios.interceptors.response.use(
       const status = error?.response?.status as number | undefined;
       const url: string = error?.config?.url || "";
       const hasLinkToken = !!getSharedLinkToken();
+
+      // NEW: Health-aware error handling for normal users
+      if (status === 429 || (error?.response?.data?.error === "QUOTA_EXCEEDED")) {
+        // If not on an admin page, show a "Contact Admin" message
+        if (!window.location.pathname.startsWith('/admin')) {
+          console.warn("External API Quota Exceeded. Prompting user to contact admin.");
+          // We'll rely on the UI to display this or we can trigger a custom event
+          window.dispatchEvent(new CustomEvent('api-health-error', {
+            detail: { message: "System is experiencing high load or quota limits. Please contact your administrator." }
+          }));
+        }
+      }
+
       if (hasLinkToken) {
         // If link resolve returns 404/410, or any 403 while a link token is attached, purge it
         if (
@@ -1353,7 +1366,19 @@ export const summaryService = {
   },
 };
 
-// OpenAI Monitoring Services
-// OpenAI monitoring removed
+// Health Services
+export const healthService = {
+  async getDetailedStatus() {
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.get(`${API_URL}/health/admin/detailed`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+  async getBasicStatus() {
+    const response = await axios.get(`${API_URL}/health/basic`);
+    return response.data;
+  },
+};
 
 export default axios;

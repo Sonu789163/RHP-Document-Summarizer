@@ -130,11 +130,25 @@ const AppRoutes = () => {
   );
 };
 
+const HealthMonitor = () => {
+  React.useEffect(() => {
+    const handleHealthError = (event: any) => {
+      const { message } = event.detail;
+      // We use a custom alert here or a toast
+      alert(`⚠️ ${message}`);
+    };
+    window.addEventListener('api-health-error', handleHealthError);
+    return () => window.removeEventListener('api-health-error', handleHealthError);
+  }, []);
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <HealthMonitor />
       <BrowserRouter
         future={{
           v7_startTransition: true,

@@ -37,6 +37,7 @@ import {
   X,
   Info,
   Save,
+  RefreshCw
 } from "lucide-react";
 import { domainService, DomainConfig } from "@/services/domainService";
 import { Switch } from "@/components/ui/switch";
@@ -800,6 +801,8 @@ function FundConfigSection() {
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<DomainConfig | null>(null);
   const [newInvestor, setNewInvestor] = useState("");
+  const [newCompany, setNewCompany] = useState("");
+  const [isCrawling, setIsCrawling] = useState(false);
 
   useEffect(() => {
     fetchConfig();
@@ -848,6 +851,25 @@ function FundConfigSection() {
     setConfig({
       ...config,
       target_investors: config.target_investors.filter(i => i !== investor)
+    });
+  };
+
+  const handleAddCompany = () => {
+    if (!newCompany.trim() || !config) return;
+    if (config.monitored_companies.includes(newCompany.trim())) return;
+
+    setConfig({
+      ...config,
+      monitored_companies: [...config.monitored_companies, newCompany.trim()]
+    });
+    setNewCompany("");
+  };
+
+  const handleRemoveCompany = (company: string) => {
+    if (!config) return;
+    setConfig({
+      ...config,
+      monitored_companies: config.monitored_companies.filter(c => c !== company)
     });
   };
 
@@ -920,9 +942,120 @@ function FundConfigSection() {
                 Run external OSINT checks for red flags and reputational risks.
               </p>
             </div>
+
+            {/* Toggle 4: News Monitor */}
+            <div className="flex flex-col space-y-3 p-4 border rounded-xl bg-gray-50/50">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="news-monitor" className="font-semibold">Daily News Monitor</Label>
+                <Switch
+                  id="news-monitor"
+                  checked={config?.news_monitor_enabled ?? false}
+                  onCheckedChange={(checked) => setConfig(prev => prev ? ({ ...prev, news_monitor_enabled: checked }) : null)}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Enable automated daily (8 AM) news crawling for selected companies.
+              </p>
+            </div>
           </div>
         </CardContent>
       </div>
+
+      {/* Monitored Companies Section - Conditional */}
+      {config?.news_monitor_enabled && (
+        <div className="shadow-md border border-gray-200 rounded-xl bg-white mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-xl">Monitored Companies</CardTitle>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs">List of companies that will be monitored for negative news daily.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 text-[#4B2A06] border-[#4B2A06]/20 hover:bg-[#4B2A06]/5"
+                disabled={isCrawling}
+                onClick={async () => {
+                  if (!config) return;
+                  try {
+                    setIsCrawling(true);
+                    // 1. Save current config first
+                    await domainService.updateConfig(config);
+
+                    // 2. Trigger crawl
+                    const res = await domainService.triggerNewsCrawl();
+                    const articleCount = res.article_count || 0;
+
+                    if (articleCount > 0) {
+                      toast.success(`Crawl completed: ${articleCount} articles found`, {
+                        action: {
+                          label: "View Articles",
+                          onClick: () => (window.location.href = "/news-articles")
+                        }
+                      });
+                    } else {
+                      toast.warning(res.message || "Crawl completed, but no new articles were found.");
+                    }
+
+                    if (res.errors && res.errors.length > 0) {
+                      toast.error(`Crawl had ${res.errors.length} errors. Check console for details.`);
+                      console.error("News crawl partial errors:", res.errors);
+                    }
+                  } catch (err: any) {
+                    console.error("Crawl error:", err);
+                    toast.error(err?.response?.data?.error || err?.response?.data?.detail || "Failed to trigger news crawl");
+                  } finally {
+                    setIsCrawling(false);
+                  }
+                }}
+              >
+                {isCrawling ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                {isCrawling ? "Crawling..." : "Run Crawler Now"}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2 max-w-md">
+              <Input
+                placeholder="Add company name..."
+                value={newCompany}
+                onChange={(e) => setNewCompany(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddCompany()}
+                className="border-gray-200 bg-white"
+              />
+              <Button variant="secondary" size="icon" onClick={handleAddCompany} className="shrink-0">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap gap-2 p-4 border rounded-xl bg-gray-50/50 min-h-[100px]">
+              {config?.monitored_companies?.length === 0 && (
+                <span className="text-sm text-muted-foreground italic self-center">No companies added for monitoring yet.</span>
+              )}
+              {config?.monitored_companies?.map((company, idx) => (
+                <Badge key={idx} variant="secondary" className="pl-3 pr-2 py-1.5 gap-2 text-sm font-normal bg-white border border-gray-200 shadow-sm">
+                  {company}
+                  <button
+                    onClick={() => handleRemoveCompany(company)}
+                    className="text-gray-400 hover:text-red-500 transition-colors focus:outline-none"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </div>
+      )}
 
       <div className="shadow-md border border-gray-200 rounded-xl bg-white mb-6">
         <CardHeader>
@@ -996,36 +1129,6 @@ function FundConfigSection() {
         <CardContent>
           <Textarea
             className="min-h-[200px] font-mono text-sm leading-relaxed border-gray-200 bg-gray-50/30 p-4 rounded-xl focus:ring-1 focus:ring-[#4B2A06]"
-            placeholder="No SOP text available. Upload an SOP via onboarding to populate this."
-            value={config?.sop_text || ""}
-            onChange={(e) => setConfig(prev => prev ? ({ ...prev, sop_text: e.target.value }) : null)}
-          />
-        </CardContent>
-      </div>
-
-      {/* Task 0: Base SOP Text */}
-      <div className="shadow-md border border-gray-200 rounded-xl bg-white mb-20">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-xl">Fund SOP (Base Document)</CardTitle>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="max-w-xs">The raw Standard Operating Procedure (SOP) text analyzed by the AI to build your custom pipeline.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            View or edit the base text used for pipeline configuration.
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            className="min-h-[400px] font-mono text-sm leading-relaxed border-gray-200 bg-gray-50/30 p-4 rounded-xl focus:ring-1 focus:ring-[#4B2A06]"
             placeholder="No SOP text available. Upload an SOP via onboarding to populate this."
             value={config?.sop_text || ""}
             onChange={(e) => setConfig(prev => prev ? ({ ...prev, sop_text: e.target.value }) : null)}

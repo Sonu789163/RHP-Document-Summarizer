@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Navbar } from '@/components/sharedcomponents/Navbar';
-import { TrendingUp, Filter, ChevronDown, ExternalLink, Calendar, Building2, Tag, AlertCircle, AlertTriangle, CheckCircle, Info, RefreshCw } from 'lucide-react';
+import { TrendingUp, Filter, ChevronDown, ExternalLink, Calendar, Building2, Tag, AlertCircle, AlertTriangle, CheckCircle, Info, RefreshCw, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -19,6 +20,7 @@ interface NewsArticle {
     sentiment: 'positive' | 'negative' | 'neutral';
     riskLevel?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
     findings?: string;
+    citations?: string[];
 }
 
 interface ArticleStats {
@@ -252,6 +254,30 @@ const NewsArticles: React.FC = () => {
                     icon: <Info className="h-5 w-5" />,
                     iconColor: 'text-gray-600'
                 };
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!window.confirm('Are you sure you want to delete this news article?')) return;
+
+        try {
+            const workspaceId = localStorage.getItem('workspaceId') || 'ws_1758689602670_z3pxonjqn';
+            const token = localStorage.getItem('token');
+
+            await axios.delete(`${API_URL}/news-articles/${id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'x-workspace': workspaceId,
+                }
+            });
+
+            toast.success('Article deleted successfully');
+            setArticles(prev => prev.filter(a => a._id !== id));
+            // Update stats too
+            fetchStats();
+        } catch (error: any) {
+            console.error('Error deleting article:', error);
+            toast.error(error.response?.data?.message || 'Failed to delete article');
         }
     };
 
@@ -576,6 +602,14 @@ const NewsArticles: React.FC = () => {
                                                     {article.category}
                                                 </span>
 
+                                                <button
+                                                    onClick={() => handleDelete(article._id)}
+                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Delete Article"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+
                                             </div>
 
                                         </div>
@@ -617,19 +651,40 @@ const NewsArticles: React.FC = () => {
                                         )}
 
                                         {/* Footer */}
-                                        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                                            <div className="text-xs text-gray-500">
-                                                Source: <span className="font-semibold text-gray-700">{article.source}</span>
+                                        <div className="flex flex-col gap-2 pt-2 border-t border-gray-200">
+                                            <div className="flex items-center justify-between">
+                                                <div className="text-xs text-gray-500">
+                                                    Source: <span className="font-semibold text-gray-700">{article.source}</span>
+                                                </div>
+                                                {!article.citations || article.citations.length <= 1 ? (
+                                                    <a
+                                                        href={article.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-2 px-3 py-1 bg-[#FF7A1A] text-white rounded-lg text-sm font-semibold hover:bg-[#4B2A06] transition-colors"
+                                                    >
+                                                        View Details
+                                                        <ExternalLink className="h-3 w-3" />
+                                                    </a>
+                                                ) : null}
                                             </div>
-                                            <a
-                                                href={article.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-2 px-2 py-1 bg-[#FF7A1A] text-white rounded-lg text-sm font-semibold hover:bg-[#4B2A06] transition-colors"
-                                            >
-                                                View Details
-                                                <ExternalLink className="h-3 w-3" />
-                                            </a>
+
+                                            {article.citations && article.citations.length > 1 && (
+                                                <div className="flex flex-wrap gap-2 mt-1">
+                                                    {article.citations.map((url: string, index: number) => (
+                                                        <a
+                                                            key={index}
+                                                            href={url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-2 px-2 py-1 bg-gray-100 text-[#4B2A06] rounded border border-gray-200 text-xs font-medium hover:bg-gray-200 transition-colors"
+                                                        >
+                                                            Citation {index + 1}
+                                                            <ExternalLink className="h-3 w-3" />
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

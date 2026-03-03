@@ -231,6 +231,9 @@ export function ChatPanel({
 
       try {
         if (chatId) {
+          // If we've already loaded this chat ID in state, don't re-mount everything
+          if (chatId === currentChatId && messages.length > 1) return;
+
           // Load specific chat if chatId is provided
           const chats = await chatStorageService.getChatsForDoc(
             currentDocument.id
@@ -247,7 +250,7 @@ export function ChatPanel({
             return;
           }
         }
-        
+
         // If session expired (based on last user activity) OR we just reset session on init, show a fresh greeting
         if (sessionService.isSessionExpired(sessionData) || sessionData.resetOnInit) {
           setMessages([
@@ -262,7 +265,7 @@ export function ChatPanel({
           setCurrentChatId(null);
           return;
         }
-        
+
         // Default: show a transient greeting in UI without loading previous chats
         setMessages([
           {
@@ -367,11 +370,12 @@ export function ChatPanel({
         chat.messages.push(userMessage);
         chat.updatedAt = new Date().toISOString();
         await chatStorageService.saveChatForDoc(currentDocument.id, chat);
-        // After save, ensure we have an id and set it as current
-        if (!newChatId && chat.id) {
+
+        // IMPORTANT: Always update currentChatId and sync with URL after first persistent save
+        if (chat.id) {
           newChatId = chat.id;
-          setCurrentChatId(newChatId);
-          if (onChatCreated) onChatCreated(newChatId);
+          setCurrentChatId(chat.id);
+          if (onChatCreated) onChatCreated(chat.id);
         }
 
         newMessages = chat.messages.map((m) => ({
@@ -527,10 +531,9 @@ export function ChatPanel({
     const token = localStorage.getItem("accessToken");
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/documents/download/${
-          currentDocument?.id
+        `${import.meta.env.VITE_API_URL}/documents/download/${currentDocument?.id
         } ` ||
-          `http://localhost:5000/api/documents/download/${currentDocument?.id}`,
+        `http://localhost:5000/api/documents/download/${currentDocument?.id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -555,7 +558,7 @@ export function ChatPanel({
   return (
     <div
       className="flex flex-col flex-1 min-h-0"
-      // style={{ background: customStyles.containerBg || undefined }}
+    // style={{ background: customStyles.containerBg || undefined }}
     >
       {/* Download PDF Button */}
       {currentDocument && (
@@ -597,7 +600,7 @@ export function ChatPanel({
       <ScrollArea
         ref={scrollAreaRef}
         className="flex-1"
-        // style={{ background: customStyles.containerBg || undefined }}
+      // style={{ background: customStyles.containerBg || undefined }}
       >
         <div className="p-4 space-y-4">
           {messages.map((message) => (
@@ -870,8 +873,7 @@ export function DocumentPopover({
     const token = localStorage.getItem("accessToken");
     try {
       const response = await axios.get(
-        `${
-          import.meta.env.VITE_API_URL
+        `${import.meta.env.VITE_API_URL
         }/documents/download/${documentId}?inline=1`,
         {
           headers: { Authorization: `Bearer ${token}` },

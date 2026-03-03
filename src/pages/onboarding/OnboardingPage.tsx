@@ -1,12 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Loader2, Upload, CheckCircle, AlertCircle, RefreshCw, Shield, Brain, Search, Sparkles, ArrowRight, Zap } from 'lucide-react';
+import { Loader2, Upload, CheckCircle, AlertCircle, RefreshCw, Shield, Brain, Search, Sparkles, ArrowRight, Zap, Plus, X, Info, Users, Building2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from 'react-router-dom';
 import { domainService, OnboardingStatus } from '@/services/domainService';
 import { Navbar } from "@/components/sharedcomponents/Navbar";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Label } from "@/components/ui/label";
 
 const OnboardingPage = () => {
     const { user } = useAuth();
@@ -17,15 +22,23 @@ const OnboardingPage = () => {
     const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
     const [isLoadingStatus, setIsLoadingStatus] = useState(true);
     const [isReOnboarding, setIsReOnboarding] = useState(false);
+    const [isCrawling, setIsCrawling] = useState(false);
 
-    const { control, handleSubmit, register, setValue, formState: { errors } } = useForm({
+    const [inputInvestor, setInputInvestor] = useState("");
+    const [inputCompany, setInputCompany] = useState("");
+
+    const { control, handleSubmit, register, setValue, watch, formState: { errors } } = useForm({
         defaultValues: {
             investor_match_only: false,
             valuation_matching: false,
             adverse_finding: false,
-            target_investors: "",
+            news_monitor_enabled: false,
+            target_investors: [] as string[],
+            monitored_companies: [] as string[],
         }
     });
+
+    const newsMonitorEnabled = watch("news_monitor_enabled");
 
     // Fetch existing onboarding status on mount
     useEffect(() => {
@@ -39,9 +52,13 @@ const OnboardingPage = () => {
                     setValue("investor_match_only", status.toggles.investor_match_only);
                     setValue("valuation_matching", status.toggles.valuation_matching);
                     setValue("adverse_finding", status.toggles.adverse_finding);
+                    setValue("news_monitor_enabled", status.toggles.news_monitor_enabled || false);
                 }
-                if (status.target_investors?.length) {
-                    setValue("target_investors", status.target_investors.join(", "));
+                if (status.target_investors) {
+                    setValue("target_investors", status.target_investors);
+                }
+                if (status.monitored_companies) {
+                    setValue("monitored_companies", status.monitored_companies);
                 }
 
                 // If already completed, show re-onboarding mode
@@ -80,9 +97,11 @@ const OnboardingPage = () => {
                 toggles: {
                     investor_match_only: data.investor_match_only,
                     valuation_matching: data.valuation_matching,
-                    adverse_finding: data.adverse_finding
+                    adverse_finding: data.adverse_finding,
+                    news_monitor_enabled: data.news_monitor_enabled
                 },
-                targetInvestors: data.target_investors ? data.target_investors.split(',').map((s: string) => s.trim()).filter(Boolean) : []
+                targetInvestors: data.target_investors || [],
+                monitoredCompanies: data.monitored_companies || []
             };
 
             if (isReOnboarding) {
@@ -160,9 +179,9 @@ const OnboardingPage = () => {
                     >
                         <div className="flex items-start gap-4">
                             <div className={`p-2.5 rounded-full ${onboardingStatus.onboarding_status === "completed" ? "bg-green-50 text-green-600" :
-                                    onboardingStatus.onboarding_status === "processing" ? "bg-yellow-50 text-yellow-600" :
-                                        onboardingStatus.onboarding_status === "failed" ? "bg-red-50 text-red-600" :
-                                            "bg-gray-100 text-gray-500"
+                                onboardingStatus.onboarding_status === "processing" ? "bg-yellow-50 text-yellow-600" :
+                                    onboardingStatus.onboarding_status === "failed" ? "bg-red-50 text-red-600" :
+                                        "bg-gray-100 text-gray-500"
                                 }`}>
                                 {onboardingStatus.onboarding_status === "completed" ? <CheckCircle className="h-5 w-5" /> :
                                     onboardingStatus.onboarding_status === "processing" ? <Loader2 className="h-5 w-5 animate-spin" /> :
@@ -206,26 +225,26 @@ const OnboardingPage = () => {
                 {/* Page Header */}
                 <div className="mb-8 flex items-center justify-between">
                     <div className="w-full">
-                    <h1 className="text-2xl font-bold text-[#4B2A06]">
-                        {isReOnboarding ? "Update SOP & Re-Configure" : "Welcome to Smart DRHP Platform"}
-                    </h1>
-                    <p className="text-gray-500 mt-2 text-sm">
-                        {isReOnboarding
-                            ? "Upload an updated SOP to re-configure your AI pipeline. All custom prompts and subqueries will be regenerated."
-                            : "Let's tailor the AI experience for your fund's specific requirements."
-                        }
-                    </p>
+                        <h1 className="text-2xl font-bold text-[#4B2A06]">
+                            {isReOnboarding ? "Update SOP & Re-Configure" : "Welcome to Smart DRHP Platform"}
+                        </h1>
+                        <p className="text-gray-500 mt-2 text-sm">
+                            {isReOnboarding
+                                ? "Upload an updated SOP to re-configure your AI pipeline. All custom prompts and subqueries will be regenerated."
+                                : "Let's tailor the AI experience for your fund's specific requirements."
+                            }
+                        </p>
                     </div>
-                      {/* Skip Option (first-time only) */}
-                            {!isReOnboarding && (
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/dashboard')}
-                                    className="w-50 justify-end text-center text-sm text-[#4B2A06] hover:text-[#4B2A06] transition-colors py-2 border border-[#4B2A06] rounded-md"
-                                >
-                                    Skip for now — use default configuration
-                                </button>
-                            )}
+                    {/* Skip Option (first-time only) */}
+                    {!isReOnboarding && (
+                        <button
+                            type="button"
+                            onClick={() => navigate('/dashboard')}
+                            className="w-50 justify-end text-center text-sm text-[#4B2A06] hover:text-[#4B2A06] transition-colors py-2 border border-[#4B2A06] rounded-md"
+                        >
+                            Skip for now — use default configuration
+                        </button>
+                    )}
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)}>
@@ -246,8 +265,8 @@ const OnboardingPage = () => {
 
                                 {/* Upload Area */}
                                 <div className={`relative border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer ${sopFile
-                                        ? "border-green-300 bg-green-50/30"
-                                        : "border-gray-200 bg-gray-50/50 hover:border-[#4B2A06]/30 hover:bg-gray-50"
+                                    ? "border-green-300 bg-green-50/30"
+                                    : "border-gray-200 bg-gray-50/50 hover:border-[#4B2A06]/30 hover:bg-gray-50"
                                     }`}>
                                     <input
                                         type="file"
@@ -308,25 +327,194 @@ const OnboardingPage = () => {
                             {/* Target Investors */}
                             <div className="bg-white shadow-sm rounded-lg p-6">
                                 <div className="flex items-center gap-2 mb-4">
-                                    <UsersIcon className="h-5 w-5 text-[#4B2A06]" />
+                                    <Users className="h-5 w-5 text-[#4B2A06]" />
                                     <h2 className="text-lg font-bold text-[#4B2A06]">Target Investors</h2>
                                     <span className="text-xs text-gray-400 font-medium">(Optional)</span>
                                 </div>
-                                <label htmlFor="target-investors" className="text-sm text-gray-500 block mb-2">
-                                    List specific investors to prioritize matching (comma separated)
-                                </label>
-                                <textarea
-                                    id="target-investors"
-                                    placeholder="e.g. Sequoia Capital, Accel, Tiger Global..."
-                                    {...register("target_investors")}
-                                    className="w-full min-h-[100px] rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm text-[rgba(38,40,43,1)] placeholder-gray-400 focus:border-[#4B2A06]/30 focus:ring-0 focus:outline-none resize-none transition-colors"
-                                />
+                                <div className="space-y-4">
+                                    <div className="flex gap-2">
+                                        <Input
+                                            placeholder="Add investor name..."
+                                            value={inputInvestor}
+                                            onChange={(e) => setInputInvestor(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    const val = watch("target_investors") || [];
+                                                    if (inputInvestor.trim() && !val.includes(inputInvestor.trim())) {
+                                                        setValue("target_investors", [...val, inputInvestor.trim()]);
+                                                        setInputInvestor("");
+                                                    }
+                                                }
+                                            }}
+                                            className="border-gray-200 bg-white"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const val = watch("target_investors") || [];
+                                                if (inputInvestor.trim() && !val.includes(inputInvestor.trim())) {
+                                                    setValue("target_investors", [...val, inputInvestor.trim()]);
+                                                    setInputInvestor("");
+                                                }
+                                            }}
+                                            className="bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg px-3 py-2 transition-colors"
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                        </button>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2 p-3 border rounded-xl bg-gray-50/50 min-h-[60px]">
+                                        {(watch("target_investors") || []).length === 0 && (
+                                            <span className="text-xs text-gray-400 italic self-center">No target investors added yet.</span>
+                                        )}
+                                        {(watch("target_investors") || []).map((investor: string, idx: number) => (
+                                            <Badge key={idx} variant="secondary" className="pl-2.5 pr-1.5 py-1 gap-1.5 text-xs font-normal bg-white border border-gray-200 shadow-sm">
+                                                {investor}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const val = watch("target_investors") || [];
+                                                        setValue("target_investors", val.filter((i: string) => i !== investor));
+                                                    }}
+                                                    className="text-gray-400 hover:text-red-500 transition-colors focus:outline-none"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
+
+                            {/* Monitored Companies - Conditional */}
+                            {newsMonitorEnabled && (
+                                <div className="bg-white shadow-sm rounded-lg p-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <Building2 className="h-5 w-5 text-[#4B2A06]" />
+                                            <h2 className="text-lg font-bold text-[#4B2A06]">News Monitor: Companies</h2>
+                                            <span className="text-xs text-gray-400 font-medium">(Optional)</span>
+                                        </div>
+                                        {isReOnboarding && (
+                                            <button
+                                                type="button"
+                                                disabled={isCrawling}
+                                                onClick={async () => {
+                                                    try {
+                                                        setIsCrawling(true);
+                                                        // 1. Save current config first to ensure crawler uses latest companies
+                                                        const data = watch();
+                                                        const updateData = {
+                                                            news_monitor_enabled: data.news_monitor_enabled,
+                                                            monitored_companies: data.monitored_companies || [],
+                                                            target_investors: data.target_investors || [],
+                                                            investor_match_only: data.investor_match_only,
+                                                            valuation_matching: data.valuation_matching,
+                                                            adverse_finding: data.adverse_finding,
+                                                        };
+                                                        await domainService.updateConfig(updateData);
+
+                                                        // 2. Trigger the crawl
+                                                        const res = await domainService.triggerNewsCrawl();
+                                                        const articleCount = res.article_count || 0;
+                                                        toast({
+                                                            title: articleCount > 0 ? "Crawl Successful" : "Crawl Completed",
+                                                            description: res.message || `Found ${articleCount} new articles.`,
+                                                            variant: articleCount > 0 ? "default" : "destructive",
+                                                            action: (
+                                                                <ToastAction altText="View Articles" onClick={() => navigate("/news-monitor")}>
+                                                                    View
+                                                                </ToastAction>
+                                                            ),
+                                                        });
+                                                        if (res.errors && res.errors.length > 0) {
+                                                            toast({
+                                                                title: "Crawl had partial errors",
+                                                                description: `Research failed for ${res.errors.length} companies.`,
+                                                                variant: "destructive"
+                                                            });
+                                                            console.warn("Crawl errors:", res.errors);
+                                                        }
+                                                    } catch (err: any) {
+                                                        console.error("Crawl error:", err);
+                                                        toast({
+                                                            title: "Crawl Failed",
+                                                            description: err?.response?.data?.error || err?.response?.data?.detail || "Failed to trigger news crawl.",
+                                                            variant: "destructive"
+                                                        });
+                                                    } finally {
+                                                        setIsCrawling(false);
+                                                    }
+                                                }}
+                                                className="flex items-center gap-1.5 text-xs font-semibold py-1.5 px-3 rounded-full border border-[#4B2A06]/20 text-[#4B2A06] hover:bg-[#4B2A06]/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {isCrawling ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                                                {isCrawling ? "Crawling..." : "Run Now"}
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="flex gap-2">
+                                            <Input
+                                                placeholder="Add company name..."
+                                                value={inputCompany}
+                                                onChange={(e) => setInputCompany(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        const val = watch("monitored_companies") || [];
+                                                        if (inputCompany.trim() && !val.includes(inputCompany.trim())) {
+                                                            setValue("monitored_companies", [...val, inputCompany.trim()]);
+                                                            setInputCompany("");
+                                                        }
+                                                    }
+                                                }}
+                                                className="border-gray-200 bg-white"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const val = watch("monitored_companies") || [];
+                                                    if (inputCompany.trim() && !val.includes(inputCompany.trim())) {
+                                                        setValue("monitored_companies", [...val, inputCompany.trim()]);
+                                                        setInputCompany("");
+                                                    }
+                                                }}
+                                                className="bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg px-3 py-2 transition-colors"
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-2 p-3 border rounded-xl bg-gray-50/50 min-h-[60px]">
+                                            {(watch("monitored_companies") || []).length === 0 && (
+                                                <span className="text-xs text-gray-400 italic self-center">No companies added for monitoring yet.</span>
+                                            )}
+                                            {(watch("monitored_companies") || []).map((company: string, idx: number) => (
+                                                <Badge key={idx} variant="secondary" className="pl-2.5 pr-1.5 py-1 gap-1.5 text-xs font-normal bg-white border border-gray-200 shadow-sm">
+                                                    {company}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const val = watch("monitored_companies") || [];
+                                                            setValue("monitored_companies", val.filter((c: string) => c !== company));
+                                                        }}
+                                                        className="text-gray-400 hover:text-red-500 transition-colors focus:outline-none"
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </button>
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Right Column - Feature Toggles + Actions */}
                         <div className="lg:col-span-5 space-y-6">
-                           
+
                             <div className="bg-white shadow-sm rounded-lg p-5">
                                 <div className="flex items-center gap-2 mb-5">
                                     <SettingsIcon className="h-5 w-5 text-[#4B2A06]" />
@@ -384,7 +572,26 @@ const OnboardingPage = () => {
                                             >
                                                 <div className="flex-1 pr-4">
                                                     <div className="font-semibold text-sm text-[rgba(38,40,43,1)]">Adverse Findings Research</div>
-                                                    <div className="text-xs text-gray-500 mt-0.5">Conduct automated web research for red flags.</div>
+                                                    <div className="text-xs text-gray-500 mt-0.5">Conduct automated web research for red flags on RHP entities.</div>
+                                                </div>
+                                                <ToggleSwitch checked={field.value} />
+                                            </div>
+                                        )}
+                                    />
+
+                                    {/* Toggle: News Monitor */}
+                                    <Controller
+                                        control={control}
+                                        name="news_monitor_enabled"
+                                        render={({ field }) => (
+                                            <div
+                                                className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${field.value ? "border-[#4B2A06]/20 bg-[#4B2A06]/[0.03]" : "border-gray-100 bg-gray-50/30 hover:border-gray-200"
+                                                    }`}
+                                                onClick={() => field.onChange(!field.value)}
+                                            >
+                                                <div className="flex-1 pr-4">
+                                                    <div className="font-semibold text-sm text-[rgba(38,40,43,1)]">Daily News Monitor</div>
+                                                    <div className="text-xs text-gray-500 mt-0.5">Enable automated daily 8 AM news crawling for selected companies.</div>
                                                 </div>
                                                 <ToggleSwitch checked={field.value} />
                                             </div>
@@ -443,7 +650,7 @@ const OnboardingPage = () => {
                                 </div>
                             </div>
 
-                           
+
                         </div>
                     </div>
                 </form>
@@ -472,6 +679,10 @@ const SettingsIcon = (props: any) => (
 
 const UsersIcon = (props: any) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+);
+
+const Building2Icon = (props: any) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" /><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" /><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" /><path d="M10 6h4" /><path d="M10 10h4" /><path d="M10 14h4" /><path d="M10 18h4" /></svg>
 );
 
 export default OnboardingPage;

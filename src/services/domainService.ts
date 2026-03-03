@@ -9,7 +9,9 @@ export interface DomainConfig {
     investor_match_only: boolean;
     valuation_matching: boolean;
     adverse_finding: boolean;
+    news_monitor_enabled: boolean;
     target_investors: string[];
+    monitored_companies: string[];
     // SOP & Prompts
     sop_text: string;
     agent3_prompt: string;
@@ -42,8 +44,10 @@ export interface OnboardingStatus {
         investor_match_only: boolean;
         valuation_matching: boolean;
         adverse_finding: boolean;
+        news_monitor_enabled: boolean;
     };
     target_investors: string[];
+    monitored_companies: string[];
     onboarding_required?: boolean;
 }
 
@@ -86,6 +90,7 @@ export const domainService = {
         config: {
             toggles: Record<string, boolean>;
             targetInvestors: string[];
+            monitoredCompanies: string[];
         };
         file?: File;
     }): Promise<any> => {
@@ -111,6 +116,7 @@ export const domainService = {
         config: {
             toggles: Record<string, boolean>;
             targetInvestors: string[];
+            monitoredCompanies: string[];
         };
         file: File;
     }): Promise<any> => {
@@ -122,6 +128,17 @@ export const domainService = {
         const response = await axios.post(`${API_URL}/domain/onboarding/re-onboard`, formData, {
             headers: {
                 Authorization: `Bearer ${token}`,
+            }
+        });
+        return response.data;
+    },
+
+    // Trigger instant news monitor crawl
+    triggerNewsCrawl: async (): Promise<any> => {
+        const token = localStorage.getItem("accessToken");
+        const response = await axios.post(`${API_URL}/domain/trigger-news-crawl`, {}, {
+            headers: {
+                Authorization: `Bearer ${token}`
             }
         });
         return response.data;
