@@ -442,7 +442,10 @@ export const StartConversation: React.FC = () => {
           );
           return;
         }
-        throw new Error(response?.error || "Failed to upload file to backend");
+        const errorMsg = response?.details
+          ? `${response.error}: ${response.details}`
+          : (response?.error || "Failed to upload file to backend");
+        throw new Error(errorMsg);
       }
 
       // Check if document already exists

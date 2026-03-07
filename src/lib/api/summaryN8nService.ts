@@ -5,8 +5,6 @@ const n8n_webhook_url = import.meta.env.VITE_N8N_WEBHOOK_URL;
 
 const SUMMARY_N8N_WEBHOOK_URL =
   `${n8n_webhook_url}/webhook/3/summary`;
-const RHP_SUMMARY_N8N_WEBHOOK_URL =
-  `${n8n_webhook_url}/webhook/1/rhp/summary`;
 
 interface N8nSummaryResponse {
   executionId?: string;
@@ -110,11 +108,7 @@ export const summaryN8nService = {
         console.error("Error extracting domain/domainId from token:", error);
       }
 
-      // Use RHP webhook if type is 'RHP', otherwise use default
-      const webhookUrl =
-        type === "RHP" ? RHP_SUMMARY_N8N_WEBHOOK_URL : SUMMARY_N8N_WEBHOOK_URL;
-
-      const response = await axios.get(`${webhookUrl}?${params.toString()}`, {
+      const response = await axios.get(`${SUMMARY_N8N_WEBHOOK_URL}?${params.toString()}`, {
         headers: {
           "Content-Type": "application/json",
         },
