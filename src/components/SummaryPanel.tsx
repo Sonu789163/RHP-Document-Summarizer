@@ -246,7 +246,15 @@ export function SummaryPanel({
     const key = `summary_processing_${currentDocument.id}`;
     const jobStartedAt = Number(localStorage.getItem(key));
     if (jobStartedAt) {
-      setIsSummarizing(true);
+      const now = Date.now();
+      const timeoutDuration = 12 * 60 * 1000; // 12 minutes
+      if (now - jobStartedAt > timeoutDuration) {
+        console.log("Found stale summary processing job, clearing...");
+        localStorage.removeItem(key);
+        setIsSummarizing(false);
+      } else {
+        setIsSummarizing(true);
+      }
     }
   }, [currentDocument?.id]);
 
@@ -374,14 +382,15 @@ export function SummaryPanel({
         jobStartedAt.toString()
       );
       toast.info("Summary request processing...");
-      // Start 10-minute timeout
+      // Start 12-minute timeout
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
         setIsSummarizing(false);
+        localStorage.removeItem(`summary_processing_${currentDocument.id}`);
         toast.error(
-          "Summary generation timed out after 10 minutes. Please try again."
+          "Summary generation timed out after 12 minutes. Please try again."
         );
-      }, 10 * 60 * 1000); // 10 minutes
+      }, 12 * 60 * 1000); // 12 minutes
       await summaryN8nService.createSummary(
         currentDocument.type === "RHP"
           ? "Generate RHP Doc Summary"

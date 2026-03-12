@@ -85,17 +85,17 @@ export default function ChatSummaryLayout() {
           setCurrentDocument(doc);
           setSelectedSummaryId(null);
           setIsSummaryProcessing(false);
-          
+
           // Check document status - but don't block view if status is processing
           const statusResponse = await uploadService.checkDocumentStatus(
             doc.id,
             sessionData
           );
-          
+
           if (isMounted) {
             // Always allow document to open, even if processing
             setIsInitialDocumentProcessing(false);
-            
+
             // Check if document is still processing
             // Also check if summaries exist - if summaries exist, processing is likely complete
             let hasSummaries = false;
@@ -106,36 +106,36 @@ export default function ChatSummaryLayout() {
               // Ignore summary check errors - summaries might not exist yet
               console.log("Could not check summaries:", summaryError);
             }
-            
+
             // Document is considered processed if:
             // 1. Status is "completed" or "ready", OR
             // 2. Status is "processing" but summaries exist (processing completed but status not updated)
             const isActuallyProcessing = statusResponse.status === "processing" && !hasSummaries;
-            
+
             if (isActuallyProcessing) {
               setIsDocumentProcessing(true);
-              
+
               // Poll for status updates in the background
               let pollAttempts = 0;
               const maxPollAttempts = 120; // 10 minutes
               const pollInterval = 5000; // 5 seconds
-              
+
               const pollForCompletion = async () => {
                 if (pollAttempts >= maxPollAttempts) {
                   setIsDocumentProcessing(false);
                   return;
                 }
-                
+
                 try {
                   const updatedDoc = await documentService.getById(namespace, linkToken || undefined);
-                  
+
                   // Check for summaries as indicator of completion
                   let summariesExist = false;
                   try {
                     const summaries = await summaryService.getByDocumentId(updatedDoc.id);
                     summariesExist = summaries && summaries.length > 0;
-                  } catch {}
-                  
+                  } catch { }
+
                   // Document is complete if status is not processing OR if summaries exist
                   if (updatedDoc && (updatedDoc.status !== "processing" || summariesExist)) {
                     // Document processing completed
@@ -155,13 +155,13 @@ export default function ChatSummaryLayout() {
                   setIsDocumentProcessing(false);
                 }
               };
-              
+
               // Start polling after a delay
               setTimeout(pollForCompletion, pollInterval);
             } else {
               // Not processing (either status is complete/ready, or summaries exist)
               setIsDocumentProcessing(false);
-              
+
               // If summaries exist but status is still processing, try to refresh the document
               if (hasSummaries && statusResponse.status === "processing") {
                 // Try to refresh document to get updated status
@@ -260,9 +260,8 @@ export default function ChatSummaryLayout() {
     <div className="flex flex-row h-screen w-screen bg-[#FAFAFA]">
       {/* Sidebar */}
       <div
-        className={`transition-all duration-300 h-full ${
-          sidebarOpen ? "w-[15%] min-w-[250px]" : "w-0 min-w-0 max-w-0"
-        } bg-white shadow-xl`}
+        className={`transition-all duration-300 h-full ${sidebarOpen ? "w-[15%] min-w-[250px]" : "w-0 min-w-0 max-w-0"
+          } bg-white shadow-xl`}
         style={{ overflow: "hidden" }}
         data-sidebar="true"
       >
@@ -280,9 +279,8 @@ export default function ChatSummaryLayout() {
       </div>
       {/* Main Content */}
       <div
-        className={`flex flex-col h-full transition-all duration-300 ${
-          sidebarOpen ? "w-[90%]" : "w-full"
-        }`}
+        className={`flex flex-col h-full transition-all duration-300 ${sidebarOpen ? "w-[90%]" : "w-full"
+          }`}
       >
         <Navbar
           onSidebarOpen={() => setSidebarOpen(true)}
