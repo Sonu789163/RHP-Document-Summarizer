@@ -801,8 +801,7 @@ function FundConfigSection() {
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<DomainConfig | null>(null);
   const [newInvestor, setNewInvestor] = useState("");
-  const [newCompany, setNewCompany] = useState("");
-  const [isCrawling, setIsCrawling] = useState(false);
+  const [newMonitoredCompany, setNewMonitoredCompany] = useState("");
 
   useEffect(() => {
     fetchConfig();
@@ -837,12 +836,51 @@ function FundConfigSection() {
 
   const handleAddInvestor = () => {
     if (!newInvestor.trim() || !config) return;
-    if (config.target_investors.includes(newInvestor.trim())) return;
 
-    setConfig({
-      ...config,
-      target_investors: [...config.target_investors, newInvestor.trim()]
-    });
+    let namesToAdd: string[] = [];
+
+    // 1. Try to parse as JSON array first
+    const trimmedInput = newInvestor.trim();
+    if (trimmedInput.startsWith('[') && trimmedInput.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmedInput);
+        if (Array.isArray(parsed)) {
+          namesToAdd = parsed.map(n => String(n).trim()).filter(n => n.length > 0);
+        }
+      } catch (e) {
+        // If not valid JSON, we'll fall through to delimiter-based splitting
+        console.warn("Invalid JSON format for investors, falling back to delimiter split");
+      }
+    }
+
+    // 2. If JSON parsing didn't find anything, split by common delimiters (comma, newline, semicolon)
+    if (namesToAdd.length === 0) {
+      namesToAdd = newInvestor
+        .split(/[,\n;]+/)
+        .map(n => n.trim())
+        .filter(n => n.length > 0);
+    }
+
+    if (namesToAdd.length === 0) return;
+
+    // Filter out duplicates within the current input and against existing config
+    const uniqueIncoming = Array.from(new Set(namesToAdd));
+    const currentInvestors = config.target_investors || [];
+    const newUniqueNames = uniqueIncoming.filter(name => !currentInvestors.includes(name));
+
+    if (newUniqueNames.length > 0) {
+      setConfig({
+        ...config,
+        target_investors: [...currentInvestors, ...newUniqueNames]
+      });
+
+      if (newUniqueNames.length > 1) {
+        toast.success(`Successfully added ${newUniqueNames.length} investors`);
+      }
+    } else if (uniqueIncoming.length > 0) {
+      toast.info("Investors already exist in the list");
+    }
+
     setNewInvestor("");
   };
 
@@ -854,24 +892,46 @@ function FundConfigSection() {
     });
   };
 
-  const handleAddCompany = () => {
-    if (!newCompany.trim() || !config) return;
-    if (config.monitored_companies.includes(newCompany.trim())) return;
+  const handleAddMonitoredCompany = () => {
+    if (!newMonitoredCompany.trim() || !config) return;
 
-    setConfig({
-      ...config,
-      monitored_companies: [...config.monitored_companies, newCompany.trim()]
-    });
-    setNewCompany("");
+    const namesToAdd = newMonitoredCompany
+      .split(/[,\n;]+/)
+      .map(n => n.trim())
+      .filter(n => n.length > 0);
+
+    if (namesToAdd.length === 0) return;
+
+    const uniqueIncoming = Array.from(new Set(namesToAdd));
+    const currentCompanies = config.monitored_companies || [];
+    const newUniqueNames = uniqueIncoming.filter(name => !currentCompanies.includes(name));
+
+    if (newUniqueNames.length > 0) {
+      setConfig({
+        ...config,
+        monitored_companies: [...currentCompanies, ...newUniqueNames]
+      });
+
+      if (newUniqueNames.length > 1) {
+        toast.success(`Broadened monitoring scope to include ${newUniqueNames.length} entities`);
+      } else {
+        toast.success(`Broadened monitoring scope to include ${newUniqueNames[0]}`);
+      }
+    } else if (uniqueIncoming.length > 0) {
+      toast.info("Companies already in monitoring list");
+    }
+    setNewMonitoredCompany("");
   };
 
-  const handleRemoveCompany = (company: string) => {
+  const handleRemoveMonitoredCompany = (company: string) => {
     if (!config) return;
     setConfig({
       ...config,
       monitored_companies: config.monitored_companies.filter(c => c !== company)
     });
   };
+
+
 
   if (loading) {
     return (
@@ -884,7 +944,7 @@ function FundConfigSection() {
   return (
     <>
       <div className="flex items-center justify-between mb-4 mt-2">
-        <h1 className="text-3xl font-bold">Fund Configuration</h1>
+        <h1 className="text-3xl font-bold">Admin Configuration</h1>
         <Button onClick={handleSave} disabled={saving} className="gap-2 bg-[#4B2A06] text-white hover:bg-[#3a2004]">
           <Save className="h-4 w-4" />
           {saving ? "Saving..." : "Save Changes"}
@@ -897,7 +957,7 @@ function FundConfigSection() {
           <div className="text-sm text-muted-foreground">Customize how the AI analyzes documents for your fund.</div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Toggle 1 */}
             <div className="flex flex-col space-y-3 p-4 border rounded-xl bg-gray-50/50">
               <div className="flex items-center justify-between">
@@ -943,10 +1003,10 @@ function FundConfigSection() {
               </p>
             </div>
 
-            {/* Toggle 4: News Monitor */}
+            {/* Toggle 4 */}
             <div className="flex flex-col space-y-3 p-4 border rounded-xl bg-gray-50/50">
               <div className="flex items-center justify-between">
-                <Label htmlFor="news-monitor" className="font-semibold">Daily News Monitor</Label>
+                <Label htmlFor="news-monitor" className="font-semibold">Web Crawl (News Monitoring)</Label>
                 <Switch
                   id="news-monitor"
                   checked={config?.news_monitor_enabled ?? false}
@@ -954,108 +1014,15 @@ function FundConfigSection() {
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Enable automated daily (8 AM) news crawling for selected companies.
+                Monitor news and web updates for specified companies and entities.
               </p>
             </div>
+
           </div>
         </CardContent>
       </div>
 
-      {/* Monitored Companies Section - Conditional */}
-      {config?.news_monitor_enabled && (
-        <div className="shadow-md border border-gray-200 rounded-xl bg-white mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-xl">Monitored Companies</CardTitle>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-4 w-4 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs">List of companies that will be monitored for negative news daily.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 text-[#4B2A06] border-[#4B2A06]/20 hover:bg-[#4B2A06]/5"
-                disabled={isCrawling}
-                onClick={async () => {
-                  if (!config) return;
-                  try {
-                    setIsCrawling(true);
-                    // 1. Save current config first
-                    await domainService.updateConfig(config);
 
-                    // 2. Trigger crawl
-                    const res = await domainService.triggerNewsCrawl();
-                    const articleCount = res.article_count || 0;
-
-                    if (articleCount > 0) {
-                      toast.success(`Crawl completed: ${articleCount} articles found`, {
-                        action: {
-                          label: "View Articles",
-                          onClick: () => (window.location.href = "/news-articles")
-                        }
-                      });
-                    } else {
-                      toast.warning(res.message || "Crawl completed, but no new articles were found.");
-                    }
-
-                    if (res.errors && res.errors.length > 0) {
-                      toast.error(`Crawl had ${res.errors.length} errors. Check console for details.`);
-                      console.error("News crawl partial errors:", res.errors);
-                    }
-                  } catch (err: any) {
-                    console.error("Crawl error:", err);
-                    toast.error(err?.response?.data?.error || err?.response?.data?.detail || "Failed to trigger news crawl");
-                  } finally {
-                    setIsCrawling(false);
-                  }
-                }}
-              >
-                {isCrawling ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                {isCrawling ? "Crawling..." : "Run Crawler Now"}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2 max-w-md">
-              <Input
-                placeholder="Add company name..."
-                value={newCompany}
-                onChange={(e) => setNewCompany(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddCompany()}
-                className="border-gray-200 bg-white"
-              />
-              <Button variant="secondary" size="icon" onClick={handleAddCompany} className="shrink-0">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="flex flex-wrap gap-2 p-4 border rounded-xl bg-gray-50/50 min-h-[100px]">
-              {config?.monitored_companies?.length === 0 && (
-                <span className="text-sm text-muted-foreground italic self-center">No companies added for monitoring yet.</span>
-              )}
-              {config?.monitored_companies?.map((company, idx) => (
-                <Badge key={idx} variant="secondary" className="pl-3 pr-2 py-1.5 gap-2 text-sm font-normal bg-white border border-gray-200 shadow-sm">
-                  {company}
-                  <button
-                    onClick={() => handleRemoveCompany(company)}
-                    className="text-gray-400 hover:text-red-500 transition-colors focus:outline-none"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </div>
-      )}
 
       <div className="shadow-md border border-gray-200 rounded-xl bg-white mb-6">
         <CardHeader>
@@ -1067,7 +1034,7 @@ function FundConfigSection() {
                   <Info className="h-4 w-4 text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="max-w-xs">List specific investors (Funds, Family Offices, Individuals) you want to track.</p>
+                  <p className="max-w-xs">List specific investors to track. You can paste a single name, a comma-separated list, or a JSON array.</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -1076,7 +1043,7 @@ function FundConfigSection() {
         <CardContent className="space-y-4">
           <div className="flex gap-2 max-w-md">
             <Input
-              placeholder="Add investor name..."
+              placeholder="Add name, comma-separated list, or JSON array..."
               value={newInvestor}
               onChange={(e) => setNewInvestor(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddInvestor()}
@@ -1102,6 +1069,113 @@ function FundConfigSection() {
                 </button>
               </Badge>
             ))}
+          </div>
+        </CardContent>
+      </div>
+
+      <div className="shadow-md border border-gray-200 rounded-xl bg-white mb-6">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-xl">Monitored Companies List</CardTitle>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs">List companies or entities to monitor across the web and news sources.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2 max-w-md">
+            <Input
+              placeholder="Add company name to monitor..."
+              value={newMonitoredCompany}
+              onChange={(e) => setNewMonitoredCompany(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddMonitoredCompany()}
+              className="border-gray-200 bg-white"
+            />
+            <Button variant="secondary" size="icon" onClick={handleAddMonitoredCompany} className="shrink-0">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap gap-2 p-4 border rounded-xl bg-gray-50/50 min-h-[100px]">
+            {config?.monitored_companies?.length === 0 && (
+              <span className="text-sm text-muted-foreground italic self-center">No companies added for monitoring yet.</span>
+            )}
+            {config?.monitored_companies?.map((company, idx) => (
+              <Badge key={idx} variant="secondary" className="pl-3 pr-2 py-1.5 gap-2 text-sm font-normal bg-white border border-gray-200 shadow-sm">
+                {company}
+                <button
+                  onClick={() => handleRemoveMonitoredCompany(company)}
+                  className="text-gray-400 hover:text-red-500 transition-colors focus:outline-none"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+      </div>
+
+      <div className="shadow-md border border-gray-200 rounded-xl bg-white mb-6">
+        <CardHeader>
+          <CardTitle className="text-xl">AI Agent Prompts</CardTitle>
+          <div className="text-sm text-muted-foreground">Manage system prompts and subqueries for all extraction agents.</div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label className="font-semibold text-lg">Agent 3 Prompt (Business Table Extractor)</Label>
+            <Textarea
+              className="min-h-[300px] font-mono text-sm leading-relaxed border-gray-200 bg-gray-50/30 p-4 rounded-xl focus:ring-1 focus:ring-[#4B2A06]"
+              placeholder="Enter Agent 3 Prompt..."
+              value={config?.agent3_prompt || ""}
+              onChange={(e) => setConfig(prev => prev ? ({ ...prev, agent3_prompt: e.target.value }) : null)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="font-semibold text-lg">Agent 3 Subqueries (One per line)</Label>
+            <Textarea
+              className="min-h-[200px] font-mono text-sm leading-relaxed border-gray-200 bg-gray-50/30 p-4 rounded-xl focus:ring-1 focus:ring-[#4B2A06]"
+              placeholder="Enter Agent 3 Subqueries..."
+              value={config?.agent3_subqueries?.join('\n') || ""}
+              onChange={(e) => setConfig(prev => prev ? ({ ...prev, agent3_subqueries: e.target.value.split('\n').filter(s => s.trim() !== "") }) : null)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="font-semibold text-lg">Agent 4 Prompt (Main Summary Generator)</Label>
+            <Textarea
+              className="min-h-[400px] font-mono text-sm leading-relaxed border-gray-200 bg-gray-50/30 p-4 rounded-xl focus:ring-1 focus:ring-[#4B2A06]"
+              placeholder="Enter Agent 4 Prompt..."
+              value={config?.agent4_prompt || ""}
+              onChange={(e) => setConfig(prev => prev ? ({ ...prev, agent4_prompt: e.target.value }) : null)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="font-semibold text-lg">Agent 4 Subqueries (One per line)</Label>
+            <Textarea
+              className="min-h-[300px] font-mono text-sm leading-relaxed border-gray-200 bg-gray-50/30 p-4 rounded-xl focus:ring-1 focus:ring-[#4B2A06]"
+              placeholder="Enter Agent 4 Subqueries..."
+              value={config?.agent4_subqueries?.join('\n') || ""}
+              onChange={(e) => setConfig(prev => prev ? ({ ...prev, agent4_subqueries: e.target.value.split('\n').filter(s => s.trim() !== "") }) : null)}
+            />
+          </div>
+
+          <div className="space-y-2 pt-4 border-t border-gray-100">
+            <Label className="font-semibold text-lg">Agent 5 Prompt (Adverse Findings Research)</Label>
+            <Textarea
+              className="min-h-[250px] font-mono text-sm leading-relaxed border-gray-200 bg-gray-50/30 p-4 rounded-xl focus:ring-1 focus:ring-[#4B2A06]"
+              placeholder="Enter Agent 5 Prompt..."
+              value={config?.agent5_prompt || ""}
+              onChange={(e) => setConfig(prev => prev ? ({ ...prev, agent5_prompt: e.target.value }) : null)}
+            />
           </div>
         </CardContent>
       </div>

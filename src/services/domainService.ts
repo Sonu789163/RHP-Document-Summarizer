@@ -10,12 +10,15 @@ export interface DomainConfig {
     valuation_matching: boolean;
     adverse_finding: boolean;
     news_monitor_enabled: boolean;
-    target_investors: string[];
     monitored_companies: string[];
+    target_investors: string[];
     // SOP & Prompts
     sop_text: string;
     agent3_prompt: string;
+    agent3_subqueries: string[];
     agent4_prompt: string;
+    agent4_subqueries: string[];
+    agent5_prompt: string;
     // Onboarding status
     onboarding_status: "pending" | "processing" | "completed" | "completed_no_sop" | "failed";
     last_onboarded: string | null;
@@ -24,8 +27,6 @@ export interface DomainConfig {
     custom_subqueries_count: number;
     has_agent3_prompt: boolean;
     has_agent4_prompt: boolean;
-    // Legacy
-    validator_checklist: string[];
 }
 
 export interface OnboardingStatus {
@@ -44,10 +45,8 @@ export interface OnboardingStatus {
         investor_match_only: boolean;
         valuation_matching: boolean;
         adverse_finding: boolean;
-        news_monitor_enabled: boolean;
     };
     target_investors: string[];
-    monitored_companies: string[];
     onboarding_required?: boolean;
 }
 
@@ -90,7 +89,6 @@ export const domainService = {
         config: {
             toggles: Record<string, boolean>;
             targetInvestors: string[];
-            monitoredCompanies: string[];
         };
         file?: File;
     }): Promise<any> => {
@@ -116,7 +114,6 @@ export const domainService = {
         config: {
             toggles: Record<string, boolean>;
             targetInvestors: string[];
-            monitoredCompanies: string[];
         };
         file: File;
     }): Promise<any> => {
@@ -133,14 +130,5 @@ export const domainService = {
         return response.data;
     },
 
-    // Trigger instant news monitor crawl
-    triggerNewsCrawl: async (): Promise<any> => {
-        const token = localStorage.getItem("accessToken");
-        const response = await axios.post(`${API_URL}/domain/trigger-news-crawl`, {}, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-        return response.data;
-    },
+
 };

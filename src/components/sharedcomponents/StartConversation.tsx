@@ -4180,6 +4180,68 @@ export const StartConversation: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* 
+              Delete Summary Confirmation Dialog
+              Modal that appears when user clicks delete on a summary
+            */}
+            {showDeleteSummaryDialog && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+                <div className="bg-white rounded-lg shadow-lg p-[2vw] max-w-sm w-full">
+                  <h2 className="text-lg font-bold mb-[1vw]">
+                    Delete Summary
+                  </h2>
+                  <p className="mb-[2vw]">
+                    Are you sure you want to delete "{summaryToDelete?.title || 'this summary'}"? This action cannot be undone.
+                  </p>
+                  <div className="flex justify-end gap-[1vw]">
+                    <button
+                      className="px-[1vw] py-[0.5vw] rounded bg-gray-200 hover:bg-gray-300"
+                      onClick={() => setShowDeleteSummaryDialog(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="px-[1vw] py-[0.5vw] rounded bg-red-600 text-white hover:bg-red-700"
+                      onClick={confirmDeleteSummary}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 
+              Delete Report Confirmation Dialog
+              Modal that appears when user clicks delete on a report
+            */}
+            {showDeleteReportDialog && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+                <div className="bg-white rounded-lg shadow-lg p-[2vw] max-w-sm w-full">
+                  <h2 className="text-lg font-bold mb-[1vw]">
+                    Delete Report
+                  </h2>
+                  <p className="mb-[2vw]">
+                    Are you sure you want to delete "{reportToDelete?.title || 'this report'}"? This action cannot be undone.
+                  </p>
+                  <div className="flex justify-end gap-[1vw]">
+                    <button
+                      className="px-[1vw] py-[0.5vw] rounded bg-gray-200 hover:bg-gray-300"
+                      onClick={() => setShowDeleteReportDialog(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="px-[1vw] py-[0.5vw] rounded bg-red-600 text-white hover:bg-red-700"
+                      onClick={confirmDeleteReport}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* 
               Upload Success Modal
               Displays after successful document upload

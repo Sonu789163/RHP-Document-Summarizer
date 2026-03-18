@@ -44,6 +44,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { io as socketIOClient } from "socket.io-client";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
+import { cleanSummaryContent } from "@/lib/utils/markdownConverter";
 
 interface ComparePageProps { }
 
@@ -497,6 +501,28 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
     setZoom((z) => Math.min(Math.round((z + 0.1) * 10) / 10, 2));
   const handleZoomOut = () =>
     setZoom((z) => Math.max(Math.round((z - 0.1) * 10) / 10, 1));
+
+  // Convert plain URLs and emails in HTML to clickable links
+  function linkifyHtml(html: string): string {
+    if (!html) return html;
+    const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+    const urlRegex = /(?:(https?:\/\/)|\bwww\.)[\w.-]+(?:\.[\w.-]+)+(?:[\w\-._~:/?#\[\]@!$&'()*+,;=%]*)/g;
+
+    let out = html.replace(emailRegex, (m) => `<a href="mailto:${m}">${m}</a>`);
+    out = out.replace(urlRegex, (m) => {
+      const hasProtocol = m.startsWith("http://") || m.startsWith("https://");
+      const href = hasProtocol ? m : `http://${m}`;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer">${m}</a>`;
+    });
+    return out;
+  }
+
+  // Helper function to prepare content for ReactMarkdown
+  const prepareContent = (content: string) => {
+    if (!content) return "";
+    const cleaned = cleanSummaryContent(content);
+    return linkifyHtml(stripStyleTags(cleaned));
+  };
 
   const handlePrint = () => {
     if (reportRef.current) {
@@ -1128,10 +1154,32 @@ export const ComparePage: React.FC<ComparePageProps> = () => {
                         wordBreak: "break-word",
                         overflowWrap: "break-word",
                       }}
-                      dangerouslySetInnerHTML={{
-                        __html: stripStyleTags(selectedReport.content),
-                      }}
-                    />
+                    >
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeRaw]}
+                        components={{
+                          table: ({ node, ...props }) => (
+                            <div className="overflow-x-auto rounded-lg border border-[#d1d5de] my-4 bg-white/50">
+                              <table className="w-full text-sm text-left border-collapse" {...props} />
+                            </div>
+                          ),
+                          thead: ({ node, ...props }) => <thead className="bg-[#ECE9E2] font-semibold" {...props} />,
+                          tr: ({ node, ...props }) => <tr className="border-b border-[#d1d5de] hover:bg-black/5" {...props} />,
+                          th: ({ node, ...props }) => <th className="px-4 py-2 border-r border-[#d1d5de] last:border-r-0" {...props} />,
+                          td: ({ node, ...props }) => <td className="px-4 py-2 border-r border-[#d1d5de] last:border-r-0" {...props} />,
+                          h1: ({ node, ...props }) => <h1 className="text-2xl font-bold my-4 text-[#1F2937]" {...props} />,
+                          h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3 text-[#1F2937]" {...props} />,
+                          h3: ({ node, ...props }) => <h3 className="text-lg font-bold my-2 text-[#1F2937]" {...props} />,
+                          p: ({ node, ...props }) => <p className="mb-4 leading-relaxed whitespace-pre-wrap" {...props} />,
+                          ul: ({ node, ...props }) => <ul className="list-disc ml-6 mb-4 space-y-1" {...props} />,
+                          ol: ({ node, ...props }) => <ol className="list-decimal ml-6 mb-4 space-y-1" {...props} />,
+                          a: ({ node, ...props }) => <a className="text-blue-600 underline hover:text-blue-800" target="_blank" rel="noopener noreferrer" {...props} />,
+                        }}
+                      >
+                        {prepareContent(selectedReport.content)}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 </div>
               ) : (

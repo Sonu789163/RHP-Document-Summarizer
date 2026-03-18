@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Navbar } from '@/components/sharedcomponents/Navbar';
-import { TrendingUp, Filter, ChevronDown, ExternalLink, Calendar, Building2, Tag, AlertCircle, AlertTriangle, CheckCircle, Info, RefreshCw, Trash2 } from 'lucide-react';
+import { TrendingUp, Filter, ChevronDown, ExternalLink, Calendar, Building2, Tag, AlertCircle, AlertTriangle, CheckCircle, Info, RefreshCw, Trash2, Zap } from 'lucide-react';
+import { domainService } from '@/services/domainService';
 import { toast } from 'sonner';
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -52,6 +53,8 @@ const NewsArticles: React.FC = () => {
     const [showFilters, setShowFilters] = useState(false);
     const [timeFilter, setTimeFilter] = useState<'today' | 'yesterday' | 'last7' | 'last30' | 'all'>('today');
     const [showTimeFilter, setShowTimeFilter] = useState(false);
+    const [isCrawling, setIsCrawling] = useState(false);
+    const [domainId, setDomainId] = useState<string | null>(null);
     const initialLoadDone = React.useRef(false);
 
     // Force reload when navigating to this page
@@ -330,6 +333,53 @@ const NewsArticles: React.FC = () => {
         fetchArticles();
     };
 
+    const handleTriggerCrawl = async () => {
+        try {
+            let targetDomainId = domainId;
+            
+            if (!targetDomainId) {
+                const config = await domainService.getConfig();
+                if (config?.domainId) {
+                    targetDomainId = config.domainId;
+                    setDomainId(config.domainId);
+                } else {
+                    toast.error("No active domain configuration found");
+                    return;
+                }
+            }
+
+            setIsCrawling(true);
+            const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+            
+            toast.info("Starting news crawl... This may take a minute.");
+            
+            const response = await axios.post(
+                `${API_URL}/domain/trigger-news-crawl`,
+                { domainId: targetDomainId },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+            
+            const result = response.data.pythonResponse || response.data;
+            
+            if (result.status === 'completed') {
+                toast.success(`Search completed! Found ${result.article_count} new findings.`);
+                handleRefresh();
+            } else {
+                toast.error(result.message || 'Monitor run failed');
+            }
+        } catch (error: any) {
+            console.error('Error triggering news monitor:', error);
+            const errorMsg = error.response?.data?.detail || "Failed to trigger monitor";
+            toast.error(errorMsg);
+        } finally {
+            setIsCrawling(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-white flex flex-col">
             <Navbar
@@ -467,6 +517,15 @@ const NewsArticles: React.FC = () => {
                                     </div>
                                 )}
                             </div>
+
+                            <button
+                                className={`flex items-center gap-1.5 ml-2 px-3 py-1.5 bg-[#FF7A1A] text-white text-xs font-bold rounded-lg hover:bg-[#4B2A06] transition-all ${isCrawling ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                onClick={handleTriggerCrawl}
+                                disabled={isCrawling}
+                            >
+                                <Zap className={`h-4 w-4 ${isCrawling ? 'animate-pulse' : ''}`} />
+                                {isCrawling ? 'Crawling...' : 'Run Monitor Now'}
+                            </button>
 
                             <button
                                 className="flex items-center gap-1.5 text-xs text-[#4B2A06] hover:text-[#FF7A1A] font-semibold transition-colors"
